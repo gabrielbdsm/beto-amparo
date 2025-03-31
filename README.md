@@ -72,7 +72,7 @@ Edeílson Milhomem
 |--------|-----------|---------------|
 | **Dallyla** | Criar páginas (Next.js): formulário de pedidos + dashboard | - |
 | **Heloisa Rolins** | Configurar Supabase (tabelas pedidos, clientes) | - |
-| **D3** | Integrar formulário com Supabase | D1, D2 |
+| **gabriel martiliano** | Integrar formulário com Supabase | D1, D2 |
 | **Ester Arraiz** | Deploy na Vercel + configurar HTTPS | D1 |
 | **Neci Silva** | Criar visualização de dados (gráficos simples) | - |
 | **Todos** | Testes manuais e ajustes | Todos |
