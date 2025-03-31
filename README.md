@@ -80,10 +80,10 @@ Edeílson Milhomem
 ### **Entregável**  
 ✅ Site no ar com formulário e dashboard funcional.
 
-##Login
+## Login
 ![Login](https://github.com/user-attachments/assets/e170a99a-4259-4b74-8439-30b79ab8a8fc)
 
-##Cadastro de empresa
+## Cadastro de empresa
 ![Cadastro empresa](https://github.com/user-attachments/assets/891fe8e3-5f94-4726-8479-863a71991837)
 
 ## Dashboard do dono
@@ -101,7 +101,7 @@ Edeílson Milhomem
 ![Texto alterantivo](fotos/Agendamentos%20(1).svg)
 ![Texto alternativo](fotos/Agendamentos.png)
 
-##Formulário de pedido
+## Formulário de pedido
 ![Formulário de pedido](https://github.com/user-attachments/assets/57a78691-255d-4083-af70-0d805a1b9975)
 
 ## Pedidos recentes
