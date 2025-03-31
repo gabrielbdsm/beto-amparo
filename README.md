@@ -106,3 +106,12 @@ Edeílson Milhomem
 
 ## Pedidos recentes
 ![Texto alternativo](fotos/Pedidos%20recentes.png)
+
+## Carrinho
+![card](fotos/card.png)
+![resumo](fotos/resumo.png)
+![ordem](fotos/ordem.png)
+![erro](fotos/ordem%20Erro.png)
+
+## Produto individual
+![individual](fotos/7%20-%20A%20-%20Advertising%20Banner.png)
