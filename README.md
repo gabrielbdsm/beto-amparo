@@ -80,3 +80,20 @@ Edeílson Milhomem
 ### **Entregável**  
 ✅ Site no ar com formulário e dashboard funcional.
 
+## Dashboard do dono
+![Texto alternativo](fotos/Dashboard%20do%20dono.svg)
+
+## Área do dono
+![Texto alternativo](fotos/Área%20do%20dono.svg)
+![Texto alternativo](fotos/Área%20do%20dono%20(1).svg)
+
+## Adicionar produto
+![Texto alternativo](fotos/Adicionar%20produto.svg)
+
+## Agendamentos
+![Texto alternativo](fotos/Agendamentos%20(4).svg)
+![Texto alterantivo](fotos/Agendamentos%20(1).svg)
+![Texto alternativo](fotos/Agendamentos.png)
+
+## Pedidos recentes
+![Texto alternativo](fotos/Pedidos%20recentes.png)
