@@ -74,7 +74,7 @@ Edeílson Milhomem
 | **Heloisa Rolins** | Configurar Supabase (tabelas pedidos, clientes) | - |
 | **D3** | Integrar formulário com Supabase | D1, D2 |
 | **D4** | Deploy na Vercel + configurar HTTPS | D1 |
-| **D5** | Criar visualização de dados (gráficos simples) | D2 |
+| **Neci Silva** | Criar visualização de dados (gráficos simples) | - |
 | **Todos** | Testes manuais e ajustes | Todos |
 
 ### **Entregável**  
