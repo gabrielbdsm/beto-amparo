@@ -87,6 +87,12 @@ Edeílson Milhomem
 ## Login
 ![Login](https://github.com/user-attachments/assets/e170a99a-4259-4b74-8439-30b79ab8a8fc)
 
+## Logout
+![Logout](fotos/Logout.png)
+
+## Recuperação de senha
+![Recuperação de Senha](fotos/recuperacao_de_senha.png)
+
 ## Cadastro de empresa
 ![Cadastro empresa](https://github.com/user-attachments/assets/891fe8e3-5f94-4726-8479-863a71991837)
 
@@ -126,3 +132,6 @@ Edeílson Milhomem
 
 ## Produto individual
 ![individual](fotos/7%20-%20A%20-%20Advertising%20Banner.png)
+
+## Cliente
+![cliente](fotos/Cliente.png)
