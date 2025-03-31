@@ -27,6 +27,20 @@ Edeílson Milhomem
       <td>Dallyla de Moraes Sousa</td>
     </tr>
   </table>
+
+# Canvas do Projeto Beto Amparo
+
+| **Seção**                 | **Descrição** |
+|---------------------------|--------------|
+| **Proposta de Valor**     | Criar um sistema híbrido de atendimento humanizado que combina WhatsApp Business (para interação inicial) e uma plataforma web (para funcionalidades avançadas), permitindo atendimento, pedidos e agendamentos de forma prática e eficiente. |
+| **Segmento de Clientes**  | Pequenos negócios e empreendedores que utilizam WhatsApp para vendas e atendimento. Clientes que desejam realizar pedidos e agendamentos sem necessidade de interação humana inicial. |
+| **Canais**                | WhatsApp Business (mensagens automáticas com links para o site). Plataforma web responsiva (Next.js + Supabase). Progressive Web App (PWA) para acesso facilitado pelo celular. |
+| **Relacionamento com Clientes** | Autoatendimento via WhatsApp e site. Dashboard para acompanhamento de pedidos. Notificações automáticas para manter o cliente informado. |
+| **Atividades-Chave**      | Desenvolvimento da plataforma web (Next.js + Supabase). Integração com WhatsApp Business. Implementação do sistema de pedidos e agendamentos. Criação de um dashboard para gerenciamento dos pedidos. Implementação de PWA para donos de negócio. |
+| **Recursos Principais**   | Plataforma web com sistema de pedidos e agendamentos. Banco de dados no Supabase para armazenar pedidos e clientes. WhatsApp Business API para envio de mensagens automáticas. Infraestrutura de hospedagem na Vercel. |
+| **Parcerias Principais**  | SEBRAE (apoio na modelagem do negócio e monetização). Fornecedores de pequenos negócios que desejam digitalizar seus atendimentos. Comunidade de desenvolvedores para suporte técnico e melhorias contínuas. |
+| **Estrutura de Custos**   | Hospedagem na Vercel (plano gratuito ou pago dependendo da demanda). Uso do Supabase (plano gratuito inicialmente, podendo escalar conforme necessário). Eventual aquisição de domínio personalizado. Investimento em marketing para atrair usuários. |
+| **Fontes de Receita**     | Modelo de assinatura paga com três planos: **Básico** (plano mais acessível, funcionalidades essenciais). **Intermediário** (mais funcionalidades que o básico, como personalização básica e relatórios simples). **Avançado** (acesso completo, incluindo automação avançada e relatórios detalhados). Taxa sobre pedidos gerados pela plataforma. Publicidade ou parcerias estratégicas. |
   
 # Escopo do Projeto Beto Amparo</h1>
 ### Objetivo: Criar um sistema híbrido de atendimento humanizado que combina WhatsApp Business (para interação inicial) + plataforma web (para funcionalidades avançadas), atendimento, pedidos e agendamentos.
@@ -72,7 +86,7 @@ Edeílson Milhomem
 |--------|-----------|---------------|
 | **Dallyla** | Criar páginas (Next.js): formulário de pedidos + dashboard | - |
 | **Heloisa Rolins** | Configurar Supabase (tabelas pedidos, clientes) | - |
-| **gabriel martiliano** | Integrar formulário com Supabase | D1, D2 |
+| **Gabriel Martiliano** | Integrar formulário com Supabase | D1, D2 |
 | **Ester Arraiz** | Deploy na Vercel + configurar HTTPS | D1 |
 | **Neci Silva** | Criar visualização de dados (gráficos simples) | - |
 | **Todos** | Testes manuais e ajustes | Todos |
