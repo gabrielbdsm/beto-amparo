@@ -1,4 +1,4 @@
-# Beto Amparo
+# #️⃣ Beto Amparo
 ## Universidade
 Universidade Federal do Tocantins
 ## Curso
@@ -28,7 +28,17 @@ Edeílson Milhomem
     </tr>
   </table>
 
-# Canvas do Projeto Beto Amparo
+## 📊 Validação da Ideia
+
+Para validar a necessidade do sistema Beto Amparo, realizamos uma pesquisa via Forms com pequenos empreendedores que utilizam o WhatsApp como canal de atendimento e vendas. Os principais resultados foram:
+
+- 🔁 **64,3%** dos entrevistados já **perderam vendas** por conta da demora no atendimento.
+- 🕒 **50%** levam de **5 a 30 minutos** para responder mensagens de clientes.
+- ⚡ Apenas **35,7%** respondem **em menos de 5 minutos**.
+
+Esses dados mostram uma demanda real por soluções que automatizem o primeiro contato com o cliente e agilizem pedidos e agendamentos, reforçando a relevância da proposta.
+
+## 🧩 Canvas do Projeto Beto Amparo
 
 | **Seção**                 | **Descrição** |
 |---------------------------|--------------|
@@ -41,10 +51,28 @@ Edeílson Milhomem
 | **Parcerias Principais**  | Instituições como SEBRAE para captação de clientes. Donos de pequenos negócios que desejam digitalizar seus atendimentos. |
 | **Estrutura de Custos**   | Hospedagem na Vercel (plano gratuito ou pago dependendo da demanda). Uso do Supabase (plano gratuito inicialmente, podendo escalar conforme necessário). Eventual aquisição de domínio personalizado. Investimento em marketing para atrair usuários. |
 | **Fontes de Receita**     | Modelo de assinatura paga com três planos: **Básico** (plano mais acessível, funcionalidades essenciais). **Intermediário** (mais funcionalidades que o básico, como personalização básica e relatórios simples). **Avançado** (acesso completo, incluindo automação avançada e relatórios detalhados). Taxa sobre pedidos gerados pela plataforma. Publicidade ou parcerias estratégicas. |
+
+## 💰 Precificação
+
+A monetização da plataforma será feita por meio de um **modelo de assinatura mensal**, dividido em três planos com diferentes funcionalidades.
+
+Todos os planos contam com **7 dias gratuitos** para experimentação, sem compromisso.
+
+### Planos e Valores
+
+| Plano            | Recursos Inclusos                                                                 | Preço Estimado (R$) |
+|------------------|------------------------------------------------------------------------------------|----------------------|
+| **Básico**       | Página de pedidos e agendamentos, dashboard simples, mensagens automáticas         | R$ 29,90 / mês       |
+| **Intermediário**| Tudo do Básico + personalização visual + relatórios simples                        | R$ 49,90 / mês       |
+| **Avançado**     | Tudo do Intermediário + relatórios avançados, filtros, integrações adicionais      | R$ 69,90 / mês       |
+
+> 📌 **Observações:**
+> - Todos os planos incluem **7 dias grátis** para teste.
+> - Os preços são estimativas iniciais e poderão ser ajustados com base no feedback dos usuários após os testes com o MVP.
   
-# Escopo do Projeto Beto Amparo</h1>
+## 🛠️ Escopo do Projeto Beto Amparo</h1>
 ### Objetivo: Criar um sistema híbrido de atendimento humanizado que combina WhatsApp Business (para interação inicial) + plataforma web (para funcionalidades avançadas), atendimento, pedidos e agendamentos.
-# Beto Amparo - MVP e User Stories
+## 🧪 Beto Amparo - MVP e User Stories
 
 ## Funcionalidades Principais
 **Site Externo** (Next.js + Supabase)  
