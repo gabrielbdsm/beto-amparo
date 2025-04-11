@@ -112,7 +112,7 @@ Todos os planos contam com **7 dias gratuitos** para experimentação, sem compr
 
 | **Dev** | **Tarefa** | **Dependência** |
 |--------|-----------|---------------|
-| **Dallyla** | Criar páginas (Next.js): formulário de pedidos + dashboard | - |
+| **Dallyla** | Criar páginas (Next.js): adicionar produto + dashboard | - |
 | **Heloisa Rolins** | Configurar Supabase (tabelas pedidos, clientes) | - |
 | **Gabriel Martiliano** | Integrar formulário com Supabase | D1, D2 |
 | **Ester Arraiz** | Deploy na Vercel + configurar HTTPS | D1 |
