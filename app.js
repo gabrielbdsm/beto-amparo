@@ -16,5 +16,5 @@ app.put('/empresas/:id', putEmpresa)
 app.delete('/empresas/:id', deleteEmpresa)
 
 app.listen(3000, () => {
-  console.log('Servidor rodando em http://localhost:3000')
+  console.log('Servidor rodando em http://localhost:3000') //comentario
 })
