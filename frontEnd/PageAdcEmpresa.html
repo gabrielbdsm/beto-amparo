@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="../frontEnd/styles/AdcEmpresa.css">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Bungee&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300&display=swap" rel="stylesheet">
+  <title>Cadastre sua empresa</title>
+</head>
+<body>
+
+  <header>
+    <img class="imagem" src="../frontEnd/public/logo.png" alt="Logo">
+    <h1>Cadastro de Empresa</h1>
+  </header>
+
+  <div class="container">
+    <div class="main-content">
+      <div class="box">
+
+        <form action="#" method="POST">
+
+          <div class="sub_titulo">
+            <i class="bi bi-buildings"></i>
+            <h2> Informações da empresa </h2>
+          </div>
+
+          <div class="form-row">
+            <label for="nome">Nome:</label>
+            <input type="text" id="nome" name="nome" required>
+          </div>
+
+          <div class="form-row">
+            <label for="cnpj">CNPJ:</label>
+            <input type="text" id="cnpj" name="cnpj" required pattern="\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2}" placeholder="XX.XXX.XXX/XXXX-XX">
+          </div>
+
+          <div class="form-row">
+            <label for="responsavel">Responsável:</label>
+            <input type="text" id="responsavel" name="responsavel" required>
+          </div>
+
+          <div class="form-row">
+            <label for="categoria">Categoria:</label>
+            <select id="categoria" name="categoria" required>
+              <option value="empresa">Empresa</option>
+              <option value="freelancer">Freelancer</option>
+              <option value="outro">Outro</option>
+            </select>
+          </div>
+
+          <div class="form-row">
+            <label for="telefone">Telefone:</label>
+            <input type="tel" id="telefone" name="telefone" required placeholder="(XX) XXXXX-XXXX" pattern="\(\d{2}\) \d{5}-\d{4}">
+          </div>
+
+          <div class="form-row">
+            <label for="endereco">Endereço:</label>
+            <input type="text" id="endereco" name="endereco" required>
+          </div>
+
+          <div class="form-row">
+            <label for="cidade">Cidade:</label>
+            <input type="text" id="cidade" name="cidade" required>
+
+            <label for="uf">UF:</label>
+            <select id="uf" name="uf" required>
+              <option value="AC">AC</option>
+              <option value="AL">AL</option>
+              <option value="AP">AP</option>
+              <option value="AM">AM</option>
+              <option value="BA">BA</option>
+              <option value="CE">CE</option>
+              <option value="DF">DF</option>
+              <option value="ES">ES</option>
+              <option value="GO">GO</option>
+              <option value="MA">MA</option>
+              <option value="MT">MT</option>
+              <option value="MS">MS</option>
+              <option value="MG">MG</option>
+              <option value="PA">PA</option>
+              <option value="PB">PB</option>
+              <option value="PR">PR</option>
+              <option value="PE">PE</option>
+              <option value="PI">PI</option>
+              <option value="RJ">RJ</option>
+              <option value="RN">RN</option>
+              <option value="RS">RS</option>
+              <option value="RO">RO</option>
+              <option value="RR">RR</option>
+              <option value="SC">SC</option>
+              <option value="SP">SP</option>
+              <option value="SE">SE</option>
+              <option value="TO">TO</option>
+            </select>
+          </div>
+
+          <div class="form-row">
+            <label for="site">Site:</label>
+            <input type="url" id="site" name="site" placeholder="https://www.exemplo.com">
+          </div>
+
+          <div class="sub_titulo">
+            <i class="bi bi-file-earmark-lock2"></i>
+            <h2>Dados de acesso</h2>
+          </div>
+
+          <div class="form-row">
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" required>
+          </div>
+
+          <div class="form-row">
+            <label for="senha">Senha:</label>
+            <input type="password" id="senha" name="senha" required>
+          </div>
+
+          <button class="botao" type="submit">Cadastrar</button>
+        </form>
+
+      </div>
+    </div>
+  </div>
+</body>
+</html>
