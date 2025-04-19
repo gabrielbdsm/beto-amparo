@@ -11,13 +11,20 @@ const app = express();
 
 app.use(express.json())
 
-app.use(cors())
+app.use(cors({
+  origin: 'http://127.0.0.1:5500' 
+}));
+
 
 app.use(empresaRoutes);  
 app.use(produtosRoutes);
 
 app.use(logoutRoutes);
 
-app.listen(process.env.PORT, ()=>{
-  console.log( `Clique no link para abrir: http://localhost:${process.env.PORT}`);
-})
+const PORT = process.env.PORT || 4000;
+app.listen(PORT, () => {
+  console.log(`Clique no link para abrir: http://localhost:${PORT}`);
+});
+app.get('/', (req, res) => {
+  res.send('API do Beto Amparo está no ar!');
+});
