@@ -122,9 +122,7 @@ Todos os planos contam com **7 dias gratuitos** para experimentação, sem compr
 ### **Entregável**  
 ✅ Site no ar com formulário e dashboard funcional.
 
-## Iteração 2: Home do Cliente + Formulário de Pedido + Página de Produto Individual + Carrinho
-
-# Iteração 2: Experiência do Cliente
+## Iteração 2: Experiência do Cliente
 
 | Dev | Tarefa | Descrição | Dependência | Feito |
 |-----|--------|-----------|-------------|-------|
