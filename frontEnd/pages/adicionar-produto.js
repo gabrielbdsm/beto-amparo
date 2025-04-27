@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import Image from 'next/image'; // Importação do componente Image do Next.js
+import Image from 'next/image';
 
 export default function AdicionarProduto() {
   const [formData, setFormData] = useState({
@@ -9,63 +9,99 @@ export default function AdicionarProduto() {
     novaCategoriaTexto: '',
     imagem: '',
     preco: '',
-    descricao: ''
+    descricao: '',
   });
+  const [error, setError] = useState(''); // Estado para mensagens de erro
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
+    setError(''); // Limpa o erro ao alterar o formulário
   };
 
   const toggleNovaCategoria = () => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       novaCategoria: !prev.novaCategoria,
-      categoria: '' // Limpa a categoria ao adicionar nova
+      categoria: '', // Limpa a categoria ao adicionar nova
+      novaCategoriaTexto: '', // Limpa o texto da nova categoria
     }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
+    // Validação básica no frontend
+    if (formData.preco && parseFloat(formData.preco) <= 0) {
+      setError('O preço deve ser maior que zero.');
+      return;
+    }
+    if (formData.novaCategoria && !formData.novaCategoriaTexto) {
+      setError('Digite o nome da nova categoria.');
+      return;
+    }
+
     const dadosProduto = {
       nome: formData.nome,
       categoria: formData.novaCategoria ? formData.novaCategoriaTexto : formData.categoria,
-      imagem: formData.imagem,
-      preco: parseFloat(formData.preco), 
-      descricao: formData.descricao
+      preco: parseFloat(formData.preco) || 0,
+      descricao: formData.descricao,
     };
 
+    // Criar o FormData para enviar ao servidor
+    const formDataToSend = new FormData();
+    formDataToSend.append('nome', dadosProduto.nome);
+    formDataToSend.append('categoria', dadosProduto.categoria);
+    formDataToSend.append('preco', dadosProduto.preco.toString());
+    formDataToSend.append('descricao', dadosProduto.descricao);
+    formDataToSend.append('novaCategoria', formData.novaCategoria.toString());
+    if (formData.novaCategoria) {
+      formDataToSend.append('novaCategoriaTexto', formData.novaCategoriaTexto);
+    }
+    if (formData.imagem) {
+      formDataToSend.append('imagem', formData.imagem);
+    }
+
+    // Log para depuração
+    console.log('Enviando dados:', Object.fromEntries(formDataToSend));
+
     try {
-      
-      const response = await fetch(process.env.NEXT_PUBLIC_EMPRESA_API + "/addProduto", {
+      const response = await fetch(process.env.NEXT_PUBLIC_EMPRESA_API + '/addProduto', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(dadosProduto),
+        body: formDataToSend,
       });
-      const responseData = await response.json(); 
+      const responseData = await response.json();
+
       if (!response.ok) {
         const errorMessage = responseData?.mensagem || 'Erro desconhecido';
-        throw new Error(errorMessage);  
+        throw new Error(errorMessage);
       }
-      
-      
-      console.log('Produto cadastrado com sucesso:');
-      
+
+      // Sucesso: resetar o formulário e mostrar mensagem
+      setFormData({
+        nome: '',
+        categoria: '',
+        novaCategoria: false,
+        novaCategoriaTexto: '',
+        imagem: '',
+        preco: '',
+        descricao: '',
+      });
+      setError('');
+      alert('Produto cadastrado com sucesso!');
+      console.log('Resposta do servidor:', responseData);
     } catch (error) {
       console.error('Erro ao enviar os dados:', error);
+      setError(`Erro: ${error.message}`);
     }
   };
 
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center px-4 py-8">
       <div className="bg-white rounded-2xl shadow-lg p-6 w-full sm:max-w-xl">
-
         {/* Header com logo e título */}
         <div className="mb-6">
           <img
@@ -74,12 +110,18 @@ export default function AdicionarProduto() {
             className="h-12 mb-2 object-contain"
           />
           <h1 className="text-2xl sm:text-3xl font-semibold" style={{ color: '#3681B6' }}>
-            Adicionar Produto  
+            Adicionar Produto
           </h1>
-
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4 text-black" >
+        {/* Mensagem de erro */}
+        {error && (
+          <div className="bg-red-100 text-red-700 p-3 rounded-xl mb-4 text-sm">
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-4 text-black">
           {/* Nome do Produto */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Nome do Produto</label>
@@ -143,7 +185,7 @@ export default function AdicionarProduto() {
                 Escolher imagem
               </label>
               <span className="text-sm text-gray-500">
-                {formData.imagem ? "Imagem selecionada" : "Nenhum arquivo escolhido"}
+                {formData.imagem ? formData.imagem.name || 'Imagem selecionada' : 'Nenhum arquivo escolhido'}
               </span>
             </div>
 
@@ -153,16 +195,11 @@ export default function AdicionarProduto() {
               accept="image/*"
               onChange={(e) => {
                 const file = e.target.files[0];
-                if (file) {
-                  const reader = new FileReader();
-                  reader.onloadend = () => {
-                    setFormData(prev => ({
-                      ...prev,
-                      imagem: reader.result
-                    }));
-                  };
-                  reader.readAsDataURL(file);
-                }
+                setFormData((prev) => ({
+                  ...prev,
+                  imagem: file || '',
+                }));
+                setError('');
               }}
               className="hidden"
             />
@@ -170,7 +207,7 @@ export default function AdicionarProduto() {
             {formData.imagem && (
               <div className="mt-4 relative">
                 <Image
-                  src={formData.imagem}
+                  src={URL.createObjectURL(formData.imagem)}
                   alt="Preview da Imagem"
                   className="max-h-48 rounded-xl object-contain border border-gray-300 w-full"
                   height={192}
@@ -178,7 +215,7 @@ export default function AdicionarProduto() {
                 />
                 <button
                   type="button"
-                  onClick={() => setFormData(prev => ({ ...prev, imagem: '' }))}
+                  onClick={() => setFormData((prev) => ({ ...prev, imagem: '' }))}
                   className="absolute top-2 right-2 bg-white border border-gray-300 rounded-full p-1 hover:bg-red-100 transition cursor-pointer"
                   title="Remover imagem"
                 >
