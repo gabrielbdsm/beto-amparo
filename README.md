@@ -116,7 +116,7 @@ Todos os planos contam com **7 dias gratuitos** para experimentação, sem compr
 | **Heloisa Rolins** | Configurar Supabase (tabelas pedidos, clientes) | - |
 | **Gabriel Martiliano** | Integrar formulário com Supabase | D1, D2 |
 | **Ester Arraiz** | Deploy na Vercel + configurar HTTPS | D1 |
-| **Neci Silva** | Criar páginas: logout + listar produtos | - |
+| **Neci Silva** | Criar páginas: logout + listar produtos | D1 |
 | **Todos** | Testes manuais e ajustes | Todos |
 
 ### **Entregável**  
