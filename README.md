@@ -113,7 +113,7 @@ Todos os planos contam com **7 dias gratuitos** para experimentação, sem compr
 | **Dev** | **Tarefa** | **Dependência** |
 |--------|-----------|---------------|
 | **Dallyla** | Criar frontend de Adicionar Produto e um pouco do backend | - |
-| **Heloisa Rolins** | Configurar Supabase (tabelas pedidos, clientes) | - |
+| **Heloisa Rolins** | Configurar Supabase (tabelas pedidos, clientes) + front e banck de cadastrar empresa + front de login| - |
 | **Gabriel Martiliano** | Integrar formulário com Supabase | D1, D2 |
 | **Ester Arraiz** | Deploy na Vercel + configurar HTTPS | D1 |
 | **Neci Silva** | Criar páginas: logout + listar produtos | D1 |
