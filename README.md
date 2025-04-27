@@ -122,6 +122,20 @@ Todos os planos contam com **7 dias gratuitos** para experimentação, sem compr
 ### **Entregável**  
 ✅ Site no ar com formulário e dashboard funcional.
 
+# Iteração 2: Home do Cliente + Formulário de Pedido + Página de Produto Individual + Carrinho
+
+| Dev                 | Tarefa                                                    | Dependência           |
+|---------------------|-----------------------------------------------------------|-----------------------|
+| Dallyla             | Criar página home do cliente (Next.js)                   | -                     |
+| Heloisa Rolins      | Criar formulário de pedido e integração com o backend    | D1                    |
+| Gabriel Martiliano  | Desenvolver página de produto individual + seção de avaliação | D1                    |
+| Ester Arraiz        | Implementar carrinho de compras                          | D1                    |
+| Neci Silva          | Criar visualização de dados (gráficos e status do pedido) | -                     |
+| Todos               | Testes manuais e ajustes                                 | Todos                 |
+
+## Entregável
+✅ Home do cliente, formulário de pedido, página de produto individual com seção de avaliação, carrinho de compras e visualização de dados (gráficos simples).
+
 ## Home 
 ![Home sem login](fotos/Home%20Sem%20Login.png)
 ![Home logado](fotos/Home%20Logado.png)
