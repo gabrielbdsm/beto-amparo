@@ -69,7 +69,6 @@ export default function Home() {
           >
             ✕
           </button>
-
           <div className="flex items-center gap-2">
             <Image src="/logo.png" alt="Logo" width={40} height={40} />
             <Image src="/name.png" alt="Logo" width={120} height={120} />
