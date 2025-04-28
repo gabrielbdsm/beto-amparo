@@ -1,0 +1,92 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: sans-serif;
+  }
+  
+  body, html {
+    height: 100%;
+  }
+  
+  body {
+    background-color: #fff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  .container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .logout-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 30px;
+  }
+  
+  .logo {
+    width: 50px;
+  }
+  
+  .logout-title {
+    font-size: 28px;
+    font-weight: 800;
+  }
+  
+  .card {
+    background-color: #7ab2d6;
+    padding: 25px 40px;
+    border-radius: 15px;
+    text-align: center;
+  }
+  
+  .card-text {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    font-size: 18px;
+    margin-bottom: 20px;
+    color: #000;
+  }
+  
+  .buttons {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+  }
+  
+  button {
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 16px;
+    cursor: pointer;
+    border: none;
+    transition: 0.3s;
+  }
+  
+  .sair {
+    background-color: #2e7dd1;
+    color: white;
+  }
+  
+  .sair:hover {
+    background-color: #1f5fa3;
+  }
+  
+  .cancelar {
+    background-color: white;
+    color: #333;
+    border: 1px solid #ccc;
+  }
+  
+  .cancelar:hover {
+    background-color: #f1f1f1;
+  }
+  

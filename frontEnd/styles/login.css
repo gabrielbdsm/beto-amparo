@@ -1,0 +1,82 @@
+body {
+    font-family: 'Inter', sans-serif;
+    font-weight: 300;
+    line-height: 1.6;
+    background-color: #f4f4f4;
+    padding: 20px;
+    align-items: center;
+}
+.imagem {
+    width: 200px; 
+    height: auto; 
+}
+  
+header { 
+    font-family: 'Bungee', cursive;
+    font-size: 20px;;
+    display: flex;
+    justify-content: center;
+    padding: 15px 0;
+    text-align: center;
+}
+h1{
+    width: 400px;
+    line-height: 1.0;
+    text-align: left;
+    margin: 10px;
+}
+.main-content {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.box {
+    background-color: #3681B6A1; /* Cor de fundo */
+    padding: 20px; /* Espaçamento interno */
+    border-radius: 10px; /* Bordas arredondadas */
+    width: 250px; /* Largura do formulário */
+    margin: 0 auto; /* Centraliza o formulário */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+.box input {
+    font-family: 'Inter', sans-serif;
+    width: 100%;
+    padding: 5px; 
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    z-index: 1;
+}
+
+.form-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    margin-bottom: 10px;
+    gap: 5px;
+}
+.texto{
+    font-size: 10px;
+    line-height: 1.0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    align-items: center;
+}
+p{
+    margin: 0%;
+}
+.botao {
+    margin-top: 15px;
+    align-self: center; /* centraliza o botão horizontalmente dentro do flex container */
+    width: 150px;
+    border: none;
+    border-radius: 5px;
+    padding: 5px;
+    font-size: 15px;
+    cursor: pointer;
+}

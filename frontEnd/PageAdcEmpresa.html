@@ -20,11 +20,11 @@
     <div class="main-content">
       <div class="box">
 
-        <form action="#" method="POST">
+        <form id="formEmpresa" action="#" method="POST">
 
           <div class="sub_titulo">
             <i class="bi bi-buildings"></i>
-            <h2> Informações da empresa </h2>
+            <p>Informações da empresa</p>
           </div>
 
           <div class="form-row">
@@ -45,9 +45,12 @@
           <div class="form-row">
             <label for="categoria">Categoria:</label>
             <select id="categoria" name="categoria" required>
-              <option value="empresa">Empresa</option>
-              <option value="freelancer">Freelancer</option>
-              <option value="outro">Outro</option>
+              <option value="comercio">Comércio</option>
+              <option value="servicos">Serviços</option>
+              <option value="alimentacao">Alimentação</option>
+              <option value="tecnologia">Tecnologia</option>
+              <option value="educacao">Educação</option>
+              <option value="industria">Indústria</option>
             </select>
           </div>
 
@@ -104,7 +107,7 @@
 
           <div class="sub_titulo">
             <i class="bi bi-file-earmark-lock2"></i>
-            <h2>Dados de acesso</h2>
+            <p class="p2">Dados de acesso</p>
           </div>
 
           <div class="form-row">
@@ -116,12 +119,57 @@
             <label for="senha">Senha:</label>
             <input type="password" id="senha" name="senha" required>
           </div>
-
-          <button class="botao" type="submit">Cadastrar</button>
+          <div class="form-row">
+            <button class="botao" type="submit">Cadastrar</button>
+          </div>
         </form>
+        
 
       </div>
     </div>
   </div>
+  <script>
+    document.getElementById('formEmpresa').addEventListener('submit', async function (event) {
+      event.preventDefault(); // Evita o recarregamento da página
+  
+      // Coleta os dados do formulário
+      const empresa = {
+        nome: document.getElementById('nome').value,
+        cnpj: document.getElementById('cnpj').value,
+        responsavel: document.getElementById('responsavel').value,
+        categoria: document.getElementById('categoria').value,
+        telefone: document.getElementById('telefone').value,
+        endereco: document.getElementById('endereco').value,
+        cidade: document.getElementById('cidade').value,
+        uf: document.getElementById('uf').value,
+        site: document.getElementById('site').value,
+        email: document.getElementById('email').value,
+        senha: document.getElementById('senha').value
+      }
+  
+      try {
+        const response = await fetch('http://localhost:4000/empresas', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(empresa)
+        });
+  
+        if (response.ok) {
+          const data = await response.json();
+          alert('Empresa cadastrada com sucesso!');
+          console.log(data);
+          event.target.reset();
+        } else {
+          const erro = await response.json();
+          alert('Erro ao cadastrar: ' + erro.erro);
+        }
+      } catch (err) {
+        alert('Erro ao conectar com o servidor: ' + err.message);
+      }
+    });
+  </script>
+  
 </body>
 </html>
