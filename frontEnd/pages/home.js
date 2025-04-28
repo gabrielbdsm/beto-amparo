@@ -36,22 +36,22 @@ export default function Home() {
         </button>
         {/* Menu horizontal para desktop */}
         <nav className="hidden lg:flex items-center gap-8 text-sm text-[#0F1D2A]">
-          <a href="/" className="hover:underline flex items-center gap-2">
+          <Link href="/" className="hover:underline flex items-center gap-2">
             <Image src="/icons/home.svg" alt="Home" width={20} height={20} />
             Home
-          </a>
-          <a href="/sobre" className="hover:underline flex items-center gap-2">
+          </Link>
+          <Link href="/sobre" className="hover:underline flex items-center gap-2">
             <Image src="/icons/info.svg" alt="Sobre" width={20} height={20} />
             Sobre
-          </a>
-          <a href="/planos" className="hover:underline flex items-center gap-2">
+          </Link>
+          <Link href="/planos" className="hover:underline flex items-center gap-2">
             <Image src="/icons/plan.svg" alt="Planos" width={20} height={20} />
             Planos e Assinaturas
-          </a>
-          <a href="/suporte" className="hover:underline flex items-center gap-2">
+          </Link>
+          <Link href="/suporte" className="hover:underline flex items-center gap-2">
             <Image src="/icons/help.svg" alt="Suporte" width={20} height={20} />
             Suporte
-          </a>
+          </Link>
           <Link href="/login" passHref>
             <button className="bg-[#3681B6] text-white px-4 py-2 rounded-md font-semibold hover:opacity-90 transition">
               Login
@@ -76,22 +76,22 @@ export default function Home() {
           </div>
 
           <nav className="flex flex-col gap-4 mt-4 text-sm text-[#0F1D2A]">
-            <a href="/" className="flex items-center gap-2 hover:underline">
+            <Link href="/" className="flex items-center gap-2 hover:underline">
               <Image src="/icons/home.svg" alt="Home" width={20} height={20} />
               Home
-            </a>
-            <a href="/sobre" className="flex items-center gap-2 hover:underline">
+            </Link>
+            <Link href="/sobre" className="flex items-center gap-2 hover:underline">
               <Image src="/icons/info.svg" alt="Sobre" width={20} height={20} />
               Sobre
-            </a>
-            <a href="/planos" className="flex items-center gap-2 hover:underline">
+            </Link>
+            <Link href="/planos" className="flex items-center gap-2 hover:underline">
               <Image src="/icons/plan.svg" alt="Planos" width={20} height={20} />
               Planos e Assinaturas
-            </a>
-            <a href="/suporte" className="flex items-center gap-2 hover:underline">
+            </Link>
+            <Link href="/suporte" className="flex items-center gap-2 hover:underline">
               <Image src="/icons/help.svg" alt="Suporte" width={20} height={20} />
               Suporte
-            </a>
+            </Link>
           </nav>
           <Link href="/login" passHref>
             <button className="mt-auto self-center bg-[#3681B6] text-white px-8 py-2 rounded-md font-semibold hover:opacity-90 transition w-full max-w-[280px]">
@@ -127,45 +127,41 @@ export default function Home() {
                 Saiba mais
               </button>
             </Link>
-
           </div>
         </div>
       </section>
 
       {/* Banner e Botões */}
       <main className="bg-gray-50 flex flex-col items-center px-6 text-center gap-6 lg:px-32">
+        <section className="py-16">
+          <div className="max-w-6xl mx-auto px-4">
+            <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">Como funciona o Beto Amparo?</h2>
 
-      <section className="py-16">
-        <div className="max-w-6xl mx-auto px-4">
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">Como funciona o Beto Amparo?</h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-10 text-center">
-            <div className="bg-white p-8 rounded-2xl shadow-md hover:shadow-lg transition">
-              <img src="/icons/whatsapp_icon.svg" className="mx-auto mb-6 h-16" alt="Ícone WhatsApp" />
-              <h3 className="text-xl font-semibold mb-3">1. O cliente entra em contato via WhatsApp</h3>
-              <p className="text-gray-600">
-                O atendimento começa automaticamente com mensagens pré-programadas e link direto para o site.
-              </p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-10 text-center">
+              <div className="bg-white p-8 rounded-2xl shadow-md hover:shadow-lg transition">
+                <Image src="/icons/whatsapp_icon.svg" width={64} height={64} className="mx-auto mb-6" alt="Ícone WhatsApp" />
+                <h3 className="text-xl font-semibold mb-3">1. O cliente entra em contato via WhatsApp</h3>
+                <p className="text-gray-600">
+                  O atendimento começa automaticamente com mensagens pré-programadas e link direto para o site.
+                </p>
+              </div>
+              <div className="bg-white p-8 rounded-2xl shadow-md hover:shadow-lg transition">
+                <Image src="/logo.png" width={64} height={64} className="mx-auto mb-6" alt="Ícone Site" />
+                <h3 className="text-xl font-semibold mb-3">2. Ele faz o pedido ou agendamento no site</h3>
+                <p className="text-gray-600">
+                  A plataforma web responsiva permite escolher produtos, horários ou serviços de forma prática, sem depender de atendimento humano.
+                </p>
+              </div>
+              <div className="bg-white p-8 rounded-2xl shadow-md hover:shadow-lg transition">
+                <Image src="/icons/dashboard_icon.svg" width={64} height={64} className="mx-auto mb-6" alt="Ícone Dashboard" />
+                <h3 className="text-xl font-semibold mb-3">3. Você recebe e gerencia tudo no seu painel</h3>
+                <p className="text-gray-600">
+                  Acompanhe pedidos e agendamentos em tempo real, receba notificações e tenha controle total do seu atendimento.
+                </p>
+              </div>
             </div>
-            <div className="bg-white p-8 rounded-2xl shadow-md hover:shadow-lg transition">
-              <img src="/logo.png" className="mx-auto mb-6 h-16" alt="Ícone Site" />
-              <h3 className="text-xl font-semibold mb-3">2. Ele faz o pedido ou agendamento no site</h3>
-              <p className="text-gray-600">
-                A plataforma web responsiva permite escolher produtos, horários ou serviços de forma prática, sem depender de atendimento humano.
-              </p>
-            </div>
-            <div className="bg-white p-8 rounded-2xl shadow-md hover:shadow-lg transition">
-              <img src="/icons/dashboard_icon.svg" className="mx-auto mb-6 h-16" alt="Ícone Dashboard" />
-              <h3 className="text-xl font-semibold mb-3">3. Você recebe e gerencia tudo no seu painel</h3>
-              <p className="text-gray-600">
-                Acompanhe pedidos e agendamentos em tempo real, receba notificações e tenha controle total do seu atendimento.
-              </p>
-            </div>
-
           </div>
-        </div>
-      </section>
-
+        </section>
 
         {/* Benefícios */}
         <div className="mt-8 w-full max-w-6xl">
@@ -208,69 +204,63 @@ export default function Home() {
         </div>
 
         {/* Comparativo de Planos */}
-      <div className="mt-16 w-full max-w-md lg:max-w-4xl">
-        <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">Planos pensados para cada etapa do seu crescimento:</h2>
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-3 lg:gap-8">
-
-          {/* Plano Básico */}
-          <div className="bg-[#EAF3FA] p-6 rounded-2xl shadow-md flex flex-col justify-between h-full hover:scale-105 transition-all">
-            <div className="flex-grow flex flex-col items-center">
-              <h3 className="font-bold text-[#1B76C6] text-lg mb-4">Plano Básico</h3>
-              <p className="text-sm text-center mb-6">Para pequenos negócios começando a usar a plataforma.</p>
-              <p className="font-semibold text-xl mb-4">R$ 29,90/mês</p>
+        <div className="mt-16 w-full max-w-md lg:max-w-4xl">
+          <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">Planos pensados para cada etapa do seu crescimento:</h2>
+          <div className="grid grid-cols-1 gap-8 lg:grid-cols-3 lg:gap-8">
+            {/* Plano Básico */}
+            <div className="bg-[#EAF3FA] p-6 rounded-2xl shadow-md flex flex-col justify-between h-full hover:scale-105 transition-all">
+              <div className="flex-grow flex flex-col items-center">
+                <h3 className="font-bold text-[#1B76C6] text-lg mb-4">Plano Básico</h3>
+                <p className="text-sm text-center mb-6">Para pequenos negócios começando a usar a plataforma.</p>
+                <p className="font-semibold text-xl mb-4">R$ 29,90/mês</p>
+              </div>
+              <Link href="/planos" passHref>
+                <button className="bg-[#F7941D] text-white px-6 py-3 rounded-xl shadow-md w-full hover:bg-[#d77900] transition-all">Saiba mais</button>
+              </Link>
             </div>
-            <Link href="/planos" passHref>
-             <button className="bg-[#F7941D] text-white px-6 py-3 rounded-xl shadow-md w-full hover:bg-[#d77900] transition-all">Saiba mais</button>
-            </Link>
+
+            {/* Plano Profissional - Destaque */}
+            <div className="bg-[#EAF3FA] p-6 rounded-lg shadow-lg flex flex-col justify-between h-full border-2 border-[#F7941D] relative transform hover:scale-105 transition duration-300">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#F7941D] text-white text-xs font-semibold px-3 py-1 rounded-full shadow-md">
+                Mais Popular
+              </div>
+
+              <div className="flex-grow flex flex-col items-center mt-4">
+                <h3 className="font-bold text-[#1B76C6] text-lg mb-4">Plano Profissional</h3>
+                <p className="text-sm text-center mb-6">Para negócios em crescimento que precisam de mais funcionalidades.</p>
+                <p className="font-semibold text-xl mb-4">R$ 49,90/mês</p>
+              </div>
+              <Link href="/planos" passHref>
+                <button className="bg-[#F7941D] text-white px-6 py-3 rounded-xl shadow-md w-full mt-4 hover:bg-[#dd831b] transition">
+                  Saiba mais
+                </button>
+              </Link>
+            </div>
+
+            {/* Plano Empresarial */}
+            <div className="bg-[#EAF3FA] p-6 rounded-2xl shadow-md flex flex-col justify-between h-full hover:scale-105 transition-all">
+              <div className="flex-grow flex flex-col items-center">
+                <h3 className="font-bold text-[#1B76C6] text-lg mb-4">Plano Empresarial</h3>
+                <p className="text-sm text-center mb-6">Para empresas que precisam de suporte completo e recursos avançados.</p>
+                <p className="font-semibold text-xl mb-4">R$ 69,90/mês</p>
+              </div>
+              <Link href="/planos" passHref>
+                <button className="bg-[#F7941D] text-white px-6 py-3 rounded-xl shadow-md w-full hover:bg-[#d77900] transition-all">Saiba mais</button>
+              </Link>
+            </div>
           </div>
-
-          {/* Plano Profissional - Destaque */}
-          <div className="bg-[#EAF3FA] p-6 rounded-lg shadow-lg flex flex-col justify-between h-full border-2 border-[#F7941D] relative transform hover:scale-105 transition duration-300">
-            {/* Selo "Mais Popular" */}
-            <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#F7941D] text-white text-xs font-semibold px-3 py-1 rounded-full shadow-md">
-              Mais Popular
-            </div>
-
-            <div className="flex-grow flex flex-col items-center mt-4">
-              <h3 className="font-bold text-[#1B76C6] text-lg mb-4">Plano Profissional</h3>
-              <p className="text-sm text-center mb-6">Para negócios em crescimento que precisam de mais funcionalidades.</p>
-              <p className="font-semibold text-xl mb-4">R$ 49,90/mês</p>
-            </div>
-            <Link href="/planos" passHref>
-              <button className="bg-[#F7941D] text-white px-6 py-3 rounded-xl shadow-md w-full mt-4 hover:bg-[#dd831b] transition">
-                Saiba mais
-              </button>
-            </Link>
-          </div>
-
-
-          {/* Plano Empresarial */}
-          <div className="bg-[#EAF3FA] p-6 rounded-2xl shadow-md flex flex-col justify-between h-full hover:scale-105 transition-all">
-            <div className="flex-grow flex flex-col items-center">
-              <h3 className="font-bold text-[#1B76C6] text-lg mb-4">Plano Empresarial</h3>
-              <p className="text-sm text-center mb-6">Para empresas que precisam de suporte completo e recursos avançados.</p>
-              <p className="font-semibold text-xl mb-4">R$ 69,90/mês</p>
-            </div>
-            <Link href="/planos" passHref>
-              <button className="bg-[#F7941D] text-white px-6 py-3 rounded-xl shadow-md w-full hover:bg-[#d77900] transition-all">Saiba mais</button>
-            </Link>
-          </div>
-
         </div>
-      </div>
-
       </main>
 
       {/* Rodapé */}
       <footer className="bg-[#3681B6] text-sm text-center py-4 mt-10 px-4">
         <div className="flex flex-row flex-wrap justify-center gap-4 mb-2">
-          <a href="/suporte" className="font-semibold hover:underline text-white">Suporte</a>
-          <a href="/politicas" className="font-semibold hover:underline text-white">Política de Privacidade</a>
-          <a href="/cadastro" className="font-semibold hover:underline text-white">Comece grátis</a>
+          <Link href="/suporte" className="font-semibold hover:underline text-white">Suporte</Link>
+          <Link href="/politicas" className="font-semibold hover:underline text-white">Política de Privacidade</Link>
+          <Link href="/cadastro" className="font-semibold hover:underline text-white">Comece grátis</Link>
         </div>
         <p className="text-xs text-white opacity-60">© 2025 Beto Amparo. Todos os direitos reservados.</p>
       </footer>
-
     </div>
   );
 }
