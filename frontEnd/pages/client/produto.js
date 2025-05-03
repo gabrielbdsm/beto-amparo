@@ -22,9 +22,11 @@ export default function Produto() {
     fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/produto/${id}`)
       .then((res) => res.json())
       .then((data) => {
+        if (!data.produto) return
         setProduto({
           ...data.produto
         });
+        
         if (data.produto.itens) {
           setAdicionais(data.produto.itens.adicionais);
           
