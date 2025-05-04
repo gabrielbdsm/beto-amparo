@@ -54,9 +54,11 @@ app.post('/upload', (req, res) => {
 });
 
 // Suas outras rotas
+app.use(express.json());
 app.use(empresaRoutes);  
 app.use(produtosRoutes);
 app.use(logoutRoutes);
+
 
 // Rota padrão
 app.get('/', (req, res) => {
