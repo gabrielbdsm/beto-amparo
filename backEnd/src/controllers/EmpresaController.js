@@ -1,4 +1,5 @@
 import { inserirEmpresa } from '../models/EmpresaModel.js';
+import * as empresas from '../models/EmpresaModel.js'
 
 export const criarEmpresa = async (req, res) => {
   try {
@@ -41,5 +42,20 @@ export const criarEmpresa = async (req, res) => {
     return res.status(201).json({ mensagem: 'Empresa cadastrada com sucesso!' });
   } catch (error) {
     return res.status(500).json({ mensagem: 'Erro no servidor.' });
+  }
+};
+
+export async function getEmpresaById(req, res) {
+  try {
+    const id = req.params.id
+    const empresa = await empresas.buscarEmpresaPorId(id)
+
+    if (!empresa) {
+      return res.status(404).json({ erro: 'Empresa não encontrada' })
+    }
+
+    res.status(200).json(empresa)
+  } catch (error) {
+    res.status(500).json({ erro: error.message })
   }
 };

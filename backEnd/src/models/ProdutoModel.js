@@ -90,3 +90,9 @@ export const listarProdutoPorId = async (id) => {
   }
 };
 
+export const listarProdutosPorEmpresa = async (empresaId) => {
+  return await supabase
+    .from("produto")  // Nome da tabela
+    .select("*")
+    .eq("id_empresa", empresaId);  // Filtra pelo ID da empresa
+};

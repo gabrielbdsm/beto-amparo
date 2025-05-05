@@ -1,5 +1,6 @@
 import express from 'express';
 import supabase from '../config/SupaBase.js';
+import * as empresaController from '../controllers/EmpresaController.js';
 
 const router = express.Router();
 
@@ -23,5 +24,8 @@ router.post('/addEmpresa', async (req, res) => {
     res.status(500).json({ mensagem: 'Erro no servidor.', erro: error.message });
   }
 });
+
+router.get('/empresa/:id', empresaController.getEmpresaById); 
+
 
 export default router;
