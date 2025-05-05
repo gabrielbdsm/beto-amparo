@@ -1,9 +1,9 @@
 import * as produto from '../models/ProdutoModel.js';
 import { validarProduto } from '../validators/ProdutoValidators.js';
-
+import * as ImageModel from '../models/ImageModel.js';
 export const criarProduto = async (req, res) => {
   try {
-    // Extrair campos do req.body (campos de texto do FormData)
+   console.log('req.body', req.body); 
     const {
       nome,
       categoria,
@@ -13,31 +13,39 @@ export const criarProduto = async (req, res) => {
       descricao,
     } = req.body;
 
-    // Extrair o nome do arquivo de imagem (se enviado)
-    const imagem = req.file ? req.file.filename : null;
+ 
 
-    // Validar os dados
+    
+    const imagem = req.file 
+    
+    if (!imagem) return res.status(400).json({ error: "Imagem não enviada" });
+
+  
     const validacao = validarProduto({
       nome,
       categoria: novaCategoria === 'true' ? novaCategoriaTexto : categoria,
       preco: parseFloat(preco),
       descricao,
-      image: imagem, // Passar o nome do arquivo ou null
+      
     });
 
     if (!validacao.valido) {
       return res.status(400).json({ mensagem: validacao.erros[0] });
     }
 
-    // Determinar a categoria final
+    
     const categoriaFinal = novaCategoria === 'true' ? novaCategoriaTexto : categoria;
-    const id_empresa = 1; // Muda futuramente para UUID da empresa
+    const UUID = 1; // Muda futuramente para UUID da empresa
 
-    // Inserir o produto no banco de dados
+    const URlimagem = await ImageModel.salvarImagem(imagem.buffer, imagem.originalname, imagem.mimetype, UUID);
+
+    if (!URlimagem) {
+      return res.status(500).json({ mensagem: 'Erro ao salvar imagem.' });
+    }
     const { error } = await produto.inserirProduto({
-      id_empresa,
+      UUID,
       nome,
-      image: imagem, // Usar o nome do arquivo ou null
+      image: URlimagem, 
       categoria: categoriaFinal,
       preco: parseFloat(preco),
       descricao,
@@ -145,6 +153,34 @@ export const listarProdutoPorId = async (req, res) => {
   } catch (erro) {
     return res.status(500).json({
       mensagem: 'Erro inesperado ao listar o produto.',
+      erro: erro.message,
+    });
+  }
+};
+
+export const listarProdutosPorEmpresa = async (req, res) => {
+  try {
+    const { empresaId } = req.params;
+
+    if (!empresaId) {
+      return res.status(400).json({ mensagem: "ID da empresa não fornecido." });
+    }
+
+    // Buscar produtos pelo ID da empresa
+    const { data, error } = await produto.listarProdutosPorEmpresa(empresaId);
+
+    if (error) {
+      return res.status(500).json({ mensagem: "Erro ao listar produtos.", erro: error });
+    }
+    
+    if (data.length === 0) {
+      return res.status(404).json({ mensagem: "Nenhum produto encontrado para esta empresa." });
+    }
+
+    return res.status(200).json(data);
+  } catch (erro) {
+    return res.status(500).json({
+      mensagem: "Erro inesperado ao listar produtos.",
       erro: erro.message,
     });
   }
