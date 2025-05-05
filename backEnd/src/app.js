@@ -11,8 +11,10 @@ dotenv.config();
 const app = express();
 
 // Configuração do CORS
-app.use(cors(
-));
+
+
+app.use(cors());
+
 
 // Configuração do multer para salvar as imagens
 const storage = multer.diskStorage({
@@ -55,9 +57,11 @@ app.post('/upload', (req, res) => {
 });
 
 // Suas outras rotas
+app.use(express.json());
 app.use(empresaRoutes);  
 app.use(produtosRoutes);
 app.use(logoutRoutes);
+
 
 // Rota padrão
 app.get('/', (req, res) => {

@@ -1,31 +1,49 @@
-import supabase from '../config/SupaBase.js'
+import supabase from '../config/SupaBase.js';
 
-export async function listarEmpresas() {
-  const { data, error } = await supabase.from('empresas').select('*')
-  if (error) throw error
-  return data
-}
+export const inserirEmpresa = async ({
+  nome,
+  cnpj,
+  responsavel,
+  categoria,
+  telefone,
+  endereco,
+  cidade,
+  uf,
+  site,
+  email,
+  senha,
+}) => {
+  try {
+    const { error } = await supabase
+      .from('empresa')
+      .insert([{
+        nome,
+        cnpj,
+        responsavel,
+        categoria,
+        telefone,
+        endereco,
+        cidade,
+        uf,
+        site,
+        email,
+        senha,
+      }]);
 
-export async function cadastrarEmpresa(novaEmpresa) {
-  const { data, error } = await supabase.from('empresas').insert([novaEmpresa])
-  if (error) throw error
-  return data
-}
+    if (error) return { error: error.message };
+    return { error: null };
+  } catch (err) {
+    return { error: err.message };
+  }
+};
 
-export async function atualizarEmpresa(id, dadosAtualizados) {
+export async function buscarEmpresaPorId(id) {
   const { data, error } = await supabase
     .from('empresas')
-    .update(dadosAtualizados)
+    .select('*')
     .eq('id', id)
-  if (error) throw error
-  return data
-}
+    .single()
 
-export async function deletarEmpresa(id) {
-  const { data, error } = await supabase
-    .from('empresas')
-    .delete()
-    .eq('id', id)
   if (error) throw error
   return data
-}
+};
