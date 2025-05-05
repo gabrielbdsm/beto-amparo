@@ -11,9 +11,7 @@ dotenv.config();
 const app = express();
 
 // Configuração do CORS
-app.use(cors({
-  origin: ['http://127.0.0.1:5500', 'http://192.168.1.46:3000',  'http://192.168.56.1:3000', 'localhost:3000']
-}));
+app.use(cors('localhost:3000'));
 
 // Configuração do multer para salvar as imagens
 const storage = multer.diskStorage({
@@ -23,7 +21,7 @@ const storage = multer.diskStorage({
   },
   filename: (req, file, cb) => {
     // Defina o nome do arquivo com base no timestamp para evitar conflitos
-    cb(null, Date.now() + path.extname(file.originalname)); 
+    cb(null, Date.now() + path.extname(file.originalname));
   }
 });
 
@@ -36,7 +34,7 @@ const upload = multer({
     const filetypes = /jpeg|jpg|png|gif/;
     const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
     const mimetype = filetypes.test(file.mimetype);
-    
+
     if (extname && mimetype) {
       return cb(null, true);
     } else {
@@ -56,7 +54,7 @@ app.post('/upload', (req, res) => {
 });
 
 // Suas outras rotas
-app.use(empresaRoutes);  
+app.use(empresaRoutes);
 app.use(produtosRoutes);
 app.use(logoutRoutes);
 

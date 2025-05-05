@@ -12,6 +12,7 @@ export async function getEmpresas(req, res) {
 export async function postEmpresa(req, res) {
   try {
     const nova = req.body
+    console.log(nova)
     const empresa = await empresas.cadastrarEmpresa(nova)
     res.status(201).json(empresa)
   } catch (error) {

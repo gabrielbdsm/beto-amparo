@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,6 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300&display=swap" rel="stylesheet">
   <title>Cadastre sua empresa</title>
 </head>
+
 <body>
 
   <header>
@@ -34,7 +36,8 @@
 
           <div class="form-row">
             <label for="cnpj">CNPJ:</label>
-            <input type="text" id="cnpj" name="cnpj" required pattern="\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2}" placeholder="XX.XXX.XXX/XXXX-XX">
+            <input type="text" id="cnpj" name="cnpj" required pattern="\d{2}\.\d{3}\.\d{3}/\d{4}-\d{2}"
+              placeholder="XX.XXX.XXX/XXXX-XX">
           </div>
 
           <div class="form-row">
@@ -56,7 +59,8 @@
 
           <div class="form-row">
             <label for="telefone">Telefone:</label>
-            <input type="tel" id="telefone" name="telefone" required placeholder="(XX) XXXXX-XXXX" pattern="\(\d{2}\) \d{5}-\d{4}">
+            <input type="tel" id="telefone" name="telefone" required placeholder="(XX) XXXXX-XXXX"
+              pattern="\(\d{2}\) \d{5}-\d{4}">
           </div>
 
           <div class="form-row">
@@ -123,7 +127,7 @@
             <button class="botao" type="submit">Cadastrar</button>
           </div>
         </form>
-        
+
 
       </div>
     </div>
@@ -131,7 +135,7 @@
   <script>
     document.getElementById('formEmpresa').addEventListener('submit', async function (event) {
       event.preventDefault(); // Evita o recarregamento da página
-  
+
       // Coleta os dados do formulário
       const empresa = {
         nome: document.getElementById('nome').value,
@@ -146,8 +150,9 @@
         email: document.getElementById('email').value,
         senha: document.getElementById('senha').value
       }
-  
+
       try {
+        console.log(empresa)
         const response = await fetch('http://localhost:4000/empresas', {
           method: 'POST',
           headers: {
@@ -155,7 +160,7 @@
           },
           body: JSON.stringify(empresa)
         });
-  
+
         if (response.ok) {
           const data = await response.json();
           alert('Empresa cadastrada com sucesso!');
@@ -170,6 +175,7 @@
       }
     });
   </script>
-  
+
 </body>
+
 </html>
