@@ -11,7 +11,10 @@ dotenv.config();
 const app = express();
 
 // Configuração do CORS
+
+
 app.use(cors());
+
 
 // Configuração do multer para salvar as imagens
 const storage = multer.diskStorage({

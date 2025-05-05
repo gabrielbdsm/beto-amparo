@@ -2,7 +2,7 @@ export const validarProduto = (dados) => {
     const erros = [];
   
     if (!dados.nome?.trim()) erros.push('O nome do produto é obrigatório.');
-    if (!dados.image?.trim()) erros.push('A imagem do produto é obrigatória.');
+    
     if (!dados.descricao?.trim()) erros.push('A descrição do produto é obrigatória.');
     if (typeof dados.preco !== 'number' || dados.preco <= 0) erros.push('O preço deve ser um número positivo.');
   
