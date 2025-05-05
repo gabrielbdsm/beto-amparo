@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import empresaRoutes from './routes/empresaRoutes.js';
 import produtosRoutes from './routes/produtosRoutes.js';
 import logoutRoutes from './routes/logoutRoutes.js';
+import clienteRoutes from './routes/clienteRoutes.js';
 import cors from 'cors';
 import multer from 'multer';
 import path from 'path';
@@ -11,7 +12,13 @@ dotenv.config();
 const app = express();
 
 // Configuração do CORS
-app.use(cors('localhost:3000'));
+//app.use(cors('localhost:3000'));
+
+const corsOptions = {
+  origin: 'http://localhost:3000',
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+};
 
 // Configuração do multer para salvar as imagens
 const storage = multer.diskStorage({
@@ -53,13 +60,13 @@ app.post('/upload', (req, res) => {
   });
 });
 
-// Suas outras rotas
 
 app.use(express.json());
+app.use(cors(corsOptions));
 app.use(empresaRoutes);  
-
 app.use(produtosRoutes);
 app.use(logoutRoutes);
+app.use(clienteRoutes);
 
 
 // Rota padrão

@@ -1,19 +1,26 @@
-// src/app/api/clientes/route.js
-import { NextResponse } from 'next/server';
-const clienteController = require('@/controllers/clienteController');
+const express = require('express');
+const router = express.Router();
+const clienteController = require('../src/controllers/clienteController');
 
-export async function POST(request) {
-  try {
-    const body = await request.json();
-    const response = await clienteController.cadastrar({ body }, {
-      json: (data) => data
-    });
-    
-    return NextResponse.json(response);
-  } catch (error) {
-    return NextResponse.json(
-      { erro: error.message || 'Erro ao processar requisição' },
-      { status: 500 }
-    );
-  }
-}
+// Middleware específico para estas rotas
+router.use((req, res, next) => {
+  console.log(`Recebida requisição para: ${req.method} ${req.path}`);
+  next();
+});
+
+// Rota para cadastrar cliente
+router.post('/', clienteController.cadastrar);
+
+// Rota para listar clientes (opcional)
+router.get('/', clienteController.listar);
+
+// Rota para obter cliente por ID (opcional)
+router.get('/:id', clienteController.obterPorId);
+
+// Rota para atualizar cliente (opcional)
+router.put('/:id', clienteController.atualizar);
+
+// Rota para deletar cliente (opcional)
+router.delete('/:id', clienteController.remover);
+
+module.exports = router;

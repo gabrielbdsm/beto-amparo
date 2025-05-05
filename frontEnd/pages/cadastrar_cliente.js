@@ -2,7 +2,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter } from 'next/router';
 
 export default function CadastroCliente() {
   const router = useRouter();
@@ -34,7 +34,7 @@ export default function CadastroCliente() {
     setErros([]);
     
     try {
-      const response = await fetch('/api/clientes', {
+      const response = await fetch('http://localhost:4000/api/clientes', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
