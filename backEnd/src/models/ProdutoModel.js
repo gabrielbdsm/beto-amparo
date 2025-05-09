@@ -1,6 +1,6 @@
 import supabase from '../config/SupaBase.js';
 
-export const inserirProduto = async ({ id_empresa, nome, categoria, image, preco, descricao }) => {
+export const inserirProduto = async ({ id_empresa, nome, categoria, image, preco, descricao, tamanhos, controlarEstoque, quantidade }) => {
   try {
     const {  error } = await supabase
       .from('produto')
@@ -10,7 +10,10 @@ export const inserirProduto = async ({ id_empresa, nome, categoria, image, preco
         image,
         categoria,
         preco,
-        descricao
+        descricao,
+        tamanhos, // Já é um array, será armazenado como JSON
+        controlar_estoque: controlarEstoque, // Boolean
+        quantidade: quantidade || 0, // Integer
       }]);
     
     if (error) {
