@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import NavBar from "@/components/NavBar";
+import ProdutoCard from "@/components/ProdutoCard";
 
 export default function ClienteHome({ empresaId }) {
   const [showSearch, setShowSearch] = useState(false);
@@ -11,7 +12,9 @@ export default function ClienteHome({ empresaId }) {
   const produtosFiltrados = produtos.filter((produto) =>
     produto.nome.toLowerCase().includes(searchTerm.toLowerCase())
   );
-  
+  const [quantidades, setQuantidades] = useState({});
+  const [mensagem, setMensagem] = useState('');
+  const [corMensagem, setCorMensagem] = useState('');
 
 
   useEffect(() => {
@@ -20,6 +23,7 @@ export default function ClienteHome({ empresaId }) {
     async function fetchEmpresa() {
       try {
         const url = `http://localhost:4000/empresa/${empresaId}`;
+
         const response = await fetch(url, {
           headers: {
             apikey: process.env.NEXT_PUBLIC_SUPABASE_KEY,
@@ -69,22 +73,71 @@ export default function ClienteHome({ empresaId }) {
     }
   };
 
-  const getImagemProduto = (imagem) => {
-    if (!imagem || imagem === "undefined") return "/fallback.jpg";
-    return imagem.startsWith("http")
-      ? imagem
-      : `https://cufzswdymezvdeonjgsn.supabase.co/storage/v1/object/public/imagens/clientes/${imagem}`;
-  };
+const getImagemProduto = (caminhoImagem) => {
+  if (!caminhoImagem) return '/fallback.jpg';
+  if (caminhoImagem.startsWith('http')) return caminhoImagem;
+  const baseUrl = 'https://cufzswdymzevdeonjgan.supabase.co/storage/v1/object/public';
+  return `${baseUrl}/imagens/clientes/${encodeURIComponent(caminhoImagem)}`;
+};
+  
 
   useEffect(() => {
     if (!showSearch) {
       setSearchTerm(""); 
     }
   }, [showSearch]);
+  const handleAumentar = (id) => {
+    setQuantidades((prev) => ({
+      ...prev,
+      [id]: (prev[id] || 1) + 1,
+    }));
+  };
+  
+  const handleDiminuir = (id) => {
+    setQuantidades((prev) => ({
+      ...prev,
+      [id]: Math.max(1, (prev[id] || 1) - 1),
+    }));
+  };
+  
+  const handleAdicionar = async (produto) => {
+    try {
+      const qtd = quantidades[produto.id] || 1;
+      console.log(`Adicionando ${qtd}x ${produto.nome} ao carrinho...`);
+  
+      const response = await fetch('http://localhost:4000/api/carrinho', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          produtoId: produto.id,
+          quantidade: qtd,
+        }),
+      });
+  
+      const data = await response.json();
+  
+      if (!response.ok) {
+        console.error('Erro no backend:', data.erro);
+        throw new Error(data.erro || 'Erro desconhecido');
+      }
+  
+      console.log(`Produto ${produto.nome} adicionado com sucesso.`);
+      setMensagem('Produto adicionado ao carrinho!');
+      setCorMensagem('text-green-600');
+    } catch (err) {
+      console.error('Erro ao adicionar ao carrinho:', err);
+      setMensagem(`Erro: ${err.message}`);
+      setCorMensagem('text-red-600');
+    }
+  
+    setTimeout(() => setMensagem(''), 3000);
+  };
+    
   
   return (
     <div className="flex flex-col min-h-screen bg-gray-100">
-      {/* Cabeçalho */}
       <header className="bg-blue-300 text-white px-4 py-3 flex items-center justify-between shadow relative">
         {!showSearch && (
           <div className="flex items-center gap-2">
@@ -126,7 +179,6 @@ export default function ClienteHome({ empresaId }) {
         )}
       </header>
 
-      {/* Aviso */}
       <div className="bg-blue-50 border border-blue-200 rounded-md mx-4 my-4 mt-3 px-3 py-2 flex items-center gap-2 text-sm text-blue-800">
         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -134,35 +186,28 @@ export default function ClienteHome({ empresaId }) {
         Atendimento: <strong>Segunda a Sexta, das 08h às 18h</strong>
       </div>
 
-      {/* Lista de Produtos */}
       <div className="flex-1 px-4 overflow-y-auto pb-24">
+      {mensagem && (
+        <div className={`text-center mb-4 font-medium ${corMensagem}`}>
+          {mensagem}
+        </div>
+      )}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {produtosFiltrados.map((produto) => (
-
-            <Link
+          {produtosFiltrados.map((produto) => (
+            <ProdutoCard
               key={produto.id}
-              href={`/produto/${produto.id}`}
-              className="bg-white rounded-xl shadow-lg p-4 flex items-center justify-between transform transition duration-300 hover:scale-105 hover:shadow-xl"
-            >
-              <div className="flex items-center gap-4">
-                <Image
-                  src={getImagemProduto(produto.imagem)}
-                  alt={produto.nome}
-                  width={100}
-                  height={100}
-                  className="rounded-lg"
-                />
-                <div>
-                  <h2 className="text-sm font-semibold text-gray-800">{produto.nome}</h2>
-                  <p className="text-xs text-gray-500 line-clamp-2">{produto.descricao}</p>
-                  <p className="text-green-600 font-bold mt-1">R$ {parseFloat(produto.preco).toFixed(2)}</p>
-                </div>
-              </div>
-            </Link>
+              produto={produto}
+              quantidade={quantidades[produto.id] || 1}
+              onAumentar={() => handleAumentar(produto.id)}
+              onDiminuir={() => handleDiminuir(produto.id)}
+              onAdicionar={() => handleAdicionar(produto)}
+              getImagemProduto={getImagemProduto}
+            />
           ))}
         </div>
       </div>
       <NavBar empresaId={empresaId} />
     </div>
   );
+  
 }

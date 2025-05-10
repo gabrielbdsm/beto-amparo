@@ -11,13 +11,16 @@ export const criarProduto = async (req, res) => {
       novaCategoriaTexto,
       preco,
       descricao,
+      tamanhos,
+      controlar_estoque,
+      quantidade,
     } = req.body;
 
- 
-
-    
     const imagem = req.file 
-    
+    // Converter dados do FormData
+    const tamanhosParsed = tamanhos ? JSON.parse(tamanhos) : [];
+    const controlarEstoque = controlar_estoque === 'true';
+    const quantidadeParsed = controlarEstoque ? parseInt(quantidade, 10) || 0 : 0;
     if (!imagem) return res.status(400).json({ error: "Imagem não enviada" });
 
   
@@ -26,7 +29,7 @@ export const criarProduto = async (req, res) => {
       categoria: novaCategoria === 'true' ? novaCategoriaTexto : categoria,
       preco: parseFloat(preco),
       descricao,
-      
+      quantidade: quantidadeParsed,
     });
 
     if (!validacao.valido) {
@@ -49,6 +52,9 @@ export const criarProduto = async (req, res) => {
       categoria: categoriaFinal,
       preco: parseFloat(preco),
       descricao,
+      tamanhos: tamanhosParsed,
+      controlarEstoque,
+      quantidade: quantidadeParsed,
     });
 
     if (error) {

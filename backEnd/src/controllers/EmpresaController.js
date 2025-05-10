@@ -17,7 +17,6 @@ export const criarEmpresa = async (req, res) => {
       senha,
     } = req.body;
 
-
 async function postEmpresa(req, res) {
   try {
     const nova = req.body

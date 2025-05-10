@@ -7,11 +7,9 @@ import clienteRoutes from './routes/clienteRoutes.js';
 import cors from 'cors';
 import multer from 'multer';
 import path from 'path';
-import { fileURLToPath } from 'url';
-
-// Configuração do __dirname para ES Modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+//import { fileURLToPath } from 'url';
+import carrinhoRoutes from './routes/carrinhoRoutes.js';
+import { createClient } from '@supabase/supabase-js';
 
 dotenv.config();
 const app = express();
@@ -24,62 +22,66 @@ const corsOptions = {
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization']
 };
+// Supabase client
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
 
-// Configuração do multer para salvar as imagens
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    // Defina o diretório onde as imagens serão salvas
-    cb(null, 'uploads/');
-  },
-  filename: (req, file, cb) => {
-    // Defina o nome do arquivo com base no timestamp para evitar conflitos
-    cb(null, Date.now() + path.extname(file.originalname));
-  }
-});
+// CORS
+app.use(cors({ origin: 'http://localhost:3000' }));
+app.use(express.json());
 
-// Criando o middleware do multer com limites e tipo de arquivo
+// Configuração do Multer
 const upload = multer({
-  storage: storage,
-  limits: { fileSize: 50 * 1024 * 1024 }, // Limite de 50MB
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 50 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
-    // Aceitar apenas imagens
     const filetypes = /jpeg|jpg|png|gif/;
-    const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
-    const mimetype = filetypes.test(file.mimetype);
+    const isValid = filetypes.test(path.extname(file.originalname).toLowerCase()) && filetypes.test(file.mimetype);
+    if (isValid) cb(null, true);
+    else cb(new Error('Apenas imagens são permitidas!'), false);
+  },
+}).single('image');
 
-    if (extname && mimetype) {
-      return cb(null, true);
-    } else {
-      cb(new Error('Apenas imagens são permitidas!'), false);
-    }
-  }
-}).single('image'); // 'image' é o nome do campo no formulário
-
-// Rota para upload de imagem
+// Rota de upload para o bucket 'loja'
 app.post('/upload', (req, res) => {
-  upload(req, res, (err) => {
-    if (err) {
-      return res.status(400).send({ message: err.message });
-    }
-    res.send({ message: 'Imagem enviada com sucesso!', file: req.file });
+  upload(req, res, async (err) => {
+    if (err) return res.status(400).json({ message: err.message });
+
+    const file = req.file;
+    const fileName = `${Date.now()}-${file.originalname}`;
+
+    const { data, error } = await supabase.storage
+      .from('loja')
+      .upload(fileName, file.buffer, {
+        contentType: file.mimetype,
+      });
+
+    if (error) return res.status(500).json({ message: error.message });
+
+    const { data: publicUrlData } = supabase.storage.from('loja').getPublicUrl(fileName);
+
+    res.json({ message: 'Imagem enviada com sucesso!', url: publicUrlData.publicUrl });
   });
 });
 
-
+/*
 app.use(express.json());
 app.use(cors(corsOptions));
-app.use(empresaRoutes);  
+*/
+import lojaRoutes from './routes/lojaRoutes.js';
+
+app.use('/api', empresaRoutes);
 app.use(produtosRoutes);
 app.use(logoutRoutes);
+app.use(carrinhoRoutes);
+app.use('/api', lojaRoutes);
 app.use(clienteRoutes);
-
 
 // Rota padrão
 app.get('/', (req, res) => {
   res.send('API do Beto Amparo está no ar!');
 });
 
-// Iniciando o servidor
+// Iniciar servidor
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
   console.log(`Clique no link para abrir: http://localhost:${PORT}`);

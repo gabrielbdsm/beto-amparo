@@ -1,0 +1,12 @@
+**/.env
+.env.local
+# Ignorar dependências
+node_modules/
+package-lock.json
+# Ignorar logs
+*.log
+
+# Ignorar diretórios de build
+/.next
+/dist
+/build
