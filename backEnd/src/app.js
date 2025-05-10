@@ -3,15 +3,25 @@ import dotenv from 'dotenv';
 import empresaRoutes from './routes/empresaRoutes.js';
 import produtosRoutes from './routes/produtosRoutes.js';
 import logoutRoutes from './routes/logoutRoutes.js';
-import carrinhoRoutes from './routes/carrinhoRoutes.js';
+import clienteRoutes from './routes/clienteRoutes.js';
 import cors from 'cors';
 import multer from 'multer';
 import path from 'path';
+//import { fileURLToPath } from 'url';
+import carrinhoRoutes from './routes/carrinhoRoutes.js';
 import { createClient } from '@supabase/supabase-js';
 
 dotenv.config();
 const app = express();
 
+// Configuração do CORS
+//app.use(cors('localhost:3000'));
+
+const corsOptions = {
+  origin: 'http://localhost:3000',
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+};
 // Supabase client
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
 
@@ -53,6 +63,10 @@ app.post('/upload', (req, res) => {
   });
 });
 
+/*
+app.use(express.json());
+app.use(cors(corsOptions));
+*/
 import lojaRoutes from './routes/lojaRoutes.js';
 
 app.use(empresaRoutes);
@@ -60,6 +74,7 @@ app.use(produtosRoutes);
 app.use(logoutRoutes);
 app.use(carrinhoRoutes);
 app.use('/api', lojaRoutes);
+app.use('/api', clienteRoutes);
 
 // Rota padrão
 app.get('/', (req, res) => {

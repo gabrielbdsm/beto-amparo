@@ -17,10 +17,16 @@ export const criarEmpresa = async (req, res) => {
       senha,
     } = req.body;
 
-
-    if (!nome || !cnpj || !email || !senha) {
-      return res.status(400).json({ mensagem: 'Campos obrigatórios ausentes.' });
-    }
+async function postEmpresa(req, res) {
+  try {
+    const nova = req.body
+    console.log(nova)
+    const empresa = await empresas.cadastrarEmpresa(nova)
+    res.status(201).json(empresa)
+  } catch (error) {
+    res.status(500).json({ erro: error.message })
+  }
+}
 
     const { error } = await inserirEmpresa({
       nome,
