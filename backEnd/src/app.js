@@ -1,12 +1,9 @@
 import express from 'express';
 import dotenv from 'dotenv';
-<<<<<<< HEAD
 import empresaRoutes from './routes/empresaRoutes.js';
 import produtosRoutes from './routes/produtosRoutes.js';
 import logoutRoutes from './routes/logoutRoutes.js';
 import carrinhoRoutes from './routes/carrinhoRoutes.js';
-=======
->>>>>>> 81a0b5b9360ca3aa715a004b276aacf3260576d1
 import cors from 'cors';
 import multer from 'multer';
 import path from 'path';
@@ -65,12 +62,8 @@ import lojaRoutes from './routes/lojaRoutes.js';
 app.use('/api', empresaRoutes);
 app.use(produtosRoutes);
 app.use(logoutRoutes);
-<<<<<<< HEAD
 app.use(carrinhoRoutes);
-
-=======
 app.use('/api', lojaRoutes);
->>>>>>> 81a0b5b9360ca3aa715a004b276aacf3260576d1
 
 // Rota padrão
 app.get('/', (req, res) => {
