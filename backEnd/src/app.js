@@ -55,7 +55,7 @@ app.post('/upload', (req, res) => {
 
 import lojaRoutes from './routes/lojaRoutes.js';
 
-app.use('/api', empresaRoutes);
+app.use(empresaRoutes);
 app.use(produtosRoutes);
 app.use(logoutRoutes);
 app.use(carrinhoRoutes);

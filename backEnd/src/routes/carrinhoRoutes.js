@@ -34,5 +34,31 @@ router.post('/api/carrinho', async (req, res) => {
     }
   });
   
+router.get('/api/carrinho', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('carrinho')
+      .select(`
+        id,
+        quantidade,
+        produto:produto_id (
+          id,
+          nome,
+          preco,
+          image
+        )
+      `);
+
+    if (error) {
+      console.error('Erro ao buscar carrinho:', error);
+      return res.status(500).json({ erro: 'Erro ao buscar o carrinho.' });
+    }
+
+    res.status(200).json(data);
+  } catch (err) {
+    console.error('Erro inesperado:', err);
+    res.status(500).json({ erro: 'Erro interno ao buscar o carrinho.' });
+  }
+});
 
 export default router;

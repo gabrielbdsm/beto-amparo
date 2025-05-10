@@ -100,7 +100,7 @@ const getImagemProduto = (caminhoImagem) => {
     }));
   };
   
-  const handleAdicionar = async (produto) => {
+   const handleAdicionar = async (produto) => {
     try {
       const qtd = quantidades[produto.id] || 1;
       console.log(`Adicionando ${qtd}x ${produto.nome} ao carrinho...`);
