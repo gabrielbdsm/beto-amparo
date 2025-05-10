@@ -49,4 +49,4 @@ class Cliente {
     }
   }
   
-  module.exports = Cliente;
+  export default Cliente;

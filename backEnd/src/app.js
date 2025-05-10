@@ -7,6 +7,11 @@ import clienteRoutes from './routes/clienteRoutes.js';
 import cors from 'cors';
 import multer from 'multer';
 import path from 'path';
+import { fileURLToPath } from 'url';
+
+// Configuração do __dirname para ES Modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 dotenv.config();
 const app = express();

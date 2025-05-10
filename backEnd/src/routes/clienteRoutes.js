@@ -1,6 +1,9 @@
-const express = require('express');
+// src/routes/clienteRoutes.js
+import express from 'express';
+import clienteController from '../controllers/clienteController.js';
+//import * as cliente from '../controllers/clienteController.js';
+//import * as clienteController from '../controllers/clienteController.js';
 const router = express.Router();
-const clienteController = require('../src/controllers/clienteController');
 
 // Middleware específico para estas rotas
 router.use((req, res, next) => {
@@ -23,4 +26,5 @@ router.put('/:id', clienteController.atualizar);
 // Rota para deletar cliente (opcional)
 router.delete('/:id', clienteController.remover);
 
-module.exports = router;
+// Exportação ES Module
+export default router;

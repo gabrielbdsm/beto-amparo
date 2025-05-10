@@ -1,7 +1,13 @@
+/*
 const Cliente = require('../src/models/clienteModel');
 const supabase = require('../src/config/supabase');
 const bcrypt = require('bcrypt');
 require('dotenv').config();
+*/
+import Personalizacao from '../models/Personalizacao.js';
+import Cliente from '../src/models/clienteModel.js';
+import supabase from '../src/config/supabase.js';
+import bcrypt from 'bcrypt';
 
 class ClienteController {
 async cadastrar(req, res) {
@@ -64,8 +70,6 @@ async cadastrar(req, res) {
     });
   }
 }
-
-  // Adicione aqui os outros métodos (listar, obterPorId, etc.) conforme necessário
 }
 
-module.exports = new ClienteController();
+export default new ClienteController();
