@@ -1,7 +1,9 @@
 import { useState } from 'react';
+import { useRouter } from 'next/router';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 export default function CadastrarEmpresa() {
+  const router = useRouter();
   const [formData, setFormData] = useState({
     nome: '',
     cnpj: '',
@@ -30,15 +32,14 @@ export default function CadastrarEmpresa() {
       name: 'uf',
       type: 'select',
       options: [
-        'AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR',
-        'PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'
+        'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG', 'PA', 'PB', 'PR',
+        'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO'
       ],
     },
     { label: 'Site', name: 'site' },
     { label: 'Categoria', name: 'categoria', type: 'select', options: ['Comércio', 'Serviços', 'Alimentação', 'Tecnologia', 'Educação', 'Indústria'] },
-    
     { label: 'Email', name: 'email', type: 'email' },
-    { label: 'Senha', name: 'senha', type: 'password' },    
+    { label: 'Senha', name: 'senha', type: 'password' },
   ];
 
   const handleChange = (e) => {
@@ -78,20 +79,35 @@ export default function CadastrarEmpresa() {
       return;
     }
     try {
-      const response = await fetch(process.env.NEXT_PUBLIC_EMPRESA_API + '/addEmpresa', {
+      console.log('Enviando requisição para o backend:', formData);
+      const response = await fetch('http://localhost:4000/api/addEmpresa', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data?.mensagem || 'Erro ao cadastrar empresa.');
-      alert('Empresa cadastrada com sucesso!');
+      
+      // Cadastro bem-sucedido, limpar formulário
       setFormData({
-        nome: '', cnpj: '', responsavel: '', telefone: '', endereco: '',
-        cidade: '', uf: '', site: '', categoria: '',  email: '', senha: '', 
+        nome: '',
+        cnpj: '',
+        responsavel: '',
+        telefone: '',
+        endereco: '',
+        cidade: '',
+        uf: '',
+        site: '',
+        categoria: '',
+        email: '',
+        senha: '',
       });
       setStep(0);
+      
+      console.log('Redirecionando para /personalizacao-loja');
+      router.push('/personalizacao-loja');
     } catch (error) {
+      console.error('Erro ao cadastrar:', error);
       setError(error.message);
     }
   };
@@ -101,14 +117,11 @@ export default function CadastrarEmpresa() {
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center px-4">
       <div className="bg-white rounded-2xl shadow-lg p-6 w-full sm:max-w-md">
-        
-        {/* Logo + Título lado a lado */}
         <div className="mb-6 flex items-center justify-center gap-3">
           <img src="/logo.png" alt="Logo" className="h-18" />
           <h1 className="text-2xl font-bold text-[#3681B6]">Cadastre sua empresa</h1>
         </div>
 
-        {/* Subtítulo condicional */}
         <div className="mb-2 text-center">
           <h2 className="text-lg font-semibold text-gray-700">
             {step < 9 ? 'Informações da empresa' : 'Dados de acesso'}
@@ -151,33 +164,32 @@ export default function CadastrarEmpresa() {
 
           <div className="flex justify-between mt-6">
             {step > 0 ? (
-                <button
+              <button
                 type="button"
                 onClick={handleBack}
                 className="p-2 px-4 bg-gray-200 rounded-xl text-gray-700"
-                >
+              >
                 <ChevronLeft className="inline-block mr-1" size={18} /> Voltar
-                </button>
+              </button>
             ) : <div />}
 
             {step === fields.length - 1 ? (
-                <button
+              <button
                 type="submit"
                 className="p-2 px-4 bg-[#3681B6] text-white rounded-xl"
-                >
+              >
                 Cadastrar
-                </button>
+              </button>
             ) : (
-                <button
+              <button
                 type="button"
                 onClick={handleNext}
                 className="p-2 px-4 bg-[#3681B6] text-white rounded-xl"
-                >
+              >
                 Avançar <ChevronRight className="inline-block ml-1" size={18} />
-                </button>
+              </button>
             )}
-            </div>
-
+          </div>
         </form>
       </div>
     </div>

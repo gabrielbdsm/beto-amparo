@@ -55,7 +55,7 @@ import produtosRoutes from './routes/produtosRoutes.js';
 import logoutRoutes from './routes/logoutRoutes.js';
 import lojaRoutes from './routes/lojaRoutes.js';
 
-app.use(empresaRoutes);
+app.use('/api', empresaRoutes);
 app.use(produtosRoutes);
 app.use(logoutRoutes);
 app.use('/api', lojaRoutes);

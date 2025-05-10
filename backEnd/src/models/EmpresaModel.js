@@ -15,7 +15,7 @@ export const inserirEmpresa = async ({
 }) => {
   try {
     const { error } = await supabase
-      .from('empresa')
+      .from('empresas')
       .insert([{
         nome,
         cnpj,
