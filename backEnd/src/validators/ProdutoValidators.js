@@ -11,7 +11,14 @@ export const validarProduto = (dados) => {
     } else {
       if (!dados.categoria?.trim()) erros.push('A categoria do produto é obrigatória.');
     }
-  
+    
+    if (dados.quantidade !== undefined) {
+      const quantidadeNum = parseInt(dados.quantidade, 10);
+      if (isNaN(quantidadeNum) || quantidadeNum < 0) {
+        erros.push('A quantidade deve ser um número inteiro não negativo.');
+      }
+    }
+    
     return erros.length > 0
       ? { valido: false, erros }
       : { valido: true, erros: null };
