@@ -13,6 +13,9 @@ export default function ClienteHome({ empresaId }) {
     produto.nome.toLowerCase().includes(searchTerm.toLowerCase())
   );
   const [quantidades, setQuantidades] = useState({});
+  const [mensagem, setMensagem] = useState('');
+  const [corMensagem, setCorMensagem] = useState('');
+
 
   useEffect(() => {
     if (!empresaId) return;
@@ -97,10 +100,41 @@ const getImagemProduto = (caminhoImagem) => {
     }));
   };
   
-  const handleAdicionar = (produto) => {
-    const qtd = quantidades[produto.id] || 1;
-    console.log(`Adicionar ${qtd}x ${produto.nome}`);
+  const handleAdicionar = async (produto) => {
+    try {
+      const qtd = quantidades[produto.id] || 1;
+      console.log(`Adicionando ${qtd}x ${produto.nome} ao carrinho...`);
+  
+      const response = await fetch('http://localhost:4000/api/carrinho', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          produtoId: produto.id,
+          quantidade: qtd,
+        }),
+      });
+  
+      const data = await response.json();
+  
+      if (!response.ok) {
+        console.error('Erro no backend:', data.erro);
+        throw new Error(data.erro || 'Erro desconhecido');
+      }
+  
+      console.log(`Produto ${produto.nome} adicionado com sucesso.`);
+      setMensagem('Produto adicionado ao carrinho!');
+      setCorMensagem('text-green-600');
+    } catch (err) {
+      console.error('Erro ao adicionar ao carrinho:', err);
+      setMensagem(`Erro: ${err.message}`);
+      setCorMensagem('text-red-600');
+    }
+  
+    setTimeout(() => setMensagem(''), 3000);
   };
+    
   
   return (
     <div className="flex flex-col min-h-screen bg-gray-100">
@@ -153,6 +187,11 @@ const getImagemProduto = (caminhoImagem) => {
       </div>
 
       <div className="flex-1 px-4 overflow-y-auto pb-24">
+      {mensagem && (
+        <div className={`text-center mb-4 font-medium ${corMensagem}`}>
+          {mensagem}
+        </div>
+      )}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {produtosFiltrados.map((produto) => (
             <ProdutoCard

@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import empresaRoutes from './routes/empresaRoutes.js';
 import produtosRoutes from './routes/produtosRoutes.js';
 import logoutRoutes from './routes/logoutRoutes.js';
+import carrinhoRoutes from './routes/carrinhoRoutes.js';
 import cors from 'cors';
 import multer from 'multer';
 import path from 'path';
@@ -60,6 +61,7 @@ app.use(empresaRoutes);
 
 app.use(produtosRoutes);
 app.use(logoutRoutes);
+app.use(carrinhoRoutes);
 
 
 // Rota padrão
