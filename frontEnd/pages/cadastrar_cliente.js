@@ -19,6 +19,7 @@ export default function CadastroCliente() {
   });
   const [erros, setErros] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [mensagemSucesso, setMensagemSucesso] = useState('');
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -45,7 +46,10 @@ export default function CadastroCliente() {
       const data = await response.json();
       
       if (response.ok) {
-        router.push('/clientes?cadastro=sucesso');
+       setMensagemSucesso('Cadastro realizado com sucesso!');  // Mensagem de sucesso
+        setTimeout(() => {
+          router.push('/');  // Redireciona para a página inicial (home.js)
+        }, 2000);  // Espera 2 segundos para redirecionar
       } else {
         setErros(data.erros || [data.erro || 'Erro ao cadastrar cliente']);
       }
@@ -70,6 +74,13 @@ export default function CadastroCliente() {
                 <li key={index}>{erro}</li>
               ))}
             </ul>
+          </div>
+        )}
+
+         {/* Exibe a mensagem de sucesso */}
+        {mensagemSucesso && (
+          <div className="mb-6 p-4 bg-green-50 border-l-4 border-green-500 text-green-700">
+            {mensagemSucesso}
           </div>
         )}
         
