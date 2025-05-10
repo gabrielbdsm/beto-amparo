@@ -53,10 +53,6 @@ app.post('/upload', (req, res) => {
   });
 });
 
-// Importar e usar as rotas existentes
-import empresaRoutes from './routes/empresaRoutes.js';
-import produtosRoutes from './routes/produtosRoutes.js';
-import logoutRoutes from './routes/logoutRoutes.js';
 import lojaRoutes from './routes/lojaRoutes.js';
 
 app.use('/api', empresaRoutes);
