@@ -74,7 +74,7 @@ app.use(produtosRoutes);
 app.use(logoutRoutes);
 app.use(carrinhoRoutes);
 app.use('/api', lojaRoutes);
-app.use(clienteRoutes);
+app.use('/api', clienteRoutes);
 
 // Rota padrão
 app.get('/', (req, res) => {
