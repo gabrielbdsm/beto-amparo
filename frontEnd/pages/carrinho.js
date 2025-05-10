@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import { FaTrashAlt } from "react-icons/fa"; // Importando o ícone de lixo
 import NavBar from "@/components/NavBar"; // Adiciona a NavBar
 
 export default function CarrinhoCliente({ empresaId }) {
@@ -29,13 +30,32 @@ export default function CarrinhoCliente({ empresaId }) {
     alert("Compra finalizada!"); // Substituir por lógica real
   };
 
+  const handleRemoverItem = async (id) => {
+    try {
+      // Remover item localmente
+      const novosItens = itensCarrinho.filter((item) => item.id !== id);
+      setItensCarrinho(novosItens);
+
+      // Atualizar o subtotal após remoção
+      const novoSubtotal = novosItens.reduce((acc, item) => acc + item.quantidade * item.produto.preco, 0);
+      setSubtotal(novoSubtotal);
+
+      // Remover item no backend
+      const response = await fetch(`http://localhost:4000/api/carrinho/${id}`, { method: 'DELETE' });
+      if (!response.ok) throw new Error("Erro ao remover item do carrinho");
+
+    } catch (error) {
+      console.error("Erro ao remover item:", error);
+    }
+  };
+
   const getImagemProduto = (caminhoImagem) => {
-  console.log("Imagem recebida:", caminhoImagem); // OK agora
-  if (!caminhoImagem) return '/fallback.jpg';
-  if (caminhoImagem.startsWith('http')) return caminhoImagem;
-  const baseUrl = 'https://cufzswdymzevdeonjgan.supabase.co/storage/v1/object/public';
-  return `${baseUrl}/imagens/clientes/${encodeURIComponent(caminhoImagem)}`;
-};
+    console.log("Imagem recebida:", caminhoImagem); // OK agora
+    if (!caminhoImagem) return '/fallback.jpg';
+    if (caminhoImagem.startsWith('http')) return caminhoImagem;
+    const baseUrl = 'https://cufzswdymzevdeonjgan.supabase.co/storage/v1/object/public';
+    return `${baseUrl}/imagens/clientes/${encodeURIComponent(caminhoImagem)}`;
+  };
 
   return (
     <div className="flex flex-col min-h-screen bg-white text-black">
@@ -66,6 +86,12 @@ export default function CarrinhoCliente({ empresaId }) {
                   <div className="text-right font-semibold text-black">
                     R$ {(item.produto.preco * item.quantidade).toFixed(2)}
                   </div>
+                  <button
+                    onClick={() => handleRemoverItem(item.id)} // Passando o id do item
+                    className="ml-4 text-red-500 hover:text-red-700"
+                  >
+                    <FaTrashAlt size={20} />
+                  </button>
                 </div>
               ))}
 

@@ -61,4 +61,32 @@ router.get('/api/carrinho', async (req, res) => {
   }
 });
 
+router.delete('/api/carrinho/:id', async (req, res) => {
+  const { id } = req.params; 
+
+  if (!id) {
+    return res.status(400).json({ erro: 'ID do produto é obrigatório.' });
+  }
+
+  try {
+    console.log('Removendo item com id:', id);
+
+    const { data, error } = await supabase
+      .from('carrinho')
+      .delete()
+      .eq('id', id); 
+
+    if (error) {
+      console.error('Erro ao remover item do carrinho:', error);
+      return res.status(500).json({ erro: 'Erro ao remover item do carrinho.' });
+    }
+
+    console.log('Item removido:', data);
+    res.status(200).json({ mensagem: 'Item removido do carrinho com sucesso.' });
+  } catch (err) {
+    console.error('Erro inesperado:', err);
+    res.status(500).json({ erro: 'Erro interno ao remover item do carrinho.' });
+  }
+});
+
 export default router;
