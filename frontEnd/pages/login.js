@@ -63,7 +63,7 @@ export default function LoginPage() {
         {/* Lado esquerdo - Imagem ilustrativa */}
         <div className="hidden md:block md:w-1/2 bg-blue-600 relative">
           <Image
-            src="/login-illustration.jpg" // Substitua pela sua imagem
+            src="/pexels-markusspiske-6502328.jpg"
             alt="Ilustração de login"
             fill
             className="object-cover"

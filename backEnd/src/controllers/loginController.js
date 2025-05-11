@@ -3,6 +3,8 @@ import Login from '../models/loginModel.js';
 import supabase from '../config/SupaBase.js';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import dotenv from 'dotenv';
+dotenv.config();
 
 class LoginController {
   async autenticar(req, res) {
