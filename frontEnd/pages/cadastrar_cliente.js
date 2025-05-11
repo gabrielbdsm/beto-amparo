@@ -4,6 +4,36 @@
 import { useState } from 'react';
 import { useRouter } from 'next/router';
 
+const UFS_BRASIL = [
+  { sigla: 'AC', nome: 'Acre' },
+  { sigla: 'AL', nome: 'Alagoas' },
+  { sigla: 'AP', nome: 'Amapá' },
+  { sigla: 'AM', nome: 'Amazonas' },
+  { sigla: 'BA', nome: 'Bahia' },
+  { sigla: 'CE', nome: 'Ceará' },
+  { sigla: 'DF', nome: 'Distrito Federal' },
+  { sigla: 'ES', nome: 'Espírito Santo' },
+  { sigla: 'GO', nome: 'Goiás' },
+  { sigla: 'MA', nome: 'Maranhão' },
+  { sigla: 'MT', nome: 'Mato Grosso' },
+  { sigla: 'MS', nome: 'Mato Grosso do Sul' },
+  { sigla: 'MG', nome: 'Minas Gerais' },
+  { sigla: 'PA', nome: 'Pará' },
+  { sigla: 'PB', nome: 'Paraíba' },
+  { sigla: 'PR', nome: 'Paraná' },
+  { sigla: 'PE', nome: 'Pernambuco' },
+  { sigla: 'PI', nome: 'Piauí' },
+  { sigla: 'RJ', nome: 'Rio de Janeiro' },
+  { sigla: 'RN', nome: 'Rio Grande do Norte' },
+  { sigla: 'RS', nome: 'Rio Grande do Sul' },
+  { sigla: 'RO', nome: 'Rondônia' },
+  { sigla: 'RR', nome: 'Roraima' },
+  { sigla: 'SC', nome: 'Santa Catarina' },
+  { sigla: 'SP', nome: 'São Paulo' },
+  { sigla: 'SE', nome: 'Sergipe' },
+  { sigla: 'TO', nome: 'Tocantins' }
+];
+
 export default function CadastroCliente() {
   const router = useRouter();
   const [formData, setFormData] = useState({
@@ -29,29 +59,69 @@ export default function CadastroCliente() {
     }));
   };
 
+  // Função para formatar o CPF
+  const handleCpfChange = (e) => {
+    let value = e.target.value.replace(/\D/g, ''); // Remove tudo que não é dígito
+    
+    // Limita a 11 caracteres
+    if (value.length > 11) {
+      value = value.substring(0, 11);
+    }
+    
+    // Aplica a formatação do CPF
+    let formattedValue = value;
+    if (value.length > 3) {
+      formattedValue = `${value.substring(0, 3)}.${value.substring(3)}`;
+    }
+    if (value.length > 6) {
+      formattedValue = `${formattedValue.substring(0, 7)}.${formattedValue.substring(7)}`;
+    }
+    if (value.length > 9) {
+      formattedValue = `${formattedValue.substring(0, 11)}-${formattedValue.substring(11)}`;
+    }
+    
+    setFormData(prev => ({
+      ...prev,
+      cpf: formattedValue
+    }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
     setErros([]);
     
     try {
+      // Remove a formatação do CPF antes de enviar
+      const dadosParaEnviar = {
+        ...formData,
+        cpf: formData.cpf.replace(/\D/g, '')
+      };
+      
       const response = await fetch('http://localhost:4000/api/clientes', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(dadosParaEnviar),
       });
       
       const data = await response.json();
       
       if (response.ok) {
-       setMensagemSucesso('Cadastro realizado com sucesso!');  // Mensagem de sucesso
+        setMensagemSucesso('Cadastro realizado com sucesso!');
         setTimeout(() => {
-          router.push('/');  // Redireciona para a página inicial (home.js)
-        }, 2000);  // Espera 2 segundos para redirecionar
+          router.push('/');
+        }, 2000);
       } else {
-        setErros(data.erros || [data.erro || 'Erro ao cadastrar cliente']);
+        const errorData = await response.json();
+        if(errorData.erros){
+          setErros(errorData.error);
+        }else if (errorData.error){
+          setErros([errorData.error]);
+        }else{
+          setErros(['Erro ao cadastrar cliente']);
+        }
       }
     } catch (error) {
       setErros(['Erro na comunicação com o servidor']);
@@ -77,7 +147,6 @@ export default function CadastroCliente() {
           </div>
         )}
 
-         {/* Exibe a mensagem de sucesso */}
         {mensagemSucesso && (
           <div className="mb-6 p-4 bg-green-50 border-l-4 border-green-500 text-green-700">
             {mensagemSucesso}
@@ -154,9 +223,10 @@ export default function CadastroCliente() {
               id="cpf"
               name="cpf"
               value={formData.cpf}
-              onChange={handleChange}
+              onChange={handleCpfChange}
               required
-              maxLength="11"
+              maxLength="14" // 11 dígitos + 3 caracteres de formatação
+              placeholder="000.000.000-00"
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
             />
           </div>
@@ -206,17 +276,23 @@ export default function CadastroCliente() {
             
             <div>
               <label htmlFor="uf" className="block text-sm font-medium text-gray-700">
-                UF
+                UF *
               </label>
-              <input
-                type="text"
+              <select
                 id="uf"
                 name="uf"
                 value={formData.uf}
                 onChange={handleChange}
-                maxLength="2"
+                required
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-              />
+              >
+                <option value="">Selecione...</option>
+                {UFS_BRASIL.map(uf => (
+                  <option key={uf.sigla} value={uf.sigla}>
+                    {uf.sigla} - {uf.nome}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
           
