@@ -6,32 +6,49 @@ import logoutRoutes from './routes/logoutRoutes.js';
 import cors from 'cors';
 import multer from 'multer';
 import path from 'path';
-
+import cookieParser from "cookie-parser";
 dotenv.config();
 const app = express();
 
-// Configuração do CORS
 
 
-app.use(cors());
+app.use(cors({
+  origin: true, 
+  credentials: true
+}));
+
+app.use(cookieParser());
+import expressSession from 'express-session';
+
+app.use(
+  expressSession({
+    secret: 'seu-segredo-aquikkkk', 
+    resave: false,              
+    saveUninitialized: true,    
+    cookie: { 
+      httpOnly: false, 
+      secure: true, // Somente se estiver em produção
+      sameSite: 'none' // Se for em ambiente cross-origin
+    }
+  })
+);
 
 
-// Configuração do multer para salvar as imagens
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    // Defina o diretório onde as imagens serão salvas
+    
     cb(null, 'uploads/');
   },
   filename: (req, file, cb) => {
-    // Defina o nome do arquivo com base no timestamp para evitar conflitos
+
     cb(null, Date.now() + path.extname(file.originalname)); 
   }
 });
 
-// Criando o middleware do multer com limites e tipo de arquivo
+
 const upload = multer({
   storage: storage,
-  limits: { fileSize: 50 * 1024 * 1024 }, // Limite de 50MB
+  limits: { fileSize: 50 * 1024 * 1024 }, 
   fileFilter: (req, file, cb) => {
     // Aceitar apenas imagens
     const filetypes = /jpeg|jpg|png|gif/;
@@ -61,7 +78,7 @@ app.use(express.json());
 app.use(empresaRoutes);  
 app.use(produtosRoutes);
 app.use(logoutRoutes);
-
+ 
 
 // Rota padrão
 app.get('/', (req, res) => {

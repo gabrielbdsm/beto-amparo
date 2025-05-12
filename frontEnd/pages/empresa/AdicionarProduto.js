@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import Image from 'next/image';
-
+import LogoutButton from './Logout';
 export default function AdicionarProduto() {
   const [formData, setFormData] = useState({
     nome: '',
@@ -103,16 +103,23 @@ export default function AdicionarProduto() {
     <div className="min-h-screen bg-gray-100 flex items-center justify-center px-4 py-8">
       <div className="bg-white rounded-2xl shadow-lg p-6 w-full sm:max-w-xl">
         {/* Header com logo e título */}
-        <div className="mb-6">
+        <div className="flex   justify-between ">
+          <div className=" "> 
           <img
             src="logo.png"
             alt="Logo da Marca"
             className="h-12 mb-2 object-contain"
-          />
-          <h1 className="text-2xl sm:text-3xl font-semibold" style={{ color: '#3681B6' }}>
+            />
+            </div>
+            <LogoutButton />
+
+          
+
+          
+        </div>
+        <h1 className="text-2xl sm:text-3xl font-semibold mb-3" style={{ color: '#3681B6' }}>
             Adicionar Produto
           </h1>
-        </div>
 
         {/* Mensagem de erro */}
         {error && (

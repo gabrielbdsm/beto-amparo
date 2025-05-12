@@ -19,7 +19,7 @@ export default function ClienteHome({ empresaId }) {
 
     async function fetchEmpresa() {
       try {
-        const url = `http://localhost:4000/empresa/${empresaId}`;
+        const url = `${process.env.NEXT_PUBLIC_EMPRESA_API}/empresa/${empresaId}`;
         const response = await fetch(url, {
           headers: {
             apikey: process.env.NEXT_PUBLIC_SUPABASE_KEY,
