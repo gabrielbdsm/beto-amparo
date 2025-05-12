@@ -44,9 +44,9 @@ class LoginController {
       // Gera token JWT (adicione sua chave secreta no .env)
       const token = jwt.sign(
         { id: cliente.id, email: cliente.email },
-        process.env.JWT_SECRET,
+        process.env.JWT_SECRET, // Agora usa a variável de ambiente JWT_SECRET
         { expiresIn: '1h' }
-      );
+      );      
 
       // Retorna o token e informações básicas do cliente (sem a senha)
       const { senha, ...clienteSemSenha } = cliente;
