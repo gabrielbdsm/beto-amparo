@@ -4,6 +4,7 @@ import empresaRoutes from './routes/empresaRoutes.js';
 import produtosRoutes from './routes/produtosRoutes.js';
 import logoutRoutes from './routes/logoutRoutes.js';
 import clienteRoutes from './routes/clienteRoutes.js';
+import loginRoutes from './routes/loginRoutes.js';
 import cors from 'cors';
 import multer from 'multer';
 import path from 'path';
@@ -69,12 +70,13 @@ app.use(cors(corsOptions));
 */
 import lojaRoutes from './routes/lojaRoutes.js';
 
-app.use(empresaRoutes);
+app.use('/api', empresaRoutes);
 app.use(produtosRoutes);
 app.use(logoutRoutes);
 app.use(carrinhoRoutes);
 app.use('/api', lojaRoutes);
 app.use('/api', clienteRoutes);
+app.use('/api', loginRoutes);
 
 // Rota padrão
 app.get('/', (req, res) => {
