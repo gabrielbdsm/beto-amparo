@@ -1,6 +1,7 @@
 import express from 'express';
 import supabase from '../config/SupaBase.js';
 import * as empresaController from '../controllers/EmpresaController.js';
+import { getEmpresaBySlug } from '../controllers/EmpresaController.js';
 
 const router = express.Router();
 
@@ -25,7 +26,7 @@ router.post('/addEmpresa', async (req, res) => {
   }
 });
 
-router.get('/empresa/:id', empresaController.getEmpresaById); 
 
+router.get('/empresa/slug/:slug', getEmpresaBySlug);
 
 export default router;

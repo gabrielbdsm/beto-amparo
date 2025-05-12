@@ -172,18 +172,12 @@ export const listarProdutosPorEmpresa = async (req, res) => {
       return res.status(400).json({ mensagem: "ID da empresa não fornecido." });
     }
 
-    // Buscar produtos pelo ID da empresa
     const { data, error } = await produto.listarProdutosPorEmpresa(empresaId);
 
     if (error) {
       return res.status(500).json({ mensagem: "Erro ao listar produtos.", erro: error });
     }
-    
-    if (data.length === 0) {
-      return res.status(404).json({ mensagem: "Nenhum produto encontrado para esta empresa." });
-    }
-
-    return res.status(200).json(data);
+    return res.status(200).json(data); 
   } catch (erro) {
     return res.status(500).json({
       mensagem: "Erro inesperado ao listar produtos.",

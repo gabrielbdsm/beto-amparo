@@ -4,8 +4,9 @@ import Link from "next/link";
 import NavBar from "@/components/NavBar";
 import ProdutoCard from "@/components/ProdutoCard";
 
-export default function ClienteHome({ empresaId }) {
-  const [showSearch, setShowSearch] = useState(false);
+
+export default function ClienteHome({ site }) {
+  const [empresaId, setEmpresaId] = useState(null);
   const [nomeEmpresa, setNomeEmpresa] = useState("Carregando...");
   const [produtos, setProdutos] = useState([]);
   const [searchTerm, setSearchTerm] = useState(""); 
@@ -15,35 +16,40 @@ export default function ClienteHome({ empresaId }) {
   const [quantidades, setQuantidades] = useState({});
   const [mensagem, setMensagem] = useState('');
   const [corMensagem, setCorMensagem] = useState('');
-
+  const [showSearch, setShowSearch] = useState(false);
+  const [fotoLoja, setFotoLoja] = useState(null);
+  const [nomeFantasia, setNomeFantasia] = useState('');
 
   useEffect(() => {
-    if (!empresaId) return;
+    if (!site) return;
 
     async function fetchEmpresa() {
       try {
-        const url = `http://localhost:4000/empresa/${empresaId}`;
-
-        const response = await fetch(url, {
-          headers: {
-            apikey: process.env.NEXT_PUBLIC_SUPABASE_KEY,
-            Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_KEY}`,
-          },
-        });
-        if (!response.ok) throw new Error(`Erro ao buscar empresa: ${response.status} - ${response.statusText}`);
+        const url = `http://localhost:4000/empresa/slug/${site}`;
+        const response = await fetch(url);
+        if (!response.ok) throw new Error("Erro ao buscar empresa");
         const data = await response.json();
-        setNomeEmpresa(data?.nome || "Empresa não encontrada");
+        setEmpresaId(data.id);
+        setNomeEmpresa(data.nome || "Empresa não encontrada");
+        setNomeFantasia(data.nome_fantasia || "Sem nome fantasia");
+        setFotoLoja(data.foto_loja || null);
       } catch (error) {
         console.error("Erro ao buscar empresa:", error);
         setNomeEmpresa("Erro ao carregar");
       }
     }
 
+    fetchEmpresa();
+  }, [site]);
+
+  useEffect(() => {
+    if (!empresaId) return;
+
     async function fetchProdutos() {
       try {
         const url = `http://localhost:4000/produtos/empresa/${empresaId}`;
         const response = await fetch(url);
-        if (!response.ok) throw new Error(`Erro ao buscar produtos: ${response.statusText}`);
+        if (!response.ok) throw new Error("Erro ao buscar produtos");
         const data = await response.json();
         setProdutos(data);
       } catch (error) {
@@ -51,7 +57,6 @@ export default function ClienteHome({ empresaId }) {
       }
     }
 
-    fetchEmpresa();
     fetchProdutos();
   }, [empresaId]);
 
@@ -141,9 +146,18 @@ const getImagemProduto = (caminhoImagem) => {
       <header className="bg-blue-300 text-white px-4 py-3 flex items-center justify-between shadow relative">
         {!showSearch && (
           <div className="flex items-center gap-2">
-            <Image src="/imagem_empresa.jpg" alt="Logo" width={32} height={32} />
-            <h1 className="text-lg font-bold">{nomeEmpresa}</h1>
+            <div className="w-10 h-10 rounded-full overflow-hidden">
+              <Image
+                src={fotoLoja ? getImagemProduto(fotoLoja) : "/fallback.jpg"}
+                alt="Logo da Loja"
+                width={50}
+                height={50}
+                className="object-cover w-full h-full"
+              />
+            </div>
+            <h1 className="text-lg font-bold">{nomeFantasia}</h1>
           </div>
+
         )}
         {showSearch && (
           <div className="flex items-center bg-white rounded-full px-3 py-1 w-full max-w-xl mx-auto shadow">
@@ -192,18 +206,27 @@ const getImagemProduto = (caminhoImagem) => {
           {mensagem}
         </div>
       )}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {produtosFiltrados.map((produto) => (
-            <ProdutoCard
-              key={produto.id}
-              produto={produto}
-              quantidade={quantidades[produto.id] || 1}
-              onAumentar={() => handleAumentar(produto.id)}
-              onDiminuir={() => handleDiminuir(produto.id)}
-              onAdicionar={() => handleAdicionar(produto)}
-              getImagemProduto={getImagemProduto}
-            />
-          ))}
+        <div className="flex-1 px-4 overflow-y-auto pb-24">
+          {produtosFiltrados.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {produtosFiltrados.map((produto) => (
+                <ProdutoCard
+                  key={produto.id}
+                  produto={produto}
+                  quantidade={quantidades[produto.id] || 1}
+                  onAumentar={() => handleAumentar(produto.id)}
+                  onDiminuir={() => handleDiminuir(produto.id)}
+                  onAdicionar={() => handleAdicionar(produto)}
+                  getImagemProduto={getImagemProduto}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center text-gray-600 mt-10 text-lg">
+              Nenhum produto disponível no momento.
+            </div>
+          )}
+
         </div>
       </div>
       <NavBar empresaId={empresaId} />

@@ -26,7 +26,7 @@ export default function ProdutoCard({
 
   return (
     <div 
-      className="bg-white rounded-xl shadow-md p-4 flex items-center justify-between hover:scale-105 hover:shadow-lg transition duration-300"
+      className="bg-white rounded-xl shadow-md p-4 flex items-center justify-between hover:scale-105 hover:shadow-lg transition duration-300 w-full sm:max-w-md lg:max-w-lg"
       onClick={handleCardClick} 
     >
         <div className="relative w-20 aspect-square">
@@ -69,8 +69,7 @@ export default function ProdutoCard({
 
         <button
             onClick={handleAdicionarClick} 
-            className="ml-2 sm:ml-3 px-2 py-1 sm:px-4 sm:py-2 bg-blue-500 text-white rounded hover:bg-blue-600 text-xs sm:text-sm font-medium flex items-center gap-1 sm:gap-2"
-        >
+            className="ml-2 sm:ml-3 px-2 py-1 sm:px-4 sm:py-2 bg-blue-500 text-white rounded hover:bg-blue-600 text-xs sm:text-sm font-medium flex items-center gap-1 sm:gap-2"        >
             <Image src="/icons/cart_icon.svg" alt="Carrinho" width={14} height={14} />
             Adicionar
         </button>
