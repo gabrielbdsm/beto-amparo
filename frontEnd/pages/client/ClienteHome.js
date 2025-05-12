@@ -25,7 +25,7 @@ export default function ClienteHome({ site }) {
 
     async function fetchEmpresa() {
       try {
-        const url = `http://localhost:4000/empresa/slug/${site}`;
+        const url = `http://localhost:4000/api/empresa/slug/${site}`;
         const response = await fetch(url);
         if (!response.ok) throw new Error("Erro ao buscar empresa");
         const data = await response.json();
