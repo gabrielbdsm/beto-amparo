@@ -1,9 +1,9 @@
 import Link from "next/link";
 
 
-const NavBar = ({ empresaId }) => (
-  <nav className="flex justify-around items-center bg-blue-300 text-white py-2 shadow-inner rounded-t-4xl">
-    <Link href={`/empresa/${empresaId}`} className="flex flex-col items-center hover:text-blue-500">
+const NavBar = ({ site }) => (
+  <nav className="fixed bottom-0 left-0 right-0 z-50 flex justify-around items-center bg-blue-300 text-white py-2 shadow-inner rounded-t-4xl">
+    <Link href={`/${site}`} className="flex flex-col items-center hover:text-blue-500">
       {/* Ícone Home */}
       <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l9-9 9 9M4 10v10a1 1 0 001 1h5m6-11v10a1 1 0 001 1h5" />

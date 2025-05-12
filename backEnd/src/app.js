@@ -3,6 +3,8 @@ import dotenv from 'dotenv';
 import empresaRoutes from './routes/empresaRoutes.js';
 import produtosRoutes from './routes/produtosRoutes.js';
 import logoutRoutes from './routes/logoutRoutes.js';
+import clienteRoutes from './routes/clienteRoutes.js';
+import loginRoutes from './routes/loginRoutes.js';
 import cors from 'cors';
 import multer from 'multer';
 import path from 'path';
@@ -50,32 +52,42 @@ const upload = multer({
   storage: storage,
   limits: { fileSize: 50 * 1024 * 1024 }, 
   fileFilter: (req, file, cb) => {
-    // Aceitar apenas imagens
     const filetypes = /jpeg|jpg|png|gif/;
-    const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
-    const mimetype = filetypes.test(file.mimetype);
-    
-    if (extname && mimetype) {
-      return cb(null, true);
-    } else {
-      cb(new Error('Apenas imagens são permitidas!'), false);
-    }
-  }
-}).single('image'); // 'image' é o nome do campo no formulário
+    const isValid = filetypes.test(path.extname(file.originalname).toLowerCase()) && filetypes.test(file.mimetype);
+    if (isValid) cb(null, true);
+    else cb(new Error('Apenas imagens são permitidas!'), false);
+  },
+}).single('image');
 
-// Rota para upload de imagem
+// Rota de upload para o bucket 'loja'
 app.post('/upload', (req, res) => {
-  upload(req, res, (err) => {
-    if (err) {
-      return res.status(400).send({ message: err.message });
-    }
-    res.send({ message: 'Imagem enviada com sucesso!', file: req.file });
+  upload(req, res, async (err) => {
+    if (err) return res.status(400).json({ message: err.message });
+
+    const file = req.file;
+    const fileName = `${Date.now()}-${file.originalname}`;
+
+    const { data, error } = await supabase.storage
+      .from('loja')
+      .upload(fileName, file.buffer, {
+        contentType: file.mimetype,
+      });
+
+    if (error) return res.status(500).json({ message: error.message });
+
+    const { data: publicUrlData } = supabase.storage.from('loja').getPublicUrl(fileName);
+
+    res.json({ message: 'Imagem enviada com sucesso!', url: publicUrlData.publicUrl });
   });
 });
 
-// Suas outras rotas
+/*
 app.use(express.json());
-app.use(empresaRoutes);  
+app.use(cors(corsOptions));
+*/
+import lojaRoutes from './routes/lojaRoutes.js';
+
+app.use('/api', empresaRoutes);
 app.use(produtosRoutes);
 app.use(logoutRoutes);
  
@@ -85,7 +97,7 @@ app.get('/', (req, res) => {
   res.send('API do Beto Amparo está no ar!');
 });
 
-// Iniciando o servidor
+// Iniciar servidor
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
   console.log(`Clique no link para abrir: http://localhost:${PORT}`);

@@ -7,9 +7,12 @@
   --background: #ffffff;
   --foreground: #171717;
 }
+
 html, body {
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
+
 
 @theme inline {
   --color-background: var(--background);

@@ -5,6 +5,7 @@ const nextConfig = {
   images: {
     domains: ['cufzswdymzevdeonjgan.supabase.co'],
   },
+  
 
   async rewrites() {
     return [

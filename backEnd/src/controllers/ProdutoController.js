@@ -11,13 +11,16 @@ export const criarProduto = async (req, res) => {
       novaCategoriaTexto,
       preco,
       descricao,
+      tamanhos,
+      controlar_estoque,
+      quantidade,
     } = req.body;
 
- 
-
-    
     const imagem = req.file 
-    
+    // Converter dados do FormData
+    const tamanhosParsed = tamanhos ? JSON.parse(tamanhos) : [];
+    const controlarEstoque = controlar_estoque === 'true';
+    const quantidadeParsed = controlarEstoque ? parseInt(quantidade, 10) || 0 : 0;
     if (!imagem) return res.status(400).json({ error: "Imagem não enviada" });
 
   
@@ -26,7 +29,7 @@ export const criarProduto = async (req, res) => {
       categoria: novaCategoria === 'true' ? novaCategoriaTexto : categoria,
       preco: parseFloat(preco),
       descricao,
-      
+      quantidade: quantidadeParsed,
     });
 
     if (!validacao.valido) {
@@ -49,6 +52,9 @@ export const criarProduto = async (req, res) => {
       categoria: categoriaFinal,
       preco: parseFloat(preco),
       descricao,
+      tamanhos: tamanhosParsed,
+      controlarEstoque,
+      quantidade: quantidadeParsed,
     });
 
     if (error) {
@@ -166,18 +172,12 @@ export const listarProdutosPorEmpresa = async (req, res) => {
       return res.status(400).json({ mensagem: "ID da empresa não fornecido." });
     }
 
-    // Buscar produtos pelo ID da empresa
     const { data, error } = await produto.listarProdutosPorEmpresa(empresaId);
 
     if (error) {
       return res.status(500).json({ mensagem: "Erro ao listar produtos.", erro: error });
     }
-    
-    if (data.length === 0) {
-      return res.status(404).json({ mensagem: "Nenhum produto encontrado para esta empresa." });
-    }
-
-    return res.status(200).json(data);
+    return res.status(200).json(data); 
   } catch (erro) {
     return res.status(500).json({
       mensagem: "Erro inesperado ao listar produtos.",
