@@ -1,17 +1,25 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { FaTrashAlt } from "react-icons/fa"; // Importando o ícone de lixo
-import NavBar from "@/components/NavBar"; // Adiciona a NavBar
+import { FaTrashAlt } from "react-icons/fa"; 
+import NavBar from "@/components/NavBar"; 
+import { useRouter } from "next/router"; 
 
 export default function CarrinhoCliente({ empresaId }) {
   const [itensCarrinho, setItensCarrinho] = useState([]);
   const [subtotal, setSubtotal] = useState(0);
 
+  const router = useRouter(); 
+  const { slug } = router.query; 
+
   useEffect(() => {
+    console.log("slug atual:", slug);
+
+    if (!slug) return; 
+
     async function fetchCarrinho() {
       try {
-        const response = await fetch('http://localhost:4000/api/carrinho');
-        if (!response.ok) throw new Error("Erro ao buscar carrinho");
+        const response = await fetch(`http://localhost:4000/${slug}/carrinho`); 
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`); 
 
         const data = await response.json();
         setItensCarrinho(data);
@@ -24,7 +32,7 @@ export default function CarrinhoCliente({ empresaId }) {
     }
 
     fetchCarrinho();
-  }, []);
+  },  [slug]);
 
   const handleFinalizarCompra = () => {
     alert("Compra finalizada!"); // Substituir por lógica real

@@ -2,7 +2,7 @@ import express from 'express';
 import supabase from '../config/SupaBase.js';
 const router = express.Router();
 
-router.post('/api/carrinho', async (req, res) => {
+router.post('/:slug/carrinho', async (req, res) => {
     const { produtoId, quantidade } = req.body;
   
     if (!produtoId || !quantidade) {
@@ -34,7 +34,7 @@ router.post('/api/carrinho', async (req, res) => {
     }
   });
   
-router.get('/api/carrinho', async (req, res) => {
+router.get('/:slug/carrinho', async (req, res) => {
   try {
     const { data, error } = await supabase
       .from('carrinho')
@@ -61,7 +61,7 @@ router.get('/api/carrinho', async (req, res) => {
   }
 });
 
-router.delete('/api/carrinho/:id', async (req, res) => {
+router.delete('/:slug/carrinho/:id', async (req, res) => {
   const { id } = req.params; 
 
   if (!id) {
