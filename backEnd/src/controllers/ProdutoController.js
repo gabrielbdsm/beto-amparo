@@ -164,15 +164,15 @@ export const listarProdutoPorId = async (req, res) => {
   }
 };
 
-export const listarProdutosPorEmpresa = async (req, res) => {
+export const listarProdutosPorLoja = async (req, res) => {
   try {
-    const { empresaId } = req.params;
+    const { lojaId } = req.params;
 
-    if (!empresaId) {
-      return res.status(400).json({ mensagem: "ID da empresa não fornecido." });
+    if (!lojaId) {
+      return res.status(400).json({ mensagem: "ID da loja não fornecido." });
     }
 
-    const { data, error } = await produto.listarProdutosPorEmpresa(empresaId);
+    const { data, error } = await produto.listarProdutosPorLoja(lojaId);
 
     if (error) {
       return res.status(500).json({ mensagem: "Erro ao listar produtos.", erro: error });

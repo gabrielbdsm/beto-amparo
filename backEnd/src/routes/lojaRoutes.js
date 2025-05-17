@@ -1,5 +1,5 @@
 import express from 'express';
-import { criarPersonalizacao, verificarSlug } from '../controllers/personalizacaoController.js';
+import { criarPersonalizacao, verificarSlug, getLojaBySlug } from '../controllers/personalizacaoController.js';
 
 const router = express.Router();
 
@@ -21,5 +21,6 @@ router.post('/personalizacao', criarPersonalizacao);
 
 // Rota GET para verificar disponibilidade de slug
 router.get('/check-slug', verificarSlug);
+router.get('/loja/slug/:slug', getLojaBySlug);
 
 export default router;

@@ -6,8 +6,8 @@ import ProdutoCard from "@/components/ProdutoCard";
 
 
 export default function ClienteHome({ site }) {
-  const [empresaId, setEmpresaId] = useState(null);
-  const [nomeEmpresa, setNomeEmpresa] = useState("Carregando...");
+  const [lojaId, setLojaId] = useState(null);
+  const [nomeFantasia, setNomeFantasia] = useState("Carregando...");
   const [produtos, setProdutos] = useState([]);
   const [searchTerm, setSearchTerm] = useState(""); 
   const produtosFiltrados = produtos.filter((produto) =>
@@ -18,36 +18,34 @@ export default function ClienteHome({ site }) {
   const [corMensagem, setCorMensagem] = useState('');
   const [showSearch, setShowSearch] = useState(false);
   const [fotoLoja, setFotoLoja] = useState(null);
-  const [nomeFantasia, setNomeFantasia] = useState('');
 
   useEffect(() => {
     if (!site) return;
 
-    async function fetchEmpresa() {
+    async function fetchLoja() {
       try {
-        const url = `http://localhost:4000/api/empresa/slug/${site}`;
+        const url = `http://localhost:4000/api/loja/slug/${site}`;
         const response = await fetch(url);
-        if (!response.ok) throw new Error("Erro ao buscar empresa");
+        if (!response.ok) throw new Error("Erro ao buscar loja");
         const data = await response.json();
-        setEmpresaId(data.id);
-        setNomeEmpresa(data.nome || "Empresa não encontrada");
+        setLojaId(data.id);
         setNomeFantasia(data.nome_fantasia || "Sem nome fantasia");
         setFotoLoja(data.foto_loja || null);
       } catch (error) {
-        console.error("Erro ao buscar empresa:", error);
-        setNomeEmpresa("Erro ao carregar");
+        console.error("Erro ao buscar loja:", error);
+        setNomeFantasia("Erro ao carregar");
       }
     }
 
-    fetchEmpresa();
+    fetchLoja();
   }, [site]);
 
   useEffect(() => {
-    if (!empresaId) return;
+    if (!lojaId) return;
 
     async function fetchProdutos() {
       try {
-        const url = `http://localhost:4000/produtos/empresa/${empresaId}`;
+        const url = `http://localhost:4000/produtos/loja/${lojaId}`;
         const response = await fetch(url);
         if (!response.ok) throw new Error("Erro ao buscar produtos");
         const data = await response.json();
@@ -58,7 +56,7 @@ export default function ClienteHome({ site }) {
     }
 
     fetchProdutos();
-  }, [empresaId]);
+  }, [lojaId]);
 
   const handleShareClick = async () => {
     if (navigator.share) {
@@ -229,7 +227,7 @@ const getImagemProduto = (caminhoImagem) => {
 
         </div>
       </div>
-      <NavBar empresaId={empresaId} />
+      <NavBar lojaId={lojaId} />
     </div>
   );
   

@@ -6,6 +6,7 @@ import logoutRoutes from './routes/logoutRoutes.js';
 import clienteRoutes from './routes/clienteRoutes.js';
 import loginRoutes from './routes/loginRoutes.js';
 import pedidoRoutes from './routes/pedidoRoutes.js';
+import lojaRoutes from './routes/lojaRoutes.js';
 import cors from 'cors';
 import multer from 'multer';
 import path from 'path';
@@ -69,7 +70,6 @@ app.post('/upload', (req, res) => {
 app.use(express.json());
 app.use(cors(corsOptions));
 */
-import lojaRoutes from './routes/lojaRoutes.js';
 
 app.use('/api', empresaRoutes);
 app.use(produtosRoutes);

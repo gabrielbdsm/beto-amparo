@@ -44,3 +44,15 @@ export default (sequelize, DataTypes) => {
 
   return Loja;
 };
+
+export async function buscarLojaBySlug(slug) {
+  const { data, error } = await supabase
+    .from('loja')
+    .select('*')
+    .eq('slug_loja', slug)
+    .single();
+
+  if (error) throw error;
+  return data;
+};
+

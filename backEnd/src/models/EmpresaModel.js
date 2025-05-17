@@ -36,14 +36,3 @@ export const inserirEmpresa = async ({
     return { error: err.message };
   }
 };
-
-export async function buscarEmpresaPorId(id) {
-  const { data, error } = await supabase
-    .from('empresas')
-    .select('*')
-    .eq('id', id)
-    .single()
-
-  if (error) throw error
-  return data
-};

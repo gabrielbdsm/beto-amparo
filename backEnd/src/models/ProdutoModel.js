@@ -93,9 +93,9 @@ export const listarProdutoPorId = async (id) => {
   }
 };
 
-export const listarProdutosPorEmpresa = async (empresaId) => {
+export const listarProdutosPorLoja = async (lojaId) => {
   return await supabase
     .from("produto")
     .select("*")
-    .eq("id_empresa", empresaId); 
+    .eq("id_loja", lojaId); 
 };
