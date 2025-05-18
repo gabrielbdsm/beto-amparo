@@ -13,7 +13,6 @@ export default function OwnerDashboard() {
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row">
-      {/* Topbar com botão hambúrguer no mobile */}
       <div className="bg-[#3681B6] text-white flex items-center justify-between p-4 md:hidden">
         <div className="flex items-center gap-2">
           <Image src="/logo.png" alt="Logo" width={32} height={32} />
@@ -25,24 +24,22 @@ export default function OwnerDashboard() {
           </svg>
         </button>
       </div>
-
-      {/* Sidebar responsiva */}
       <aside className={`
-        fixed md:static z-40 bg-[#3681B6] text-white w-64 h-full p-4 flex flex-col justify-between
+        fixed md:static z-40 bg-[#3681B6] text-white w-64 min-h-screen p-4 flex flex-col justify-between
         transition-transform duration-300
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0
       `}>
         <div>
           <div className="flex items-center mb-4">
             <Image src="/logo.png" alt="Logo" width={40} height={40} className="mr-2" />
-            <div className="leading-tight">
-              <div className="font-bold text-2xl">BETO</div>
-              <div className="text-sm -mt-1">Amparo</div>
+            <div className="leading-tight text-lg">
+              <span className="font-bold">BETO</span>{' '}
+              <span className="font-normal">Amparo</span>
             </div>
           </div>
           <div className="flex flex-col gap-4">
             <div
-              onClick={() => router.push('/owner')}
+              onClick={() => router.push('/empresa/donoarea')}
               className="flex flex-col items-center gap-2 p-2 cursor-pointer text-center"
             >
               <Image src="/icons/store_white.svg" alt="Área do dono" width={40} height={40} />
@@ -57,14 +54,29 @@ export default function OwnerDashboard() {
           </div>
         </div>
         <button className="bg-orange-400 hover:bg-orange-500 p-2 rounded text-white mt-4">SAIR</button>
-        <div className="h-0 md:hidden" />
       </aside>
 
-      {/* Conteúdo principal */}
-      <main className="flex-1 bg-gray-100 p-6 md:p-8 mt-[64px] md:mt-0">
+      <main className="flex-1 bg-gray-100 p-6 md:p-8">
         <h1 className="text-2xl font-bold text-gray-600 mb-6 text-center">Bem-vindo (a) de volta, Fulano!</h1>
-
-        {/* Estatísticas */}
+        <div className="mt-4 w-full max-w-3xl mx-auto mb-6">
+          <label className="block text-gray-800 text-sm mb-1 font-bold">Link da sua loja:</label>
+          <div className="flex items-center bg-white rounded shadow p-2">
+            <input
+              type="text"
+              readOnly
+              value="http://localhost:3000/slug"
+              className="flex-1 outline-none bg-transparent text-sm text-gray-600"
+            />
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText("http://localhost:3000/slug");
+              }}
+              className="ml-2 bg-blue-600 hover:bg-blue-700 text-white text-sm px-3 py-1 rounded"
+            >
+              Copiar
+            </button>
+          </div>
+        </div>
         <div className="bg-white rounded shadow p-6 w-full max-w-3xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
           <div className="col-span-2 md:col-span-4">
             <h2 className="text-lg font-semibold text-gray-600 mb-1">Resumo geral:</h2>
@@ -75,17 +87,13 @@ export default function OwnerDashboard() {
           <InfoCard value="2" sub="notificações" />
         </div>
 
-        {/* Ações principais e promoções */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-3xl mx-auto">
-          {/* Ações principais */}
           <div className="grid grid-cols-2 gap-4">
             <ActionCard icon="/icons/add2.svg" label="Adicionar Produtos" path="/adicionar-produto" />
             <ActionCard icon="/icons/notification.svg" label="Notificações" path="/notificacoes" />
             <ActionCard icon="/icons/paint_gray.svg" label="Personalizar Loja" path="/personalizacao-loja" />
             <ActionCard icon="/icons/store_gray.svg" label="Ver Loja" path="/loja" />
           </div>
-
-          {/* Promoções */}
           <div className="bg-white rounded shadow p-4 flex flex-col gap-4">
             <div className="text-sm font-semibold text-gray-600 border-b pb-1">Promoções</div>
             <ActionCard icon="/icons/sale.svg" label="Adicionar Promoção" noBg />
@@ -97,7 +105,6 @@ export default function OwnerDashboard() {
   );
 }
 
-// Item de menu lateral
 function NavItem({ icon, label, path }) {
   const router = useRouter();
   return (
@@ -111,7 +118,6 @@ function NavItem({ icon, label, path }) {
   );
 }
 
-// Cartão de informação
 function InfoCard({ value, sub }) {
   return (
     <div className="bg-gray-100 p-4 rounded shadow text-center">
@@ -121,7 +127,6 @@ function InfoCard({ value, sub }) {
   );
 }
 
-// Cartão de ação
 function ActionCard({ icon, label, path, noBg = false }) {
   const router = useRouter();
   const classes = `
