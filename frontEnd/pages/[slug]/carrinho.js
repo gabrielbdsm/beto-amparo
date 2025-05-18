@@ -7,6 +7,7 @@ import { useRouter } from "next/router";
 export default function CarrinhoCliente({ empresaId }) {
   const [itensCarrinho, setItensCarrinho] = useState([]);
   const [subtotal, setSubtotal] = useState(0);
+  const [corPrimaria, setCorPrimaria] = useState("#3B82F6"); // Valor padrão
 
   const router = useRouter(); 
   const { slug } = router.query; 
@@ -16,6 +17,21 @@ export default function CarrinhoCliente({ empresaId }) {
 
     if (!slug) return; 
 
+    // Buscar a corPrimaria da loja
+    async function fetchLoja() {
+      try {
+        const url = `http://localhost:4000/api/loja/slug/${slug}`;
+        const response = await fetch(url);
+        if (!response.ok) throw new Error("Erro ao buscar loja");
+        const data = await response.json();
+        setCorPrimaria(data.cor_primaria || "#3B82F6"); // Atualiza com a cor da API ou usa o fallback
+      } catch (error) {
+        console.error("Erro ao buscar loja:", error);
+        setCorPrimaria("#3B82F6"); // Fallback em caso de erro
+      }
+    }
+
+    // Buscar itens do carrinho
     async function fetchCarrinho() {
       try {
         const response = await fetch(`http://localhost:4000/${slug}/carrinho`); 
@@ -31,6 +47,7 @@ export default function CarrinhoCliente({ empresaId }) {
       }
     }
 
+    fetchLoja();
     fetchCarrinho();
   },  [slug]);
 
@@ -67,7 +84,10 @@ export default function CarrinhoCliente({ empresaId }) {
 
   return (
     <div className="flex flex-col min-h-screen bg-white text-black">
-      <header className="bg-blue-300 text-white px-4 py-3 shadow flex items-center justify-center">
+      <header
+        className="text-white px-4 py-3 shadow flex items-center justify-center"
+        style={{ backgroundColor: corPrimaria }}
+      >
         <h1 className="text-xl font-bold">Seu Carrinho</h1>
       </header>
 
@@ -110,7 +130,8 @@ export default function CarrinhoCliente({ empresaId }) {
 
               <button
                 onClick={handleFinalizarCompra}
-                className="w-full py-3 bg-blue-500 hover:bg-green-600 text-white rounded-xl mt-6"
+                className="w-full py-3 rounded-xl mt-6 text-white hover:opacity-90 transition-opacity"
+                style={{ backgroundColor: corPrimaria }}
               >
                 Finalizar Compra
               </button>
@@ -119,7 +140,7 @@ export default function CarrinhoCliente({ empresaId }) {
         </div>
       </div>
 
-      <NavBar empresaId={empresaId} />
+      <NavBar empresaId={empresaId} corPrimaria={corPrimaria} />
     </div>
   );
 }

@@ -7,10 +7,35 @@ export default function Pedidos() {
   const { slug } = router.query;
 
   const [pedidos, setPedidos] = useState([]);
+  const [corPrimaria, setCorPrimaria] = useState("#3B82F6"); // Valor padrão
+
+  // Função para calcular contraste (opcional)
+  const getContrastColor = (hexColor) => {
+    const r = parseInt(hexColor.slice(1, 3), 16);
+    const g = parseInt(hexColor.slice(3, 5), 16);
+    const b = parseInt(hexColor.slice(5, 7), 16);
+    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+    return brightness > 128 ? '#000000' : '#FFFFFF';
+  };
 
   useEffect(() => {
     if (!slug) return;
 
+    // Buscar informações da loja para obter a corPrimaria
+    async function fetchLoja() {
+      try {
+        const url = `http://localhost:4000/api/loja/slug/${slug}`;
+        const response = await fetch(url);
+        if (!response.ok) throw new Error("Erro ao buscar loja");
+        const data = await response.json();
+        setCorPrimaria(data.cor_primaria || "#3B82F6");
+      } catch (error) {
+        console.error("Erro ao buscar loja:", error);
+        setCorPrimaria("#3B82F6");
+      }
+    }
+
+    // Buscar pedidos
     async function fetchPedidos() {
       try {
         const res = await fetch(`http://localhost:4000/empresa/${slug}/pedidos`);
@@ -22,6 +47,7 @@ export default function Pedidos() {
       }
     }
 
+    fetchLoja();
     fetchPedidos();
   }, [slug]);
 
@@ -40,11 +66,19 @@ export default function Pedidos() {
 
   if (!slug) return <p className="text-black text-center mt-10">Carregando...</p>;
 
+  // Calcular a cor do texto com base na corPrimaria (opcional)
+  const textColor = getContrastColor(corPrimaria);
+
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
       {/* Barra superior */}
-      <header className="bg-blue-300 text-white px-4 py-3 flex items-center justify-center shadow">
-        <h1 className="text-xl font-bold">Seus pedidos em {slug}</h1>
+      <header
+        className="px-4 py-3 flex items-center justify-center shadow"
+        style={{ backgroundColor: corPrimaria, color: textColor }}
+      >
+        <h1 className="text-xl font-bold" style={{ color: textColor }}>
+          Seus pedidos em {slug}
+        </h1>
       </header>
 
       {/* Conteúdo principal */}
@@ -69,7 +103,7 @@ export default function Pedidos() {
         )}
       </main>
 
-      <NavBar site={slug} />
+      <NavBar site={slug} corPrimaria={corPrimaria} />
     </div>
   );
 }
