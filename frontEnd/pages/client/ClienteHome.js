@@ -3,9 +3,12 @@ import Image from "next/image";
 import Link from "next/link";
 import NavBar from "@/components/NavBar";
 import ProdutoCard from "@/components/ProdutoCard";
+import { useRouter } from 'next/router';
 
+export default function ClienteHome() {
+  const router = useRouter();
+  const { site } = router.query 
 
-export default function ClienteHome({ site }) {
   const [empresaId, setEmpresaId] = useState(null);
   const [nomeEmpresa, setNomeEmpresa] = useState("Carregando...");
   const [produtos, setProdutos] = useState([]);
@@ -21,44 +24,59 @@ export default function ClienteHome({ site }) {
   const [nomeFantasia, setNomeFantasia] = useState('');
 
   useEffect(() => {
+    
     if (!site) return;
-
+  
     async function fetchEmpresa() {
       try {
-        const url = `${process.env.NEXT_PUBLIC_EMPRESA_API}/empresa/${empresaId}`;
-        const response = await fetch(url, {
-          headers: {
-            apikey: process.env.NEXT_PUBLIC_SUPABASE_KEY,
-            Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_KEY}`,
-          },
-        });
-        if (!response.ok) throw new Error(`Erro ao buscar empresa: ${response.status} - ${response.statusText}`);
+        const url = `${process.env.NEXT_PUBLIC_EMPRESA_API}/empresa/slug/${site}`;
+        const response = await fetch(url);
+  
+        if (!response.ok) {
+          // Tenta obter corpo do erro
+          let errorMessage = `Erro HTTP ${response.status}: ${response.statusText}`;
+          try {
+            const errorData = await response.json();
+            if (errorData.message) {
+              errorMessage += ` - ${errorData.message}`;
+            }
+          } catch (jsonError) {
+            // Não conseguiu parsear o JSON do erro
+          }
+  
+          console.error("Erro na resposta da API:", errorMessage);
+          setNomeEmpresa("Erro ao carregar");
+          return;
+        }
+  
         const data = await response.json();
         setEmpresaId(data.id);
         setNomeEmpresa(data.nome || "Empresa não encontrada");
         setNomeFantasia(data.nome_fantasia || "Sem nome fantasia");
         setFotoLoja(data.foto_loja || null);
       } catch (error) {
-        console.error("Erro ao buscar empresa:", error);
+        console.error("Erro na requisição ao buscar empresa:", error.message || error);
         setNomeEmpresa("Erro ao carregar");
       }
     }
-
+  
     fetchEmpresa();
   }, [site]);
-
+  
+ 
   useEffect(() => {
     if (!empresaId) return;
 
     async function fetchProdutos() {
       try {
-        const url = `http://localhost:4000/produtos/empresa/${empresaId}`;
+        const url = `${process.env.NEXT_PUBLIC_EMPRESA_API}/produtos/empresa/${empresaId}`;
         const response = await fetch(url);
-        if (!response.ok) throw new Error("Erro ao buscar produtos");
+        
+        if (!response.ok) console.error("Erro na resposta da API:", response.statusText);
         const data = await response.json();
         setProdutos(data);
       } catch (error) {
-        console.error("Erro ao buscar produtos:", error);
+        console.error("Erro ao buscar produtos:", error.message);
       }
     }
 
@@ -84,7 +102,7 @@ export default function ClienteHome({ site }) {
   };
 
 const getImagemProduto = (caminhoImagem) => {
-  if (!caminhoImagem) return '/fallback.jpg';
+  if (!caminhoImagem) return null;
   if (caminhoImagem.startsWith('http')) return caminhoImagem;
   const baseUrl = 'https://cufzswdymzevdeonjgan.supabase.co/storage/v1/object/public';
   return `${baseUrl}/imagens/clientes/${encodeURIComponent(caminhoImagem)}`;
@@ -115,7 +133,7 @@ const getImagemProduto = (caminhoImagem) => {
       const qtd = quantidades[produto.id] || 1;
       console.log(`Adicionando ${qtd}x ${produto.nome} ao carrinho...`);
   
-      const response = await fetch('http://localhost:4000/api/carrinho', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/carrinho`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -153,7 +171,7 @@ const getImagemProduto = (caminhoImagem) => {
           <div className="flex items-center gap-2">
             <div className="w-10 h-10 rounded-full overflow-hidden">
               <Image
-                src={fotoLoja ? getImagemProduto(fotoLoja) : "/fallback.jpg"}
+                src={fotoLoja ? getImagemProduto(fotoLoja) : "/fallback.png"}
                 alt="Logo da Loja"
                 width={50}
                 height={50}
@@ -238,4 +256,4 @@ const getImagemProduto = (caminhoImagem) => {
     </div>
   );
   
-}
+} 

@@ -1,5 +1,5 @@
 import express from 'express';
-import { criarPersonalizacao, verificarSlug } from '../controllers/personalizacaoController.js';
+import { criarPersonalizacao, verificarSlug } from '../controllers/Empresa/personalizacaoController.js';
 
 const router = express.Router();
 

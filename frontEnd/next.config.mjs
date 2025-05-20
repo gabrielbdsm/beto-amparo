@@ -14,6 +14,29 @@ const nextConfig = {
         destination: '/client/produto', // Arquivo de destino
       },
       {
+        source: '/carrinho', 
+        destination: '/client/carrinho', 
+      },
+      {
+        source: '/home/:site' ,
+        destination: '/client/ClienteHome', 
+      },
+      {
+        source: '/cadastro', 
+        destination: '/client/cadastrar_cliente', 
+      },
+      {
+        source: '/login', 
+        destination: '/client/loginCliente', 
+      },
+
+
+
+      {
+        source: '/empresa/personalizar', 
+        destination: '/empresa/personalizacao-loja', 
+      },
+      {
         source: '/loginEmpresa', 
         destination: '/empresa/LoginEmpresa', 
       },
@@ -22,7 +45,7 @@ const nextConfig = {
         destination: '/empresa/CadastroEmpresa', 
       },
       {
-        source: '/adicionarProduto', 
+        source: '/empresa/adicionarProduto', 
         destination: '/empresa/AdicionarProduto', 
       },
       

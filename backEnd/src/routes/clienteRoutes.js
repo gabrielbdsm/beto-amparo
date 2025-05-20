@@ -1,6 +1,10 @@
 // src/routes/clienteRoutes.js
 import express from 'express';
-import clienteController from '../controllers/clienteController.js';
+import clienteController from '../controllers/client/clienteController.js';
+
+import * as AuthClinteController from "../controllers/client/AuthClinteController.js";
+
+
 const router = express.Router();
 
 // Middleware específico para estas rotas
@@ -9,8 +13,6 @@ router.use((req, res, next) => {
   next();
 });
 
-// Rota para cadastrar cliente
-router.post('/clientes', clienteController.cadastrar);  // Ajuste aqui para '/clientes'
 
 // Rota para listar clientes (opcional)
 router.get('/clientes', clienteController.listar);  // Ajuste aqui para '/clientes'
@@ -24,5 +26,17 @@ router.put('/clientes/:id', clienteController.atualizar);  // Ajuste aqui para '
 // Rota para deletar cliente (opcional)
 router.delete('/clientes/:id', clienteController.remover);  // Ajuste aqui para '/clientes/:id'
 
-// Exportação ES Module
+
+
+router.use((req, res, next) => {
+  console.log(`Recebida requisição para: ${req.method} ${req.path}`);
+  next();
+});
+
+
+router.post('/login', AuthClinteController.login); 
+router.post('/clientes', AuthClinteController.cadastrar); 
+router.get('/ClientLogout', AuthClinteController.logout);
+
+
 export default router;

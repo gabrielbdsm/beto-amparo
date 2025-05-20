@@ -1,7 +1,7 @@
 document.addEventListener('DOMContentLoaded', async () => {
     try {
         // 1. Busca os produtos do seu endpoint (que já existe no controller)
-        const response = await fetch('http://localhost:4000/produtos',{
+        const response = await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/produtos`,{
             mode: 'cors'
         });
         

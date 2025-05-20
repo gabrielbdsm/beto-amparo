@@ -18,12 +18,14 @@ export const loginEmpresa = async (req, res) => {
     }
 
     
-    const token = jwt.sign({ id: data.id }, process.env.SECRETKEY, {
+    const token = jwt.sign({
+       id: data.id  ,tipo: 'empresa'}, 
+       process.env.JWT_SECRET,{
       expiresIn: '1d'
     });
 
     
-    res.cookie("token", token, {
+    res.cookie("token_empresa", token, {
       httpOnly: false,
       secure: true, 
       sameSite: "none", 
@@ -32,7 +34,8 @@ export const loginEmpresa = async (req, res) => {
     });
 
 
-    res.status(200).json({ id: data.id  });
+    res.status(200).json({
+      mensagem: "Login realizado com sucesso"});
 
   } catch (error) {
     res.status(500).json({ error: "Erro ao fazer login: " + error.message });
@@ -85,8 +88,8 @@ export const criarEmpresa = async (req, res) => {
 
   export const logout = (req, res) => {
   
-      res.clearCookie('token', {
-        httpOnly: true,
+      res.clearCookie('token_empresa', {
+        httpOnly: false,
         secure: true, 
         sameSite: 'none',
         path: '/',

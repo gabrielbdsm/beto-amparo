@@ -1,8 +1,8 @@
 import express from 'express';
-import * as produto from '../controllers/ProdutoController.js';
+import * as produto from '../controllers/produto/ProdutoController.js';
 import multer from 'multer';
 import path from 'path';
-import { listarProdutosPorEmpresa } from "../controllers/ProdutoController.js";
+import { listarProdutosPorEmpresa } from "../controllers/produto/ProdutoController.js";
 import {routePrivate}  from '../middleware/sessionEmpresa.js';
 const router = express.Router();
 

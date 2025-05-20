@@ -1,5 +1,5 @@
 import { useState } from 'react';
-
+import Link from 'next/link';
 export default function LoginEmpresa() {
   const initialState = { email: '', senha: '' };
   const [formData, setFormData] = useState(initialState);
@@ -32,7 +32,7 @@ export default function LoginEmpresa() {
       }
 
       alert('Login realizado com sucesso!');
-      window.location.href = '/empresa/' + data.id;
+      window.location.href = 'empresa/personalizar';
     } catch (err) {
       console.error(err);
       setErrors({ geral: 'Erro ao fazer login. Tente novamente mais tarde.' });
@@ -83,6 +83,16 @@ export default function LoginEmpresa() {
           )}
 
           <div className="flex justify-between items-center">
+           
+          <button
+              type="button"
+              onClick={handleCadastrar}
+              className="p-2 px-6 bg-gray-200 text-[#3681B6] rounded-xl hover:bg-gray-300"
+            >
+              Cadastrar
+            </button>
+           
+           
             <button
               type="submit"
               className="p-2 px-8 bg-[#3681B6] text-white rounded-xl"
@@ -90,14 +100,13 @@ export default function LoginEmpresa() {
               Entrar
             </button>
 
-            <button
-              type="button"
-              onClick={handleCadastrar}
-              className="p-2 px-6 bg-gray-200 text-[#3681B6] rounded-xl hover:bg-gray-300"
-            >
-              Cadastrar
-            </button>
+        
           </div>
+          <div className="text-sm text-center">
+              <Link href="/recuperar-senha" className="font-medium text-blue-600 hover:text-blue-500">
+                Esqueceu sua senha?
+              </Link>
+              </div>
         </form>
       </div>
     </div>

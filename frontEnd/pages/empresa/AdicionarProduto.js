@@ -120,6 +120,7 @@ export default function AdicionarProduto() {
     try {
       const response = await fetch(process.env.NEXT_PUBLIC_EMPRESA_API + '/addProduto', {
         method: 'POST',
+        credentials: 'include' ,
         body: formDataToSend,
       });
       const responseData = await response.json();
@@ -155,14 +156,17 @@ export default function AdicionarProduto() {
 
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center px-4 py-8">
-      <div className="bg-white rounded-2xl shadow-lg p-6 w-full sm:max-w-xl">
+      <div className="bg-white rounded-2xl shadow-lg p-5 w-full sm:max-w-xl">
         {/* Header com logo e título */}
         <div className="flex   justify-between ">
-          <div className=" "> 
-          <img
-            src="logo.png"
+          <div className=" h-12 mb-1 object-contain"> 
+         
+            <Image
+
+            src="/logo.png"
+            width={80}
+            height={70}
             alt="Logo da Marca"
-            className="h-12 mb-2 object-contain"
             />
             </div>
             <LogoutButton />
@@ -171,7 +175,7 @@ export default function AdicionarProduto() {
 
           
         </div>
-        <h1 className="text-2xl sm:text-3xl font-semibold mb-3" style={{ color: '#3681B6' }}>
+        <h1 className="text-2xl sm:text-3xl font-semibold mb-3 mt-3" style={{ color: '#3681B6' }}>
             Adicionar Produto
           </h1>
 
