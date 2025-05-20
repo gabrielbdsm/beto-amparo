@@ -1,4 +1,3 @@
-// src/app/login/page.js
 'use client';
 import Link from 'next/link';
 import { useState } from 'react';

@@ -12,16 +12,28 @@ export default function ClienteHome() {
   const [empresaId, setEmpresaId] = useState(null);
   const [nomeEmpresa, setNomeEmpresa] = useState("Carregando...");
   const [produtos, setProdutos] = useState([]);
-  const [searchTerm, setSearchTerm] = useState(""); 
+  const [searchTerm, setSearchTerm] = useState("");
+  
+  // Função para remover acentos
+  const removeAccents = (str) => {
+    return str
+      .normalize("NFD") // Decompõe caracteres acentuados (ex.: "á" vira "a" + acento)
+      .replace(/[\u0300-\u036f]/g, ""); // Remove os diacríticos (acentos)
+  };
+
+  // Filtragem dos produtos com remoção de acentos
   const produtosFiltrados = produtos.filter((produto) =>
-    produto.nome.toLowerCase().includes(searchTerm.toLowerCase())
+    removeAccents(produto.nome.toLowerCase()).includes(
+      removeAccents(searchTerm.toLowerCase())
+    )
   );
+
   const [quantidades, setQuantidades] = useState({});
   const [mensagem, setMensagem] = useState('');
   const [corMensagem, setCorMensagem] = useState('');
   const [showSearch, setShowSearch] = useState(false);
   const [fotoLoja, setFotoLoja] = useState(null);
-  const [nomeFantasia, setNomeFantasia] = useState('');
+  const [corPrimaria, setCorPrimaria] = useState("#3B82F6"); // Valor padrão
 
   useEffect(() => {
     
@@ -50,10 +62,11 @@ export default function ClienteHome() {
         }
   
         const data = await response.json();
-        setEmpresaId(data.id);
-        setNomeEmpresa(data.nome || "Empresa não encontrada");
+        console.log("Dados da loja da API:", data); // Depuração
+        setLojaId(data.id);
         setNomeFantasia(data.nome_fantasia || "Sem nome fantasia");
         setFotoLoja(data.foto_loja || null);
+        setCorPrimaria(data.cor_primaria || "#3B82F6"); // Atualiza com a cor da API
       } catch (error) {
         console.error("Erro na requisição ao buscar empresa:", error.message || error);
         setNomeEmpresa("Erro ao carregar");
@@ -65,7 +78,7 @@ export default function ClienteHome() {
   
  
   useEffect(() => {
-    if (!empresaId) return;
+    if (!lojaId) return;
 
     async function fetchProdutos() {
       try {
@@ -81,7 +94,7 @@ export default function ClienteHome() {
     }
 
     fetchProdutos();
-  }, [empresaId]);
+  }, [lojaId]);
 
   const handleShareClick = async () => {
     if (navigator.share) {
@@ -111,24 +124,25 @@ const getImagemProduto = (caminhoImagem) => {
 
   useEffect(() => {
     if (!showSearch) {
-      setSearchTerm(""); 
+      setSearchTerm("");
     }
   }, [showSearch]);
+
   const handleAumentar = (id) => {
     setQuantidades((prev) => ({
       ...prev,
       [id]: (prev[id] || 1) + 1,
     }));
   };
-  
+
   const handleDiminuir = (id) => {
     setQuantidades((prev) => ({
       ...prev,
       [id]: Math.max(1, (prev[id] || 1) - 1),
     }));
   };
-  
-   const handleAdicionar = async (produto) => {
+
+  const handleAdicionar = async (produto) => {
     try {
       const qtd = quantidades[produto.id] || 1;
       console.log(`Adicionando ${qtd}x ${produto.nome} ao carrinho...`);
@@ -143,14 +157,14 @@ const getImagemProduto = (caminhoImagem) => {
           quantidade: qtd,
         }),
       });
-  
+
       const data = await response.json();
-  
+
       if (!response.ok) {
         console.error('Erro no backend:', data.erro);
         throw new Error(data.erro || 'Erro desconhecido');
       }
-  
+
       console.log(`Produto ${produto.nome} adicionado com sucesso.`);
       setMensagem('Produto adicionado ao carrinho!');
       setCorMensagem('text-green-600');
@@ -159,14 +173,16 @@ const getImagemProduto = (caminhoImagem) => {
       setMensagem(`Erro: ${err.message}`);
       setCorMensagem('text-red-600');
     }
-  
+
     setTimeout(() => setMensagem(''), 3000);
   };
-    
-  
+
   return (
     <div className="flex flex-col min-h-screen bg-gray-100">
-      <header className="bg-blue-300 text-white px-4 py-3 flex items-center justify-between shadow relative">
+      <header
+        className="text-white px-4 py-3 flex items-center justify-between shadow relative"
+        style={{ backgroundColor: corPrimaria }}
+      >
         {!showSearch && (
           <div className="flex items-center gap-2">
             <div className="w-10 h-10 rounded-full overflow-hidden">
@@ -180,11 +196,18 @@ const getImagemProduto = (caminhoImagem) => {
             </div>
             <h1 className="text-lg font-bold">{nomeFantasia}</h1>
           </div>
-
         )}
         {showSearch && (
           <div className="flex items-center bg-white rounded-full px-3 py-1 w-full max-w-xl mx-auto shadow">
-            <Image src="/icons/search_icon.svg" alt="Buscar" width={16} height={16} className="mr-2" />
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="w-4 h-4 mr-2"
+              fill={corPrimaria}
+              viewBox="0 0 24 24"
+              stroke="none"
+            >
+              <path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" />
+            </svg>
             <input
               type="text"
               placeholder="O que você quer comprar hoje?"
@@ -192,7 +215,6 @@ const getImagemProduto = (caminhoImagem) => {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
-
             <button onClick={() => setShowSearch(false)} className="text-gray-500 hover:text-red-600">
               ✕
             </button>
@@ -200,15 +222,39 @@ const getImagemProduto = (caminhoImagem) => {
         )}
         {!showSearch && (
           <div className="flex items-center gap-3 ml-auto">
-            <button onClick={() => setShowSearch(true)} className="flex flex-col items-center">
-              <div className="bg-white/70 p-2 rounded-full shadow hover:bg-white transition-colors">
-                <Image src="/icons/search_icon.svg" alt="Buscar" width={20} height={20} />
+            <button
+              onClick={() => setShowSearch(true)}
+              className="flex flex-col items-center cursor-pointer"
+              style={{ cursor: 'pointer' }}
+            >
+              <div className="bg-white p-2 rounded-full shadow hover:bg-gray-100 transition-colors">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="w-5 h-5"
+                  fill={corPrimaria}
+                  viewBox="0 0 24 24"
+                  stroke="none"
+                >
+                  <path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" />
+                </svg>
               </div>
               <span className="text-[10px] mt-1">Buscar</span>
             </button>
-            <button onClick={handleShareClick} className="flex flex-col items-center">
-              <div className="bg-white/70 p-2 rounded-full shadow hover:bg-white transition-colors">
-                <Image src="/icons/share_icon.svg" alt="Compartilhar" width={20} height={20} />
+            <button
+              onClick={handleShareClick}
+              className="flex flex-col items-center cursor-pointer"
+              style={{ cursor: 'pointer' }}
+            >
+              <div className="bg-white p-2 rounded-full shadow hover:bg-gray-100 transition-colors">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="w-5 h-5"
+                  fill={corPrimaria}
+                  viewBox="0 0 24 24"
+                  stroke="none"
+                >
+                  <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92c0-1.61-1.31-2.92-2.92-2.92zM18 4c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zM6 13c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm12 7.02c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1z" />
+                </svg>
               </div>
               <span className="text-[10px] mt-1">Compartilhar</span>
             </button>
@@ -224,35 +270,32 @@ const getImagemProduto = (caminhoImagem) => {
       </div>
 
       <div className="flex-1 px-4 overflow-y-auto pb-24">
-      {mensagem && (
-        <div className={`text-center mb-4 font-medium ${corMensagem}`}>
-          {mensagem}
-        </div>
-      )}
-        <div className="flex-1 px-4 overflow-y-auto pb-24">
-          {produtosFiltrados.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {produtosFiltrados.map((produto) => (
-                <ProdutoCard
-                  key={produto.id}
-                  produto={produto}
-                  quantidade={quantidades[produto.id] || 1}
-                  onAumentar={() => handleAumentar(produto.id)}
-                  onDiminuir={() => handleDiminuir(produto.id)}
-                  onAdicionar={() => handleAdicionar(produto)}
-                  getImagemProduto={getImagemProduto}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="text-center text-gray-600 mt-10 text-lg">
-              Nenhum produto disponível no momento.
-            </div>
-          )}
-
-        </div>
+        {mensagem && (
+          <div className={`text-center mb-4 font-medium ${corMensagem}`}>
+            {mensagem}
+          </div>
+        )}
+        {produtosFiltrados.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {produtosFiltrados.map((produto) => (
+              <ProdutoCard
+                key={produto.id}
+                produto={produto}
+                quantidade={quantidades[produto.id] || 1}
+                onAumentar={() => handleAumentar(produto.id)}
+                onDiminuir={() => handleDiminuir(produto.id)}
+                onAdicionar={() => handleAdicionar(produto)}
+                getImagemProduto={getImagemProduto}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="text-center text-gray-600 mt-10 text-lg">
+            Nenhum produto disponível no momento.
+          </div>
+        )}
       </div>
-      <NavBar empresaId={empresaId} />
+      <NavBar site={site} corPrimaria={corPrimaria} />
     </div>
   );
   
