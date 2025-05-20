@@ -36,7 +36,7 @@ router.use((req, res, next) => {
 
 router.post('/login', AuthClinteController.login); 
 router.post('/clientes', AuthClinteController.cadastrar); 
-router.get('/ClientLogout', AuthClinteController.logout);
+router.get('/clientLogout', AuthClinteController.logout);
 
 
 export default router;

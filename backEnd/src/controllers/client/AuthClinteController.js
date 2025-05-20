@@ -47,13 +47,14 @@ export const login = async (req, res) => {
 
     const { senha, ...clienteSemSenha } = cliente;
 
-    res.cookie('token_usuario', token, {
+    res.cookie('token_cliente', token, {
       httpOnly: false,
       secure: true,
       sameSite: 'none',
       maxAge: 24 * 60 * 60 * 1000,
       path: '/',
     });
+    console.log('Cookie definido:', token);
 
     return res.status(200).json({ token, cliente: clienteSemSenha });
   } catch (error) {

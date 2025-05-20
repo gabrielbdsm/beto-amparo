@@ -96,7 +96,7 @@ export const listarProdutoPorId = async (id) => {
 export const listarProdutosPorEmpresa = async (id_empresa) => {
   const data_loja =  await supabase
     .from("loja")
-    .select("id")
+    .select("*")
     .eq("id_empresa",id_empresa); 
 
   if (data_loja.error) {
@@ -122,3 +122,16 @@ export const listarProdutosPorEmpresa = async (id_empresa) => {
     return { data: null, error: err.message };
   }
 };
+
+export const listarProdutosPorLoja = async (lojaId) => {
+  
+  
+  const data = await supabase
+    .from("produto")
+    .select("*")
+    .eq("id_loja", lojaId); 
+
+    return data;
+};
+
+
