@@ -2,12 +2,17 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { createClient } from '@supabase/supabase-js';
 import Image from 'next/image';
+import { useRouter } from 'next/router';
+
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.NEXT_PUBLIC_SUPABASE_KEY
 );
 
 const PersonalizacaoLoja = () => {
+  const router = useRouter();
+  const { slug } = router.query;
+
   const [formData, setFormData] = useState({
     nomeFantasia: '',
     fotoLoja: null,
@@ -103,11 +108,10 @@ const PersonalizacaoLoja = () => {
         slugLoja: formData.slugLoja,
       };
 
-      console.log('Enviando payload:', payload);
       const response = await axios.post(`${process.env.NEXT_PUBLIC_EMPRESA_API}/personalizacao`, payload);
 
-      console.log('Personalização salva com sucesso!', response.data);
       alert('Personalização da loja salva com sucesso!');
+      router.push(`/loja/${formData.slugLoja}`);
     } catch (error) {
       console.error('Erro ao salvar personalização:', error.response?.data || error.message);
       alert(`Erro ao salvar a personalização: ${error.response?.data?.message || error.message}`);
@@ -120,6 +124,10 @@ const PersonalizacaoLoja = () => {
     setStep(2);
   };
 
+  const handleBack = () => {
+    setStep(1);
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center px-4 py-8">
       <div className="bg-white rounded-2xl shadow-lg p-6 w-full sm:max-w-5xl max-h-[85vh] overflow-y-auto flex flex-col space-y-6">
@@ -128,19 +136,14 @@ const PersonalizacaoLoja = () => {
             {/* FORMULÁRIO */}
             <div className="w-full sm:max-w-xl">
               <div className="mb-6">
-               <div className=" h-12 mb-1 object-contain"> 
-                        
-                           <Image
-               
-                           src="/logo.png"
-                           width={70}
-                           height={50}
-                           alt="Logo da Marca"
-                           />
-                           </div>
-                 
-
-                
+                <div className="h-12 mb-1 object-contain">
+                  <Image
+                    src="/logo.png"
+                    width={70}
+                    height={50}
+                    alt="Logo da Marca"
+                  />
+                </div>
                 <h1 className="text-2xl sm:text-3xl font-semibold text-[#3681B6]">
                   Personalizar Loja
                 </h1>
@@ -172,7 +175,7 @@ const PersonalizacaoLoja = () => {
                     />
                     <button
                       type="button"
-                      className="w-full sm:w-auto p-3 text-white rounded-xl bg-gradient-to-r from-[#3681B6] to-[#2e6e99] flex justify-center items-center hover:bg-gradient-to-r hover:from-[#2e6e99] hover:to-[#3681B6] focus:outline-none"
+                      className="w-full sm:w-auto p-3 text-white rounded-xl bg-gradient-to-r from-[#3681B6] to-[#2e6e99] flex justify-center items-center hover:from-[#2e6e99] hover:to-[#3681B6]"
                     >
                       <span>Escolher Arquivo</span>
                     </button>
@@ -219,7 +222,7 @@ const PersonalizacaoLoja = () => {
                 <button
                   type="button"
                   onClick={handleNext}
-                  className="w-full bg-gradient-to-r from-[#3681B6] to-[#2e6e99] text-white py-3 rounded-xl font-semibold hover:bg-gradient-to-r hover:from-[#2e6e99] hover:to-[#3681B6] transition cursor-pointer"
+                  className="w-full bg-gradient-to-r from-[#3681B6] to-[#2e6e99] text-white py-3 rounded-xl font-semibold hover:from-[#2e6e99] hover:to-[#3681B6] transition"
                 >
                   Próximo
                 </button>
@@ -242,19 +245,13 @@ const PersonalizacaoLoja = () => {
                   <h3 className="text-xl font-semibold" style={{ color: formData.corPrimaria }}>
                     {formData.nomeFantasia || 'Nome da Loja'}
                   </h3>
-                  <p className="text-sm text-gray-600" style={{ color: formData.corSecundaria }}>
+                  <p className="text-sm" style={{ color: formData.corSecundaria }}>
                     {formData.slogan || 'Slogan da loja'}
                   </p>
                 </div>
                 <div className="w-full flex justify-between">
-                  <div
-                    className="w-16 h-16 rounded-xl"
-                    style={{ backgroundColor: formData.corPrimaria }}
-                  ></div>
-                  <div
-                    className="w-16 h-16 rounded-xl"
-                    style={{ backgroundColor: formData.corSecundaria }}
-                  ></div>
+                  <div className="w-16 h-16 rounded-xl" style={{ backgroundColor: formData.corPrimaria }}></div>
+                  <div className="w-16 h-16 rounded-xl" style={{ backgroundColor: formData.corSecundaria }}></div>
                 </div>
               </div>
             </div>
@@ -266,61 +263,40 @@ const PersonalizacaoLoja = () => {
             <h2 className="text-2xl font-semibold text-[#3681B6]">Link Personalizado</h2>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                URL Amigável da Loja
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">URL Amigável da Loja</label>
               <input
                 type="text"
                 name="slugLoja"
                 value={formData.slugLoja}
                 onChange={handleChange}
-                placeholder="Ex: nome-da-loja"
-                className={`w-full p-3 border ${
-                  slugError ? 'border-red-500' : 'border-gray-300'
-                } rounded-xl focus:outline-none focus:ring-2 focus:ring-[#3681B6] placeholder:text-gray-400`}
+                placeholder="exemplo-loja"
+                className="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#3681B6]"
               />
-              {isCheckingSlug && (
-                <p className="text-sm text-gray-500 mt-1">Verificando disponibilidade...</p>
-              )}
-              {slugError && (
-                <p className="text-sm text-red-500 mt-1">{slugError}</p>
+              {isCheckingSlug ? (
+                <p className="text-sm text-blue-600 mt-1">Verificando disponibilidade...</p>
+              ) : slugError ? (
+                <p className="text-sm text-red-600 mt-1">{slugError}</p>
+              ) : (
+                formData.slugLoja && <p className="text-sm text-green-600 mt-1">Disponível!</p>
               )}
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Pré-visualização do Link
-              </label>
-              <div className="p-3 bg-gray-100 rounded-xl">
-                <a
-                  href={`/${formData.slugLoja || 'nome-da-loja'}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-[#3681B6] hover:underline"
-                >
-                  {`/${formData.slugLoja || 'nome-da-loja'}`}
-                </a>
-              </div>
-            </div>
-
-            <div className="flex justify-between">
+            <div className="flex space-x-4">
               <button
-                onClick={() => setStep(1)}
-                className="bg-gray-300 text-gray-800 px-4 py-2 rounded-xl hover:bg-gray-400 cursor-pointer"
+                type="button"
+                onClick={handleBack}
+                className="w-full bg-gray-300 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-400"
               >
                 Voltar
               </button>
+
               <button
                 type="button"
-                disabled={uploading || slugError || !formData.slugLoja}
                 onClick={handleSubmit}
-                className={`bg-gradient-to-r from-[#3681B6] to-[#2e6e99] text-white px-4 py-2 rounded-xl font-semibold ${
-                  uploading || slugError || !formData.slugLoja
-                    ? 'opacity-50 cursor-not-allowed'
-                    : 'hover:bg-gradient-to-r hover:from-[#2e6e99] hover:to-[#3681B6]'
-                } transition cursor-pointer`}
+                disabled={uploading}
+                className="w-full bg-gradient-to-r from-[#3681B6] to-[#2e6e99] text-white py-3 rounded-xl font-semibold hover:from-[#2e6e99] hover:to-[#3681B6] transition"
               >
-                {uploading ? 'Enviando...' : 'Salvar'}
+                {uploading ? 'Salvando...' : 'Salvar Personalização'}
               </button>
             </div>
           </div>

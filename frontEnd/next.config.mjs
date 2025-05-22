@@ -18,7 +18,7 @@ const nextConfig = {
         destination: '/client/carrinho', 
       },
       {
-        source: '/home/:site' ,
+        source: '/loja/:site' ,
         destination: '/client/ClienteHome', 
       },
       {
