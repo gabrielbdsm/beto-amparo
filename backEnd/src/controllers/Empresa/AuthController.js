@@ -6,11 +6,12 @@ import validarDadosEmpresa from '../../validators/EmpresaValidator.js'
 
 export const loginEmpresa = async (req, res) => {
   const { email, senha } = req.body;
-    console.log(req.body)
+    
     if (!email || !senha) {
     return res.status(400).json({ error: "Email e senha são obrigatórios" });
   }
   try {
+
     const { error, data } = await empresas.LoginEmpresa(email, senha);
 
     if (error || !data) {

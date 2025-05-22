@@ -1,4 +1,5 @@
 import supabase from '../config/SupaBase.js';
+import bcrypt from 'bcrypt';
 
 export const inserirEmpresa = async ({
   nome,
@@ -53,8 +54,12 @@ export async function LoginEmpresa(email, senha) {
     .from('empresas')
     .select('*')
     .eq('email', email)
-    .eq('senha', senha);
 
+ 
+    const senhaCorreta = await bcrypt.compare(senha, data[0].senha);
+    if (!senhaCorreta) {
+      return { error: 'Senha incorreta', data: null };
+    }
   if (error) {
     throw new Error(`Erro ao fazer login: ${error.message}`);
   }
