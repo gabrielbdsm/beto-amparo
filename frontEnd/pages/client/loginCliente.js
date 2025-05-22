@@ -27,31 +27,29 @@ export default function LoginPage() {
     setErros([]);
     
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/login`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify(formData),
       });
       
-      const data = await response.json();
+      const data = await res.json();
       
-      if (response.ok) {
-        // Salva o token JWT (se sua API retornar um)
-        if (data.token) {
-          localStorage.setItem('token', data.token);
-        }
-        
-        // Redireciona para a página inicial ou dashboard
-        router.push('/');
-      } else {
-        setErros(data.erros || [data.error || 'E-mail ou senha incorretos']);
+      
+      if (!res.ok) {
+        const mensagem = data?.error || data?.mensagem || 'Erro desconhecido.';
+        setErrors({ geral: mensagem });
+        return;
       }
-    } catch (error) {
-      setErros(['Erro na comunicação com o servidor']);
-    } finally {
-      setIsSubmitting(false);
+
+      alert('Login realizado com sucesso!');
+      window.location.href = 'home';
+    } catch (err) {
+      console.error(err);
+      setErrors({ geral: 'Erro ao fazer login. Tente novamente mais tarde.' });
     }
   };
 

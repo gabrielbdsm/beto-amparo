@@ -9,8 +9,9 @@ export default function ClienteHome() {
   const router = useRouter();
   const { site } = router.query 
 
-  const [empresaId, setEmpresaId] = useState(null);
-  const [nomeEmpresa, setNomeEmpresa] = useState("Carregando...");
+  const [lojaId, setLojaId] = useState(null);
+  const [nomeFantasia, setNomeFantasia] = useState("Carregando...");
+
   const [produtos, setProdutos] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   
@@ -41,7 +42,7 @@ export default function ClienteHome() {
   
     async function fetchEmpresa() {
       try {
-        const url = `${process.env.NEXT_PUBLIC_EMPRESA_API}/empresa/slug/${site}`;
+        const url = `${process.env.NEXT_PUBLIC_EMPRESA_API}/loja/slug/${site}`;
         const response = await fetch(url);
   
         if (!response.ok) {
@@ -82,7 +83,7 @@ export default function ClienteHome() {
 
     async function fetchProdutos() {
       try {
-        const url = `${process.env.NEXT_PUBLIC_EMPRESA_API}/produtos/empresa/${empresaId}`;
+        const url = `${process.env.NEXT_PUBLIC_EMPRESA_API}/produtos/loja/${lojaId}`;
         const response = await fetch(url);
         
         if (!response.ok) console.error("Erro na resposta da API:", response.statusText);

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { createClient } from '@supabase/supabase-js';
-
+import Image from 'next/image';
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.NEXT_PUBLIC_SUPABASE_KEY
@@ -128,11 +128,19 @@ const PersonalizacaoLoja = () => {
             {/* FORMULÁRIO */}
             <div className="w-full sm:max-w-xl">
               <div className="mb-6">
-                <img
-                  src="logo.png"
-                  alt="Logo da Marca"
-                  className="h-12 mb-2 object-contain"
-                />
+               <div className=" h-12 mb-1 object-contain"> 
+                        
+                           <Image
+               
+                           src="/logo.png"
+                           width={70}
+                           height={50}
+                           alt="Logo da Marca"
+                           />
+                           </div>
+                 
+
+                
                 <h1 className="text-2xl sm:text-3xl font-semibold text-[#3681B6]">
                   Personalizar Loja
                 </h1>

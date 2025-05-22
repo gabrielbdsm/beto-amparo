@@ -34,7 +34,7 @@ export function middleware(req) {
     decoded = token ? parseJwt(token) : null;
 
     if (!decoded || decoded.tipo !== 'cliente') {
-      url.pathname = '/loginCliente';
+      url.pathname = '/login';
       return NextResponse.redirect(url);
     }
   }
