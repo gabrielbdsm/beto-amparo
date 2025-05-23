@@ -39,6 +39,7 @@ export default function Pedidos() {
     async function fetchPedidos() {
       try {
         const res = await fetch(`http://localhost:4000/empresa/${slug}/pedidos`);
+        console.log(res)
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
         const data = await res.json();
         setPedidos(data);

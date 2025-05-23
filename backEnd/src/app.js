@@ -5,7 +5,7 @@ import produtosRoutes from './routes/produtosRoutes.js';
 import clienteRoutes from './routes/clienteRoutes.js';
 import carrinhoRoutes from './routes/carrinhoRoutes.js';
 import lojaRoutes from './routes/lojaRoutes.js';
-
+import pedidoRoutes from './routes/pedidoRoutes.js';
 import cors from 'cors';
 import multer from 'multer';
 import path from 'path';
@@ -74,7 +74,7 @@ app.post('/upload', (req, res) => {
 app.use(empresaRoutes);
 app.use(produtosRoutes);
 app.use(clienteRoutes);
-
+app.use(pedidoRoutes);
 app.use(carrinhoRoutes);
 app.use(lojaRoutes);
 

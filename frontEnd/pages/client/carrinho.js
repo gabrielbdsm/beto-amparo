@@ -35,6 +35,7 @@ export default function CarrinhoCliente({ empresaId }) {
     async function fetchCarrinho() {
       try {
 
+        console.log(`${process.env.NEXT_PUBLIC_EMPRESA_API}/carrinho`);
         const response = await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/carrinho`);
         if (!response.ok) throw new Error("Erro ao buscar carrinho");
 

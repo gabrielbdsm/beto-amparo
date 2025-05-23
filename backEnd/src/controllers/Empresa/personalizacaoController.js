@@ -72,6 +72,7 @@ export const verificarSlug = async (req, res) => {
 
 export async function getLojaBySlug(req, res) {
   const { slug } = req.params;
+  
 
   try {
     const { data: loja, error: erroLoja } = await supabase
@@ -79,10 +80,10 @@ export async function getLojaBySlug(req, res) {
       .select('*')
       .eq('slug_loja', slug)
       .single();
-
-    if (erroLoja || !loja) {
-      return res.status(404).json({ erro: 'Loja não encontrada' });
-    }
+      if (erroLoja || !loja) {
+        return res.status(404).json({ erro: 'Loja não encontrada' });
+      }
+      
 
     return res.status(200).json(loja);
 

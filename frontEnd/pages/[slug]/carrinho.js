@@ -20,7 +20,7 @@ export default function CarrinhoCliente({ empresaId }) {
     // Buscar a corPrimaria da loja
     async function fetchLoja() {
       try {
-        const url = `http://localhost:4000/api/loja/slug/${slug}`;
+        const url = `http://localhost:4000/loja/slug/${slug}`;
         const response = await fetch(url);
         if (!response.ok) throw new Error("Erro ao buscar loja");
         const data = await response.json();
@@ -66,7 +66,7 @@ export default function CarrinhoCliente({ empresaId }) {
       setSubtotal(novoSubtotal);
 
       // Remover item no backend
-      const response = await fetch(`http://localhost:4000/api/carrinho/${id}`, { method: 'DELETE' });
+      const response = await fetch(`http://localhost:4000/carrinho/${id}`, { method: 'DELETE' });
       if (!response.ok) throw new Error("Erro ao remover item do carrinho");
 
     } catch (error) {
