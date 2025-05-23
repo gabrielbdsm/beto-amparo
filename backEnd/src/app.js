@@ -75,8 +75,8 @@ app.use(empresaRoutes);
 app.use(produtosRoutes);
 app.use(clienteRoutes);
 app.use(pedidoRoutes);
-app.use(carrinhoRoutes);
-app.use(lojaRoutes);
+app.use('/loja', carrinhoRoutes);
+app.use(lojaRoutes);//essa linha fica SEMPRE depois de carrinho. Não remova!!! Dallyla aqui
 
 app.get('/', (req, res) => {
   res.send('API do Beto Amparo está no ar!');
