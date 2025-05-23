@@ -23,7 +23,7 @@ export default function LoginEmpresa() {
       });
 
       const data = await res.json();
-      console.log(data);
+      
 
       if (!res.ok) {
         const mensagem = data?.error || data?.mensagem || 'Erro desconhecido.';
