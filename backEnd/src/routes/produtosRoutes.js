@@ -3,7 +3,7 @@ import * as produto from '../controllers/produto/ProdutoController.js';
 import multer from 'multer';
 import path from 'path';
 import { listarProdutosPorLoja } from "../controllers/produto/ProdutoController.js";
-import {routePrivate}  from '../middleware/sessionEmpresa.js';
+import {routePrivate}  from '../middleware/protectRoutes.js';
 const router = express.Router();
 
 
