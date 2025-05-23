@@ -71,35 +71,40 @@ export default function Produto() {
   if (!produto) return <div className="p-4 text-center">Carregando...</div>;
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-start ">
-      <div className="w-full max-w-md min-h-lvh flex flex-col justify-between bg-white rounded-xl shadow-lg  ">
-        <div className="felx  justify-between pt-6 px-6 ">
+    <div className="min-h-screen bg-gray-50 flex flex-col justify-center items-center px-4 py-6">
+      <div className="w-full max-w-5xl bg-white rounded-2xl shadow-xl flex flex-col md:flex-row overflow-hidden">
+  
+        {/* Coluna: Produto e Observação */}
+        <div className="flex-1 p-6 space-y-6">
           <ExibirProduto produto={produto} />
-        
-          <div className="mt-2">
+  
           <QuantidadeControl
-          produto={produto}
+            produto={produto}
             quantidade={quantidade}
             setQuantidade={setQuantidade}
           />
-          </div>
-        
-          
+  
+          <Obersevacao produto={produto} />
         </div>
-
-        <Adicionais
-          adicionais={adicionais}
-          selecionados={selecionados}
-          toggleAdicional={toggleAdicional}
-          
-        />
-        <div className="pt-3">
-        <Obersevacao produto={produto} />
-        
-        <Carrinho subtotal={subtotal} handleAddToCart={handleAddToCart} />
+  
+        {/* Coluna: Adicionais e Carrinho */}
+        <div className="flex-1 bg-gray-100 p-6 space-y-6 border-t md:border-t-0 md:border-l border-gray-200">
+          <Adicionais
+            adicionais={adicionais}
+            selecionados={selecionados}
+            toggleAdicional={toggleAdicional}
+          />
+  
+          <Carrinho subtotal={subtotal} handleAddToCart={handleAddToCart} />
+        </div>
+      </div>
+  
+      {/* Navbar (sempre visível no final da tela) */}
+      <div className="w-full max-w-5xl mt-6">
         <NavBar />
-        </div>
       </div>
     </div>
   );
+  
+  
 }

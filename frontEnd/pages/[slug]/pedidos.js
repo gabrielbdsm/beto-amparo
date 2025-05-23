@@ -24,7 +24,7 @@ export default function Pedidos() {
     // Buscar informações da loja para obter a corPrimaria
     async function fetchLoja() {
       try {
-        const url = `http://localhost:4000/api/loja/slug/${slug}`;
+        const url = `http://localhost:4000/loja/slug/${slug}`;
         const response = await fetch(url);
         if (!response.ok) throw new Error("Erro ao buscar loja");
         const data = await response.json();
@@ -39,6 +39,7 @@ export default function Pedidos() {
     async function fetchPedidos() {
       try {
         const res = await fetch(`http://localhost:4000/empresa/${slug}/pedidos`);
+        console.log(res)
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
         const data = await res.json();
         setPedidos(data);

@@ -13,6 +13,42 @@ const nextConfig = {
         source: '/produto/:id', // URL personalizada
         destination: '/client/produto', // Arquivo de destino
       },
+      {
+        source: '/carrinho', 
+        destination: '/client/carrinho', 
+      },
+      {
+        source: '/loja/:site' ,
+        destination: '/client/ClienteHome', 
+      },
+      {
+        source: '/cadastro', 
+        destination: '/client/cadastrar_cliente', 
+      },
+      {
+        source: '/login', 
+        destination: '/client/loginCliente', 
+      },
+
+
+
+      {
+        source: '/empresa/personalizar', 
+        destination: '/empresa/personalizacao-loja', 
+      },
+      {
+        source: '/loginEmpresa', 
+        destination: '/empresa/LoginEmpresa', 
+      },
+      {
+        source: '/cadastroEmpresa', 
+        destination: '/empresa/CadastroEmpresa', 
+      },
+      {
+        source: '/empresa/adicionarProduto', 
+        destination: '/empresa/AdicionarProduto', 
+      },
+      
     ];
   },
 };

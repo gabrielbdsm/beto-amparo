@@ -3,10 +3,15 @@ import Image from "next/image";
 import Link from "next/link";
 import NavBar from "@/components/NavBar";
 import ProdutoCard from "@/components/ProdutoCard";
+import { useRouter } from 'next/router';
 
-export default function ClienteHome({ site }) {
+export default function ClienteHome() {
+  const router = useRouter();
+  const { site } = router.query 
+
   const [lojaId, setLojaId] = useState(null);
   const [nomeFantasia, setNomeFantasia] = useState("Carregando...");
+
   const [produtos, setProdutos] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   
@@ -32,13 +37,31 @@ export default function ClienteHome({ site }) {
   const [corPrimaria, setCorPrimaria] = useState("#3B82F6"); // Valor padrão
 
   useEffect(() => {
+    
     if (!site) return;
-
-    async function fetchLoja() {
+  
+    async function fetchEmpresa() {
       try {
-        const url = `http://localhost:4000/api/loja/slug/${site}`;
+        const url = `${process.env.NEXT_PUBLIC_EMPRESA_API}/loja/slug/${site}`;
         const response = await fetch(url);
-        if (!response.ok) throw new Error("Erro ao buscar loja");
+  
+        if (!response.ok) {
+          // Tenta obter corpo do erro
+          let errorMessage = `Erro HTTP ${response.status}: ${response.statusText}`;
+          try {
+            const errorData = await response.json();
+            if (errorData.message) {
+              errorMessage += ` - ${errorData.message}`;
+            }
+          } catch (jsonError) {
+            // Não conseguiu parsear o JSON do erro
+          }
+  
+          console.error("Erro na resposta da API:", errorMessage);
+          setNomeEmpresa("Erro ao carregar");
+          return;
+        }
+  
         const data = await response.json();
         console.log("Dados da loja da API:", data); // Depuração
         setLojaId(data.id);
@@ -46,27 +69,28 @@ export default function ClienteHome({ site }) {
         setFotoLoja(data.foto_loja || null);
         setCorPrimaria(data.cor_primaria || "#3B82F6"); // Atualiza com a cor da API
       } catch (error) {
-        console.error("Erro ao buscar loja:", error);
-        setNomeFantasia("Erro ao carregar");
-        setCorPrimaria("#3B82F6"); // Fallback em caso de erro
+        console.error("Erro na requisição ao buscar empresa:", error.message || error);
+        setNomeEmpresa("Erro ao carregar");
       }
     }
-
-    fetchLoja();
+  
+    fetchEmpresa();
   }, [site]);
-
+  
+ 
   useEffect(() => {
     if (!lojaId) return;
 
     async function fetchProdutos() {
       try {
-        const url = `http://localhost:4000/produtos/loja/${lojaId}`;
+        const url = `${process.env.NEXT_PUBLIC_EMPRESA_API}/produtos/loja/${lojaId}`;
         const response = await fetch(url);
-        if (!response.ok) throw new Error("Erro ao buscar produtos");
+        
+        if (!response.ok) console.error("Erro na resposta da API:", response.statusText);
         const data = await response.json();
         setProdutos(data);
       } catch (error) {
-        console.error("Erro ao buscar produtos:", error);
+        console.error("Erro ao buscar produtos:", error.message);
       }
     }
 
@@ -91,12 +115,13 @@ export default function ClienteHome({ site }) {
     }
   };
 
-  const getImagemProduto = (caminhoImagem) => {
-    if (!caminhoImagem) return '/fallback.jpg';
-    if (caminhoImagem.startsWith('http')) return caminhoImagem;
-    const baseUrl = 'https://cufzswdymzevdeonjgan.supabase.co/storage/v1/object/public';
-    return `${baseUrl}/imagens/clientes/${encodeURIComponent(caminhoImagem)}`;
-  };
+const getImagemProduto = (caminhoImagem) => {
+  if (!caminhoImagem) return null;
+  if (caminhoImagem.startsWith('http')) return caminhoImagem;
+  const baseUrl = 'https://cufzswdymzevdeonjgan.supabase.co/storage/v1/object/public';
+  return `${baseUrl}/imagens/clientes/${encodeURIComponent(caminhoImagem)}`;
+};
+  
 
   useEffect(() => {
     if (!showSearch) {
@@ -122,8 +147,8 @@ export default function ClienteHome({ site }) {
     try {
       const qtd = quantidades[produto.id] || 1;
       console.log(`Adicionando ${qtd}x ${produto.nome} ao carrinho...`);
-
-      const response = await fetch('http://localhost:4000/api/carrinho', {
+  
+      const response = await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/carrinho`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -163,7 +188,7 @@ export default function ClienteHome({ site }) {
           <div className="flex items-center gap-2">
             <div className="w-10 h-10 rounded-full overflow-hidden">
               <Image
-                src={fotoLoja ? getImagemProduto(fotoLoja) : "/fallback.jpg"}
+                src={fotoLoja ? getImagemProduto(fotoLoja) : "/fallback.png"}
                 alt="Logo da Loja"
                 width={50}
                 height={50}
@@ -274,4 +299,5 @@ export default function ClienteHome({ site }) {
       <NavBar site={site} corPrimaria={corPrimaria} />
     </div>
   );
-}
+  
+} 

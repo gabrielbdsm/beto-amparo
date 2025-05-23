@@ -1,9 +1,9 @@
 import express from 'express';
-import * as produto from '../controllers/ProdutoController.js';
+import * as produto from '../controllers/produto/ProdutoController.js';
 import multer from 'multer';
 import path from 'path';
-import { listarProdutosPorLoja } from "../controllers/ProdutoController.js";
-
+import { listarProdutosPorLoja } from "../controllers/produto/ProdutoController.js";
+import {routePrivate}  from '../middleware/protectRoutes.js';
 const router = express.Router();
 
 
@@ -26,9 +26,9 @@ const upload = multer({
 // Rotas
 router.get('/produtos', produto.getProdutos);
 router.get('/produto/:id', produto.listarProdutoPorId);
-router.post('/addProduto', upload.single('imagem'), produto.criarProduto); 
-router.put('/produto/:id', produto.atualizarProduto);
-router.delete('/produto/:id', produto.deletarProduto);
+router.post('/addProduto',routePrivate, upload.single('imagem'), produto.criarProduto); 
+router.put('/produto/:id',routePrivate, produto.atualizarProduto);
+router.delete('/produto/:id',routePrivate, produto.deletarProduto);
+router.get("/produtos/empresa/:empresaId", listarProdutosPorLoja);
 router.get("/produtos/loja/:lojaId", listarProdutosPorLoja);
-
 export default router;

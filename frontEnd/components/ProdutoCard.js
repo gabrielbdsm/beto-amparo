@@ -12,7 +12,7 @@ export default function ProdutoCard({
   const [imageSrc, setImageSrc] = useState(getImagemProduto(produto.image));
 
   const handleCardClick = () => {
-    window.location.href = `http://localhost:3000/produto/${produto.id}`;
+    window.location.href = `/produto/${produto.id}`;
   };
 
   const handleAdicionarClick = (event) => {
@@ -36,7 +36,7 @@ export default function ProdutoCard({
                 fill
                 className="rounded-lg object-cover"
                 unoptimized
-                onError={() => setImageSrc("/fallback.png")}
+                onError={() => setImageSrc("/frontEnd/public/fallback.png")}
             />
         </div>
 

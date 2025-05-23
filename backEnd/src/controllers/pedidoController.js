@@ -3,6 +3,8 @@ import { buscarPedidosPorSlug } from '../models/PedidoModel.js';
 export async function listarPedidosPorEmpresa(req, res) {
   const { slug } = req.params;
 
+  console.log('Slug recebido:', slug);
+
   try {
     const pedidos = await buscarPedidosPorSlug(slug);
 

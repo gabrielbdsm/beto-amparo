@@ -1,58 +1,22 @@
-export default (sequelize, DataTypes) => {
-  const Loja = sequelize.define(
-    'Loja',
-    {
-      id: {
-        type: DataTypes.INTEGER,
-        primaryKey: true,
-        autoIncrement: true,
-      },
-      nome_fantasia: {
-        type: DataTypes.STRING,
-        allowNull: false,
-      },
-      cor_primaria: {
-        type: DataTypes.STRING,
-        allowNull: false,
-      },
-      cor_secundaria: {
-        type: DataTypes.STRING,
-        allowNull: false,
-      },
-      slogan: {
-        type: DataTypes.STRING,
-        allowNull: true,
-      },
-      foto_loja: {
-        type: DataTypes.STRING,
-        allowNull: true,
-      },
-      slug_loja: {
-        type: DataTypes.STRING,
-        allowNull: false,
-        unique: true,
-        validate: {
-          is: /^[a-z0-9-]+$/ // Apenas letras minúsculas, números e hífens
-        }
-      },
-    },
-    {
-      tableName: 'loja',
-      timestamps: true,
-    }
-  );
+import supabase from '../config/SupaBase.js';
 
-  return Loja;
-};
 
-export async function buscarLojaBySlug(slug) {
+export async function buscarIdLoja(id_empresa) {
   const { data, error } = await supabase
     .from('loja')
-    .select('*')
-    .eq('slug_loja', slug)
-    .single();
+    .select('id')
+    .eq('id_empresa', id_empresa)
+   
 
-  if (error) throw error;
-  return data;
-};
+  if (error) {
+    throw new Error(`Erro ao fazer login: ${error.message}`);
+  }
 
+  if (!data || data.length === 0) {
+    return { error: 'Loja não encontrada' };
+  }
+
+  
+
+  return { data: data[0] };
+}

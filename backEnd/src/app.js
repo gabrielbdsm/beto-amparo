@@ -2,40 +2,44 @@ import express from 'express';
 import dotenv from 'dotenv';
 import empresaRoutes from './routes/empresaRoutes.js';
 import produtosRoutes from './routes/produtosRoutes.js';
-import logoutRoutes from './routes/logoutRoutes.js';
 import clienteRoutes from './routes/clienteRoutes.js';
-import loginRoutes from './routes/loginRoutes.js';
-import pedidoRoutes from './routes/pedidoRoutes.js';
+import carrinhoRoutes from './routes/carrinhoRoutes.js';
 import lojaRoutes from './routes/lojaRoutes.js';
+import pedidoRoutes from './routes/pedidoRoutes.js';
 import cors from 'cors';
 import multer from 'multer';
 import path from 'path';
-//import { fileURLToPath } from 'url';
-import carrinhoRoutes from './routes/carrinhoRoutes.js';
-import { createClient } from '@supabase/supabase-js';
+import cookieParser from "cookie-parser";
+
 
 dotenv.config();
 const app = express();
 
-// Configuração do CORS
-//app.use(cors('localhost:3000'));
+app.use(cors({
+  origin: true, 
+  credentials: true
+}));
 
-const corsOptions = {
-  origin: 'http://localhost:3000',
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-};
-// Supabase client
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
+app.use(cookieParser());
 
-// CORS
-app.use(cors({ origin: 'http://localhost:3000' }));
 app.use(express.json());
 
-// Configuração do Multer
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    
+    cb(null, 'uploads/');
+  },
+  filename: (req, file, cb) => {
+
+    cb(null, Date.now() + path.extname(file.originalname)); 
+  }
+});
+
+
 const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 50 * 1024 * 1024 },
+  storage: storage,
+  limits: { fileSize: 50 * 1024 * 1024 }, 
   fileFilter: (req, file, cb) => {
     const filetypes = /jpeg|jpg|png|gif/;
     const isValid = filetypes.test(path.extname(file.originalname).toLowerCase()) && filetypes.test(file.mimetype);
@@ -44,7 +48,7 @@ const upload = multer({
   },
 }).single('image');
 
-// Rota de upload para o bucket 'loja'
+
 app.post('/upload', (req, res) => {
   upload(req, res, async (err) => {
     if (err) return res.status(400).json({ message: err.message });
@@ -66,27 +70,18 @@ app.post('/upload', (req, res) => {
   });
 });
 
-/*
-app.use(express.json());
-app.use(cors(corsOptions));
-*/
 
-app.use('/api', empresaRoutes);
+app.use(empresaRoutes);
 app.use(produtosRoutes);
-app.use(logoutRoutes);
-app.use(carrinhoRoutes);
-app.use('/api', lojaRoutes);
-app.use('/api', clienteRoutes);
-app.use('/api', loginRoutes);
+app.use(clienteRoutes);
 app.use(pedidoRoutes);
+app.use('/loja', carrinhoRoutes);
+app.use(lojaRoutes);//essa linha fica SEMPRE depois de carrinho. Não remova!!! Dallyla aqui
 
-
-// Rota padrão
 app.get('/', (req, res) => {
   res.send('API do Beto Amparo está no ar!');
 });
 
-// Iniciar servidor
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
   console.log(`Clique no link para abrir: http://localhost:${PORT}`);

@@ -1,11 +1,11 @@
 import supabase from '../config/SupaBase.js';
 
-export const inserirProduto = async ({ id_empresa, nome, categoria, image, preco, descricao, tamanhos, controlarEstoque, quantidade }) => {
+export const inserirProduto = async ({ id_loja, nome, categoria, image, preco, descricao, tamanhos, controlarEstoque, quantidade }) => {
   try {
     const {  error } = await supabase
       .from('produto')
       .insert([{
-        id_empresa,
+        id_loja,
         nome,
         image,
         categoria,
@@ -93,9 +93,45 @@ export const listarProdutoPorId = async (id) => {
   }
 };
 
+export const listarProdutosPorEmpresa = async (id_empresa) => {
+  const data_loja =  await supabase
+    .from("loja")
+    .select("*")
+    .eq("id_empresa",id_empresa); 
+
+  if (data_loja.error) {
+    return { data: null, error: data_loja.error.message };
+  }
+  const id_loja = data_loja.data[0].id;
+  if (!id_loja) {
+    return { data: null, error: "Loja não encontrada" };
+  }
+
+  const { data, error } =  await supabase
+    .from("produto")
+    .select("*")
+    .eq("id_loja",id_loja); 
+    try {
+
+    if (error) {
+      return { data: null, error: error.message };
+    }
+
+    return { data };
+  } catch (err) {
+    return { data: null, error: err.message };
+  }
+};
+
 export const listarProdutosPorLoja = async (lojaId) => {
-  return await supabase
+  
+  
+  const data = await supabase
     .from("produto")
     .select("*")
     .eq("id_loja", lojaId); 
+
+    return data;
 };
+
+

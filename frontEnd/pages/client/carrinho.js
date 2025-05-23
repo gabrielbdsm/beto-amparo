@@ -20,7 +20,7 @@ export default function CarrinhoCliente({ empresaId }) {
     // Buscar a corPrimaria da loja
     async function fetchLoja() {
       try {
-        const url = `http://localhost:4000/loja/slug/${slug}`;
+        const url = `${process.env.NEXT_PUBLIC_EMPRESA_API}/loja/slug/${slug}`;
         const response = await fetch(url);
         if (!response.ok) throw new Error("Erro ao buscar loja");
         const data = await response.json();
@@ -34,8 +34,12 @@ export default function CarrinhoCliente({ empresaId }) {
     // Buscar itens do carrinho
     async function fetchCarrinho() {
       try {
-        const response = await fetch(`http://localhost:4000/${slug}/carrinho`); 
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`); 
+
+        console.log(`${process.env.NEXT_PUBLIC_EMPRESA_API}/carrinho`);
+        const response = await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/carrinho`);
+        if (!response.ok) throw new Error("Erro ao buscar carrinho");
+
+   
 
         const data = await response.json();
         setItensCarrinho(data);
@@ -66,7 +70,7 @@ export default function CarrinhoCliente({ empresaId }) {
       setSubtotal(novoSubtotal);
 
       // Remover item no backend
-      const response = await fetch(`http://localhost:4000/carrinho/${id}`, { method: 'DELETE' });
+      const response = await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/carrinho/${id}`, { method: 'DELETE' });
       if (!response.ok) throw new Error("Erro ao remover item do carrinho");
 
     } catch (error) {
@@ -76,7 +80,7 @@ export default function CarrinhoCliente({ empresaId }) {
 
   const getImagemProduto = (caminhoImagem) => {
     console.log("Imagem recebida:", caminhoImagem); // OK agora
-    if (!caminhoImagem) return '/fallback.jpg';
+    if (!caminhoImagem) return '/frontEnd/public/fallback.png';
     if (caminhoImagem.startsWith('http')) return caminhoImagem;
     const baseUrl = 'https://cufzswdymzevdeonjgan.supabase.co/storage/v1/object/public';
     return `${baseUrl}/imagens/clientes/${encodeURIComponent(caminhoImagem)}`;
