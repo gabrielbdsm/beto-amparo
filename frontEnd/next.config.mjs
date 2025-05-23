@@ -14,7 +14,7 @@ const nextConfig = {
         destination: '/client/produto', // Arquivo de destino
       },
       {
-        source: '/carrinho', 
+        source: '/:slug/carrinho',
         destination: '/client/carrinho', 
       },
       {

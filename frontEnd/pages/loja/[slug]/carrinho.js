@@ -1,3 +1,4 @@
+// C:\Users\Dallyla\OneDrive\Área de Trabalho\beto-amparo\beto-amparo\frontEnd\pages\client\carrinho.js
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { FaTrashAlt } from "react-icons/fa"; 
@@ -20,7 +21,7 @@ export default function CarrinhoCliente({ empresaId }) {
     // Buscar a corPrimaria da loja
     async function fetchLoja() {
       try {
-        const url = `http://localhost:4000/loja/slug/${slug}`;
+        const url = `${process.env.NEXT_PUBLIC_EMPRESA_API}/loja/slug/${slug}`;
         const response = await fetch(url);
         if (!response.ok) throw new Error("Erro ao buscar loja");
         const data = await response.json();
@@ -34,12 +35,13 @@ export default function CarrinhoCliente({ empresaId }) {
     // Buscar itens do carrinho
     async function fetchCarrinho() {
       try {
-        const response = await fetch(`http://localhost:4000/${slug}/carrinho`); 
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`); 
-
+        // CORREÇÃO AQUI: Adicione '/loja/' ao caminho da API
+        const url = `${process.env.NEXT_PUBLIC_EMPRESA_API}/loja/${slug}/carrinho`; 
+        console.log("Buscando carrinho em:", url); 
+        const response = await fetch(url);
+        if (!response.ok) throw new Error("Erro ao buscar carrinho");
         const data = await response.json();
         setItensCarrinho(data);
-
         const total = data.reduce((acc, item) => acc + item.quantidade * item.produto.preco, 0);
         setSubtotal(total);
       } catch (error) {
@@ -49,34 +51,32 @@ export default function CarrinhoCliente({ empresaId }) {
 
     fetchLoja();
     fetchCarrinho();
-  },  [slug]);
+  }, [slug]);
 
   const handleFinalizarCompra = () => {
     alert("Compra finalizada!"); // Substituir por lógica real
   };
 
-  const handleRemoverItem = async (id) => {
+  async function handleRemoverItem(id) {
     try {
-      // Remover item localmente
       const novosItens = itensCarrinho.filter((item) => item.id !== id);
       setItensCarrinho(novosItens);
-
-      // Atualizar o subtotal após remoção
       const novoSubtotal = novosItens.reduce((acc, item) => acc + item.quantidade * item.produto.preco, 0);
       setSubtotal(novoSubtotal);
-
-      // Remover item no backend
-      const response = await fetch(`http://localhost:4000/carrinho/${id}`, { method: 'DELETE' });
+ 
+      // CORREÇÃO AQUI: Adicione '/loja/' ao caminho da API
+      const url = `${process.env.NEXT_PUBLIC_EMPRESA_API}/loja/${slug}/carrinho/${id}`;
+      console.log("Removendo item em:", url);
+      const response = await fetch(url, { method: 'DELETE' });
       if (!response.ok) throw new Error("Erro ao remover item do carrinho");
-
     } catch (error) {
       console.error("Erro ao remover item:", error);
     }
-  };
+  }
 
   const getImagemProduto = (caminhoImagem) => {
-    console.log("Imagem recebida:", caminhoImagem); // OK agora
-    if (!caminhoImagem) return '/fallback.jpg';
+    console.log("Imagem recebida:", caminhoImagem); 
+    if (!caminhoImagem) return '/fallback.png';
     if (caminhoImagem.startsWith('http')) return caminhoImagem;
     const baseUrl = 'https://cufzswdymzevdeonjgan.supabase.co/storage/v1/object/public';
     return `${baseUrl}/imagens/clientes/${encodeURIComponent(caminhoImagem)}`;
@@ -105,6 +105,7 @@ export default function CarrinhoCliente({ empresaId }) {
                     width={80}
                     height={80}
                     className="rounded object-cover"
+                    unoptimized
                   />
                   <div className="ml-4 flex-1">
                     <p className="text-lg font-medium text-black">{item.produto.nome}</p>
@@ -115,7 +116,7 @@ export default function CarrinhoCliente({ empresaId }) {
                     R$ {(item.produto.preco * item.quantidade).toFixed(2)}
                   </div>
                   <button
-                    onClick={() => handleRemoverItem(item.id)} // Passando o id do item
+                    onClick={() => handleRemoverItem(item.id)}
                     className="ml-4 text-red-500 hover:text-red-700"
                   >
                     <FaTrashAlt size={20} />

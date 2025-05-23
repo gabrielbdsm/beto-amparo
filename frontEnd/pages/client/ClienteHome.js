@@ -148,7 +148,11 @@ const getImagemProduto = (caminhoImagem) => {
       const qtd = quantidades[produto.id] || 1;
       console.log(`Adicionando ${qtd}x ${produto.nome} ao carrinho...`);
   
-      const response = await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/carrinho`, {
+      // CORREÇÃO AQUI: Adicione '/loja/' ao caminho da API
+      const url = `${process.env.NEXT_PUBLIC_EMPRESA_API}/loja/${site}/carrinho`; 
+      console.log("Adicionando produto em:", url); // Para depuração
+  
+      const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -156,16 +160,17 @@ const getImagemProduto = (caminhoImagem) => {
         body: JSON.stringify({
           produtoId: produto.id,
           quantidade: qtd,
+          lojaId: lojaId // Mantenha isso se o backend espera
         }),
       });
-
+  
       const data = await response.json();
-
+  
       if (!response.ok) {
         console.error('Erro no backend:', data.erro);
         throw new Error(data.erro || 'Erro desconhecido');
       }
-
+  
       console.log(`Produto ${produto.nome} adicionado com sucesso.`);
       setMensagem('Produto adicionado ao carrinho!');
       setCorMensagem('text-green-600');
@@ -174,7 +179,7 @@ const getImagemProduto = (caminhoImagem) => {
       setMensagem(`Erro: ${err.message}`);
       setCorMensagem('text-red-600');
     }
-
+  
     setTimeout(() => setMensagem(''), 3000);
   };
 

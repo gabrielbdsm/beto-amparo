@@ -34,16 +34,12 @@ export default function CarrinhoCliente({ empresaId }) {
     // Buscar itens do carrinho
     async function fetchCarrinho() {
       try {
-
-        console.log(`${process.env.NEXT_PUBLIC_EMPRESA_API}/carrinho`);
-        const response = await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/carrinho`);
+        const url = `${process.env.NEXT_PUBLIC_EMPRESA_API}/${slug}/carrinho`;
+        console.log("Buscando carrinho em:", url);
+        const response = await fetch(url);
         if (!response.ok) throw new Error("Erro ao buscar carrinho");
-
-   
-
         const data = await response.json();
         setItensCarrinho(data);
-
         const total = data.reduce((acc, item) => acc + item.quantidade * item.produto.preco, 0);
         setSubtotal(total);
       } catch (error) {

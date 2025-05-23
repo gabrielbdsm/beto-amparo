@@ -1,10 +1,11 @@
+// frontEnd/components/ProdutoCard.js
 import { useState } from "react";
 import Image from "next/image";
 
 export default function ProdutoCard({
   produto,
   quantidade = 1,
-  onAdicionar,
+  onAdicionar, // Essa prop recebe a função handleAdicionar do ClienteHome
   onAumentar,
   onDiminuir,
   getImagemProduto,
@@ -17,7 +18,7 @@ export default function ProdutoCard({
 
   const handleAdicionarClick = (event) => {
     event.stopPropagation(); 
-    onAdicionar();
+    onAdicionar(produto); 
   };
 
   const handleQuantidadeClick = (event) => {
