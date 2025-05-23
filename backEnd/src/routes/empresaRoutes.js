@@ -1,5 +1,5 @@
 import express from 'express';
-import {routePrivate}  from '../middleware/sessionEmpresa.js';
+
 import * as empresaController from '../controllers/Empresa/EmpresaController.js';
 import* as AuthController from '../controllers/Empresa/AuthController.js';
 const router = express.Router();
