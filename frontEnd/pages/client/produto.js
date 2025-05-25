@@ -137,7 +137,7 @@ export default function Produto() {
       <div className="w-full max-w-5xl bg-white rounded-2xl shadow-xl flex flex-col md:flex-row overflow-hidden">
   
         {/* Coluna: Produto e Observação */}
-        <div className="flex-1 p-6 space-y-6">
+        <div className="flex-1 p-6 space-y-6 text-gray-800">
           <ExibirProduto produto={produto} />
   
           <QuantidadeControl
@@ -150,7 +150,7 @@ export default function Produto() {
         </div>
   
         {/* Coluna: Adicionais e Carrinho */}
-        <div className="flex-1 bg-gray-100 p-6 space-y-6 border-t md:border-t-0 md:border-l border-gray-200">
+        <div className="flex-1 bg-gray-100 text-gray-800 p-6 space-y-6 border-t md:border-t-0 md:border-l border-gray-200">
           <Adicionais
             adicionais={adicionais}
             selecionados={selecionados}
