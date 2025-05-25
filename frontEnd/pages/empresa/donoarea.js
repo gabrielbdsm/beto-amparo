@@ -2,7 +2,11 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import Image from 'next/image';
 
+import FloatingNotificationsTop from '@/components/notification';
+
+
 export default function OwnerDono() {
+
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [donoData, setDonoData] = useState(null);
@@ -77,6 +81,7 @@ export default function OwnerDono() {
   }
 
   return (
+    
     <div className="min-h-screen flex flex-col md:flex-row">
       {/* Mobile header */}
       <div className="bg-[#3681B6] text-white flex items-center justify-start p-4 md:hidden gap-4">
@@ -140,6 +145,10 @@ export default function OwnerDono() {
 
       {/* Main content */}
       <main className="flex-1 bg-gray-100 p-6 md:p-8">
+
+      <FloatingNotificationsTop/>
+        
+
         <h1 className="text-2xl font-bold text-gray-600 mb-6 text-center">
           Bem-vindo(a) de volta, {donoData.empresa.nome}!
         </h1>

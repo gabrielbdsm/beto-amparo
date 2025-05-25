@@ -294,6 +294,8 @@ const getImagemProduto = (caminhoImagem) => {
                 onDiminuir={() => handleDiminuir(produto.id)}
                 onAdicionar={() => handleAdicionar(produto)}
                 getImagemProduto={getImagemProduto}
+                slug={site}
+
               />
             ))}
           </div>
