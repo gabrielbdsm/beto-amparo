@@ -3,208 +3,185 @@ import Image from "next/image";
 import { FiEdit, FiTrash2, FiChevronDown, FiChevronUp } from "react-icons/fi";
 import { useRouter } from "next/router";
 import NavBar from "@/components/NavBar";
-//import { useAuth } from "@/context/AuthContext";
-
-const getClienteId = () => {
-    // Recupera do localStorage ou cookies
-    const userData = localStorage.getItem('user');
-    return userData ? JSON.parse(userData).id : null;
-};
 
 export default function FinalizarPedido({ empresaId }) {
-    const [itensCarrinho, setItensCarrinho] = useState([]);
-    const [corPrimaria, setCorPrimaria] = useState("#3B82F6");
-    const [loading, setLoading] = useState(false);
-    const [activeSection, setActiveSection] = useState(null);
-    const [metodoEntrega, setMetodoEntrega] = useState("retirada");
-    const [metodoPagamento, setMetodoPagamento] = useState("pix");
-    const [cupom, setCupom] = useState("");
-    const [aceiteTermos, setAceiteTermos] = useState(false);
-    const [frete, setFrete] = useState(0);
-    const [desconto, setDesconto] = useState(0);
+  // Estados (mantidos da versão anterior)
+  const [itensCarrinho, setItensCarrinho] = useState([]);
+  const [corPrimaria, setCorPrimaria] = useState("#3B82F6");
+  const [loading, setLoading] = useState(false);
+  const [activeSection, setActiveSection] = useState(null);
+  const [metodoEntrega, setMetodoEntrega] = useState("retirada");
+  const [metodoPagamento, setMetodoPagamento] = useState("pix");
+  const [cupom, setCupom] = useState("");
+  const [aceiteTermos, setAceiteTermos] = useState(false);
+  const [frete, setFrete] = useState(0);
+  const [desconto, setDesconto] = useState(0);
+  const [dadosCliente, setDadosCliente] = useState({
+    nome: "",
+    email: "",
+    telefone: "",
+    endereco: {}
+  });
+  const [enderecoEntrega, setEnderecoEntrega] = useState({});
+  const [cartoes, setCartoes] = useState([]);
 
-    const router = useRouter();
-    const { slug } = router.query;
-    //const { user } = useAuth();
+  const router = useRouter();
+  const { slug } = router.query;
 
-    // Dados mockados - substituir por chamadas reais
-    /*const [enderecos, setEnderecos] = useState([
-        {
-            id: 1,
-            principal: true,
-            nome: "Casa",
-            destinatario: "João Silva",
-            cep: "01234-567",
-            rua: "Rua Exemplo",
-            numero: "123",
-            complemento: "Apto 101",
-            bairro: "Centro",
-            cidade: "São Paulo",
-            estado: "SP",
-            telefone: "(11) 99999-9999"
-        }
-    ]);*/
+  // Função toggleSection para controlar as seções expansíveis
+  const toggleSection = (section) => {
+    setActiveSection(activeSection === section ? null : section);
+  };
 
-    const [dadosCliente, setDadosCliente] = useState({
-        email: "",
-        telefone: "",
-        endereco: {}
-    });
+  // Função para obter o ID do cliente
+  const getClienteId = () => {
+    const userData = localStorage.getItem('user');
+    return userData ? JSON.parse(userData).id : null;
+  };
 
-    const [enderecoEntrega, setEnderecoEntrega] = useState({});
-    //const [loading, setLoading] = useState(false);
+  // useEffect para carregar dados (mantido da versão anterior)
+  useEffect(() => {
+    if (!slug) return;
 
-    const [cartoes, setCartoes] = useState([]);
+    const fetchData = async () => {
+      try {
+        // Buscar dados da loja
+        const lojaResponse = await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/loja/slug/${slug}`);
+        const lojaData = await lojaResponse.json();
+        setCorPrimaria(lojaData.cor_primaria || "#3B82F6");
 
-    useEffect(() => {
-        const fetchCliente = async () => {
-            if (!user?.id) return;
+        // Buscar carrinho
+        const carrinhoResponse = await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/${slug}/carrinho`);
+        const carrinhoData = await carrinhoResponse.json();
+        setItensCarrinho(carrinhoData);
 
-            try {
-                const response = await fetch(
-                    `${process.env.NEXT_PUBLIC_EMPRESA_API}/clientes/${user.id}`,
-                    {
-                        headers: {
-                            'Authorization': `Bearer ${localStorage.getItem('token_cliente')}`
-                        }
-                    }
-                );
-
-                if (!response.ok) throw new Error("Erro ao buscar cliente");
-
-                const data = await response.json();
-
-                setDadosCliente({
-                    email: data.email,
-                    telefone: data.telefone,
-                    endereco: data.endereco || {}
-                });
-
-                // Pré-preencher endereço de entrega com dados do cliente
-                if (data.endereco) {
-                    setEnderecoEntrega(prev => ({
-                        ...prev,
-                        ...data.endereco
-                    }));
-                }
-
-            } catch (error) {
-                console.error("Erro ao buscar dados do cliente:", error);
+        // Buscar dados do cliente
+        const clienteId = getClienteId();
+        if (clienteId) {
+          const clienteResponse = await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/clientes/${clienteId}`, {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token_cliente')}`
             }
-        };
+          });
+          const clienteData = await clienteResponse.json();
+          
+          setDadosCliente({
+            nome: clienteData.nome,
+            email: clienteData.email,
+            telefone: clienteData.telefone,
+            endereco: clienteData.endereco || {}
+          });
 
-        fetchCliente();
-    }, [user?.id]);
-
-    const subtotal = itensCarrinho.reduce((acc, item) => acc + (item.produto.preco * item.quantidade), 0);
-    const total = subtotal + frete - desconto;
-
-    const toggleSection = (section) => {
-        setActiveSection(activeSection === section ? null : section);
-    };
-
-    const handleRemoverItem = async (id) => {
-        try {
-            await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/carrinho/${id}`, { method: 'DELETE' });
-            setItensCarrinho(itensCarrinho.filter(item => item.id !== id));
-        } catch (error) {
-            console.error("Erro ao remover item:", error);
+          if (clienteData.endereco) {
+            setEnderecoEntrega(prev => ({
+              ...prev,
+              ...clienteData.endereco
+            }));
+          }
         }
+      } catch (error) {
+        console.error("Erro ao carregar dados:", error);
+      }
     };
 
-    const handleAplicarCupom = () => {
-        // Lógica para aplicar cupom
-        if (cupom === "DESCONTO10") {
-            setDesconto(subtotal * 0.1); // 10% de desconto
-        }
-    };
+    fetchData();
+  }, [slug]);
 
-    const camposEnderecoObrigatorios = ['rua', 'numero', 'bairro', 'cep'];
-    const enderecoValido = camposEnderecoObrigatorios.every(
-        campo => enderecoEntrega[campo] || dadosCliente.endereco?.[campo]
-    );
+  // Cálculos
+  const subtotal = itensCarrinho.reduce((acc, item) => acc + (item.produto.preco * item.quantidade), 0);
+  const total = subtotal + frete - desconto;
 
-    if (!enderecoValido) {
-        alert("Preencha todos os campos obrigatórios do endereço!");
-        return;
+  // Funções de manipulação (mantidas da versão anterior)
+  const handleRemoverItem = async (id) => {
+    try {
+      await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/carrinho/${id}`, { 
+        method: 'DELETE' 
+      });
+      setItensCarrinho(itensCarrinho.filter(item => item.id !== id));
+    } catch (error) {
+      console.error("Erro ao remover item:", error);
+    }
+  };
+
+  const handleAplicarCupom = () => {
+    if (cupom === "DESCONTO10") {
+      setDesconto(subtotal * 0.1);
+    }
+  };
+
+  const handleFinalizarPedido = async () => {
+    if (!aceiteTermos) {
+      alert("Você precisa aceitar os termos e condições!");
+      return;
     }
 
-    const handleFinalizarPedido = async () => {
-        // 1. Validação dos termos
-        if (!aceiteTermos) {
-            alert("Você precisa aceitar os termos e condições!");
-            return;
+    const camposObrigatorios = ['rua', 'numero', 'bairro', 'cep', 'cidade', 'estado'];
+    const enderecoCompleto = camposObrigatorios.every(
+      campo => enderecoEntrega[campo]
+    );
+
+    if (!enderecoCompleto) {
+      alert("Preencha todos os campos obrigatórios do endereço!");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const clienteId = getClienteId();
+      if (!clienteId) throw new Error("Usuário não autenticado");
+
+      const payload = {
+        metodoPagamento,
+        enderecoEntrega: {
+          destinatario: dadosCliente.nome || "Cliente",
+          cep: enderecoEntrega.cep,
+          rua: enderecoEntrega.rua,
+          numero: enderecoEntrega.numero,
+          complemento: enderecoEntrega.complemento || "",
+          bairro: enderecoEntrega.bairro,
+          cidade: enderecoEntrega.cidade,
+          estado: enderecoEntrega.estado,
+          telefone: dadosCliente.telefone || ""
+        },
+        cupom: cupom.trim() !== "" ? cupom : null,
+        clienteId
+      };
+
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_EMPRESA_API}/loja/${slug}/pedidos/finalizar`, 
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token_cliente')}`
+          },
+          body: JSON.stringify(payload)
         }
+      );
 
-        // 2. Validação do endereço
-        const camposObrigatoriosEndereco = ['rua', 'numero', 'bairro', 'cep', 'cidade', 'estado'];
-        const enderecoCompleto = camposObrigatoriosEndereco.every(
-            campo => enderecoEntrega[campo]
-        );
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.erro || "Erro ao finalizar pedido");
+      }
 
-        if (!enderecoCompleto) {
-            alert("Preencha todos os campos obrigatórios do endereço de entrega!");
-            return;
-        }
+      const { pedido } = await response.json();
+      router.push(`/${slug}/pedido/confirmacao/${pedido.id}`);
 
-        setLoading(true);
-
-        try {
-            // 3. Preparar payload
-            const payload = {
-                metodoPagamento,
-                enderecoEntrega: {
-                    destinatario: dadosCliente.nome || "Cliente",
-                    cep: enderecoEntrega.cep,
-                    rua: enderecoEntrega.rua,
-                    numero: enderecoEntrega.numero,
-                    complemento: enderecoEntrega.complemento || "",
-                    bairro: enderecoEntrega.bairro,
-                    cidade: enderecoEntrega.cidade,
-                    estado: enderecoEntrega.estado,
-                    telefone: dadosCliente.telefone || ""
-                },
-                cupom: cupomAtivo ? cupom : null,
-                clienteId: getClienteId() || 'ID_TEMPORARIO' // Usando user do contexto de autenticação
-            };
-
-            // 4. Chamar API
-            const response = await fetch(
-                `${process.env.NEXT_PUBLIC_EMPRESA_API}/loja/${slug}/pedidos/finalizar`,
-                {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('token_cliente')}`
-                    },
-                    body: JSON.stringify(payload)
-                }
-            );
-
-            // 5. Tratar resposta
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.erro || "Erro ao finalizar pedido");
-            }
-
-            // 6. Redirecionar para confirmação
-            const { pedido } = await response.json();
-            router.push(`/${slug}/pedido/confirmacao/${pedido.id}`);
-
-        } catch (error) {
-            console.error("Erro ao finalizar pedido:", error);
-
-            // Tratamento específico para erros de estoque
-            if (error.message.includes('Estoque insuficiente')) {
-                alert(error.message);
-                router.reload(); // Recarrega a página para atualizar os itens
-            } else {
-                alert(error.message || "Erro ao processar pedido. Tente novamente.");
-            }
-        } finally {
-            setLoading(false);
-        }
-    };
+    } catch (error) {
+      console.error("Erro ao finalizar pedido:", error);
+      alert(error.message.includes('Estoque insuficiente') 
+        ? error.message 
+        : "Erro ao processar pedido. Tente novamente."
+      );
+      
+      if (error.message.includes('Estoque insuficiente')) {
+        router.reload();
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
     return (
         <div className="flex flex-col min-h-screen bg-gray-50 text-black">
