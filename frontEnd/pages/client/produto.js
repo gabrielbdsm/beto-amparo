@@ -104,7 +104,7 @@ export default function Produto() {
 
     const handleAddToCart = async () => {
       try {
-        console.log(quantidade, lojaId);
+        console.log(quantidade, produto.id, produto.id_loja, site);
         const response = await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/loja/${site}/carrinho`, {
           method: 'POST',
           headers: {
@@ -113,13 +113,16 @@ export default function Produto() {
           body: JSON.stringify({
             produtoId: produto.id,
             quantidade,
-            lojaId: produto.loja_id ,
+            lojaId: produto.id_loja ,
           }),
         });
     
         const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.mensagem || 'Erro ao adicionar ao carrinho');
+        }
         console.log('Resposta do servidor:', data);
-        alert(data.message);
+        alert(data.mensagem || 'Produto adicionado ao carrinho com sucesso!');
       } catch (error) {
         console.error('Erro ao adicionar ao carrinho:', error);
         alert('Erro ao adicionar ao carrinho');
