@@ -1,21 +1,24 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { FaTrashAlt } from "react-icons/fa"; 
-import NavBar from "@/components/NavBar"; 
-import { useRouter } from "next/router"; 
+import { FaTrashAlt } from "react-icons/fa";
+import NavBar from "@/components/NavBar";
+import { useRouter } from "next/router";
+import { useParams } from "react-router-dom";
+
+const { slug } = useParams();
 
 export default function CarrinhoCliente({ empresaId }) {
   const [itensCarrinho, setItensCarrinho] = useState([]);
   const [subtotal, setSubtotal] = useState(0);
   const [corPrimaria, setCorPrimaria] = useState("#3B82F6"); // Valor padrão
 
-  const router = useRouter(); 
-  const { slug } = router.query; 
+  const router = useRouter();
+  const { slug } = router.query;
 
   useEffect(() => {
     console.log("slug atual:", slug);
 
-    if (!slug) return; 
+    if (!slug) return;
 
     // Buscar a corPrimaria da loja
     async function fetchLoja() {
@@ -49,7 +52,7 @@ export default function CarrinhoCliente({ empresaId }) {
 
     fetchLoja();
     fetchCarrinho();
-  },  [slug]);
+  }, [slug]);
 
   const handleFinalizarCompra = () => {
     alert("Compra finalizada!"); // Substituir por lógica real

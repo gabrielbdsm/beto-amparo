@@ -1,23 +1,24 @@
 // C:\Users\Dallyla\OneDrive\Área de Trabalho\beto-amparo\beto-amparo\frontEnd\pages\client\carrinho.js
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { FaTrashAlt } from "react-icons/fa"; 
-import NavBar from "@/components/NavBar"; 
-import { useRouter } from "next/router"; 
+import { FaTrashAlt } from "react-icons/fa";
+import NavBar from "@/components/NavBar";
+import { useRouter } from "next/router";
+import FinalizarPedido from "./finalizarPedido";
 
 export default function CarrinhoCliente({ empresaId }) {
   const [itensCarrinho, setItensCarrinho] = useState([]);
   const [subtotal, setSubtotal] = useState(0);
   const [corPrimaria, setCorPrimaria] = useState("#3B82F6"); // Valor padrão
 
-  const router = useRouter(); 
-  const { slug } = router.query; 
-  
+  const router = useRouter();
+  const { slug } = router.query;
+
   const [lojaId, setLojaId] = useState(null);
   useEffect(() => {
     console.log("slug atual:", slug);
 
-    if (!slug) return; 
+    if (!slug) return;
 
     // Buscar a corPrimaria da loja
     async function fetchLoja() {
@@ -38,8 +39,8 @@ export default function CarrinhoCliente({ empresaId }) {
     async function fetchCarrinho() {
       try {
         // CORREÇÃO AQUI: Adicione '/loja/' ao caminho da API
-        const url = `${process.env.NEXT_PUBLIC_EMPRESA_API}/loja/${slug}/carrinho`; 
-        console.log("Buscando carrinho em:", url); 
+        const url = `${process.env.NEXT_PUBLIC_EMPRESA_API}/loja/${slug}/carrinho`;
+        console.log("Buscando carrinho em:", url);
         const response = await fetch(url);
         if (!response.ok) throw new Error("Erro ao buscar carrinho");
         const data = await response.json();
@@ -57,77 +58,77 @@ export default function CarrinhoCliente({ empresaId }) {
   }, [slug]);
 
   const handleFinalizarCompra = async () => {
-  try {
-    const id_cliente = 30; // você pode tornar isso dinâmico se necessário
-    const dataPedido = new Date().toLocaleDateString('pt-BR'); // DD/MM/AAAA
-    const status = 0; // Pedido ainda não confirmado
-    const observacoes = ""; // vazio por padrão
+    try {
+      const id_cliente = 30; // você pode tornar isso dinâmico se necessário
+      const dataPedido = new Date().toLocaleDateString('pt-BR'); // DD/MM/AAAA
+      const status = 0; // Pedido ainda não confirmado
+      const observacoes = ""; // vazio por padrão
 
-    const pedidoUrl = `${process.env.NEXT_PUBLIC_EMPRESA_API}/loja/${slug}/pedidos`;
-    
-    // 1. Criar pedido
-    const pedidoResponse = await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/loja/${slug}/pedidos`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        id_cliente,
-        id_loja: lojaId,
-        data: dataPedido,
-        total: subtotal,
-        status,
-        observacoes
-      }),
-    });
+      const pedidoUrl = `${process.env.NEXT_PUBLIC_EMPRESA_API}/loja/${slug}/pedidos`;
 
-    const pedidoCriado = await pedidoResponse.json();
-    if (!pedidoResponse.ok) {
-      console.error("Erro ao criar pedido:", pedidoCriado);
-      throw new Error(pedidoCriado.erro || "Erro ao criar pedido");
-    }
-
-    const pedidoId = pedidoCriado.id;
-
-    // 2. Adicionar itens ao pedido
-    for (const item of itensCarrinho) {
-      const itemResponse = await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/loja/${slug}/pedidos/item`, {
+      // 1. Criar pedido
+      const pedidoResponse = await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/loja/${slug}/pedidos`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          pedido_id: pedidoId,
-          produto_id: item.produto.id,
-          quantidade: item.quantidade,
-          preco_unitario: item.produto.preco,
+          id_cliente,
+          id_loja: lojaId,
+          data: dataPedido,
+          total: subtotal,
+          status,
+          observacoes
         }),
       });
 
-      const itemData = await itemResponse.json();
-      if (!itemResponse.ok) {
-        console.error("Erro ao adicionar item ao pedido:", itemData);
-        throw new Error(itemData.erro || "Erro ao adicionar item ao pedido");
+      const pedidoCriado = await pedidoResponse.json();
+      if (!pedidoResponse.ok) {
+        console.error("Erro ao criar pedido:", pedidoCriado);
+        throw new Error(pedidoCriado.erro || "Erro ao criar pedido");
       }
-    }
-    
-    // 3. Limpar carrinho
-    for (const item of itensCarrinho) {
-      const deleteResponse = await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/loja/${slug}/carrinho/${item.id}`, {
-       method: 'DELETE',
-      });
 
-      if (!deleteResponse.ok) {
-        console.error("Resposta do backend:", responseData);
-        console.error(`Erro ao remover item ${item.id} do carrinho`);
+      const pedidoId = pedidoCriado.id;
+
+      // 2. Adicionar itens ao pedido
+      for (const item of itensCarrinho) {
+        const itemResponse = await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/loja/${slug}/pedidos/item`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            pedido_id: pedidoId,
+            produto_id: item.produto.id,
+            quantidade: item.quantidade,
+            preco_unitario: item.produto.preco,
+          }),
+        });
+
+        const itemData = await itemResponse.json();
+        if (!itemResponse.ok) {
+          console.error("Erro ao adicionar item ao pedido:", itemData);
+          throw new Error(itemData.erro || "Erro ao adicionar item ao pedido");
+        }
       }
-    }
 
-    alert("Compra finalizada com sucesso!");
-    setItensCarrinho([]);
-    setSubtotal(0);
-    router.push(`/loja/${slug}`);
-  } catch (error) {
-    console.error("Erro ao finalizar compra:", error);
-    alert("Ocorreu um erro ao finalizar a compra.");
-  }
-};
+      // 4. Limpar carrinho
+      for (const item of itensCarrinho) {
+        const deleteResponse = await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/loja/${slug}/carrinho/${item.id}`, {
+          method: 'DELETE',
+        });
+
+        if (!deleteResponse.ok) {
+          console.error("Resposta do backend:", responseData);
+          console.error(`Erro ao remover item ${item.id} do carrinho`);
+        }
+      }
+
+      alert("Compra finalizada com sucesso!");
+      setItensCarrinho([]);
+      setSubtotal(0);
+      router.push(`/loja/${slug}`);
+    } catch (error) {
+      console.error("Erro ao finalizar compra:", error);
+      alert("Ocorreu um erro ao finalizar a compra.");
+    }
+  };
 
 
   async function handleRemoverItem(id) {
@@ -136,7 +137,7 @@ export default function CarrinhoCliente({ empresaId }) {
       setItensCarrinho(novosItens);
       const novoSubtotal = novosItens.reduce((acc, item) => acc + item.quantidade * item.produto.preco, 0);
       setSubtotal(novoSubtotal);
-      
+
       // CORREÇÃO AQUI: Adicione '/loja/' ao caminho da API
       const url = `${process.env.NEXT_PUBLIC_EMPRESA_API}/loja/${slug}/carrinho/${id}`;
       console.log("Removendo item em:", url);
@@ -148,7 +149,7 @@ export default function CarrinhoCliente({ empresaId }) {
   }
 
   const getImagemProduto = (caminhoImagem) => {
-    console.log("Imagem recebida:", caminhoImagem); 
+    console.log("Imagem recebida:", caminhoImagem);
     if (!caminhoImagem) return '/fallback.png';
     if (caminhoImagem.startsWith('http')) return caminhoImagem;
     const baseUrl = 'https://cufzswdymzevdeonjgan.supabase.co/storage/v1/object/public';

@@ -98,6 +98,19 @@ export default function Pedidos() {
                 <p><strong>Total:</strong> R$ {(Number(pedido.total) || 0).toFixed(2)}</p>
                 <p><strong>Status:</strong> {traduzirStatus(pedido.status)}</p>
                 <p><strong>Observações:</strong> {pedido.observacoes || 'Nenhuma'}</p>
+
+                {/* Botão Finalizar */}
+                <div className="mt-4 flex justify-center">
+                  <button
+                    className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded"
+                    style={{ backgroundColor: corPrimaria }}
+                    onClick={() => router.push(`/loja/${slug}/finalizarPedido`)}
+                  >
+                    Finalizar
+                  </button>
+                </div>
+
+
               </div>
             ))}
           </div>

@@ -7,6 +7,6 @@ const router = express.Router();
 router.get('/loja/:slug/pedidos', listarPedidosPorEmpresa);
 router.post('/loja/:slug/pedidos', criarPedido); 
 router.post('/loja/:slug/pedidos/item', adicionarItemPedido);
-router.put('/loja/:slug/pedidos/finalizar', finalizarPedido); //put pra indicar atualizacao
+router.put('/loja/:slug/pedidos/finalizar', finalizarPedido);
 
 export default router;
