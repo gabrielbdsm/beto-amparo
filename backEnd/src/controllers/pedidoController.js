@@ -119,3 +119,125 @@ export async function adicionarItemPedido(req, res) {
   }
 }
 
+export async function finalizarPedido(req, res) {
+  const { slug } = req.params;
+  const { metodoPagamento, enderecoEntrega, cupom, clienteId } = req.body; // clienteId vem do front (via sessão/token)
+
+  try {
+    // 1. Buscar ID da loja pelo slug
+    const { data: loja, error: lojaError } = await supabase
+      .from('lojas')
+      .select('id')
+      .eq('slug_loja', slug)
+      .single();
+
+    if (lojaError || !loja) {
+      return res.status(404).json({ erro: 'Loja não encontrada' });
+    }
+
+    // 2. Buscar pedido aberto do cliente
+    const { data: pedido, error: pedidoError } = await supabase
+      .from('pedidos')
+      .select(`
+        *,
+        pedido_itens(
+          *,
+          produtos(
+            nome,
+            estoque,
+            preco
+          )
+        )
+      `)
+      .eq('id_loja', loja.id)
+      .eq('id_cliente', clienteId)
+      .eq('status', 'aberto') // Status do carrinho não finalizado
+      .single();
+
+    if (pedidoError || !pedido) {
+      return res.status(404).json({ erro: 'Nenhum pedido aberto encontrado' });
+    }
+
+    // 3. Validar itens e estoque
+    for (const item of pedido.pedido_itens) {
+      if (item.produtos.estoque < item.quantidade) {
+        return res.status(400).json({
+          erro: `Estoque insuficiente para ${item.produtos.nome} (disponível: ${item.produtos.estoque})`
+        });
+      }
+    }
+
+    // 4. Aplicar cupom (se existir)
+    let valorDesconto = 0;
+    if (cupom) {
+      const { data: cupomValido, error: cupomError } = await supabase
+        .from('cupons')
+        .select('valor_desconto, tipo')
+        .eq('codigo', cupom)
+        .eq('id_loja', loja.id)
+        .eq('ativo', true)
+        .single();
+
+      if (!cupomError && cupomValido) {
+        valorDesconto = cupomValido.tipo === 'porcentagem' 
+          ? pedido.total * (cupomValido.valor_desconto / 100)
+          : cupomValido.valor_desconto;
+      }
+    }
+
+    // 5. Calcular total final
+    const totalFinal = pedido.total - valorDesconto;
+
+    // 6. Atualizar pedido (status e dados)
+    const { data: pedidoAtualizado, error: updateError } = await supabase
+      .from('pedidos')
+      .update({
+        status: 'finalizado',
+        metodo_pagamento: metodoPagamento,
+        endereco_entrega: enderecoEntrega,
+        desconto: valorDesconto,
+        total: totalFinal,
+        data_finalizacao: new Date().toISOString()
+      })
+      .eq('id', pedido.id)
+      .select()
+      .single();
+
+    if (updateError) {
+      throw new Error('Falha ao atualizar pedido');
+    }
+
+    // 7. Atualizar estoque
+    for (const item of pedido.pedido_itens) {
+      await supabase
+        .from('produtos')
+        .update({ estoque: supabase.rpc('decrement', { val: item.quantidade }) })
+        .eq('id', item.produto_id);
+    }
+
+    // 8. Retornar resposta
+    res.status(200).json({
+      sucesso: true,
+      pedido: pedidoAtualizado,
+      mensagem: 'Pedido finalizado com sucesso'
+    });
+
+  } catch (error) {
+    console.error('Erro ao finalizar pedido:', error);
+    res.status(500).json({
+      erro: error.message || 'Erro interno ao finalizar pedido'
+    });
+  }
+}
+// Função auxiliar para validar cupons (exemplo)
+async function validarCupom(codigo, lojaId) {
+  const { data: cupom, error } = await supabase
+    .from('cupons')
+    .select('*')
+    .eq('codigo', codigo)
+    .eq('id_loja', lojaId)
+    .single();
+
+  if (error || !cupom || !cupom.ativo) return 0;
+  return cupom.valor_desconto; // Pode ser valor fixo ou percentual
+}
