@@ -26,5 +26,27 @@ export async function buscarPedidosPorSlug(slug) {
 
   if (pedidosError) throw pedidosError;
 
-  return pedidos;
+   const pedidosComProdutos = await Promise.all(pedidos.map(async (pedido) => {
+    const { data: itens, error: itensError } = await supabase
+      .from('pedido_itens')
+      .select(`
+        quantidade,
+        preco_unitario,
+        produto:produto_id ( id, nome )
+      `)
+      .eq('pedido_id', pedido.id);
+
+    if (itensError) throw itensError;
+
+    return {
+      ...pedido,
+      produtos: itens.map((item) => ({
+        nome: item.produto.nome,
+        quantidade: item.quantidade,
+        preco_unitario: item.preco_unitario,
+      }))
+    };
+  }));
+
+  return pedidosComProdutos;
 }

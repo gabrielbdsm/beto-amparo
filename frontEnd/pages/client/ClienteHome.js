@@ -145,13 +145,14 @@ const getImagemProduto = (caminhoImagem) => {
 
   const handleAdicionar = async (produto) => {
     try {
+      const id_cliente = 30; 
       const qtd = quantidades[produto.id] || 1;
       console.log(`Adicionando ${qtd}x ${produto.nome} ao carrinho...`);
   
       // CORREÇÃO AQUI: Adicione '/loja/' ao caminho da API
       const url = `${process.env.NEXT_PUBLIC_EMPRESA_API}/loja/${site}/carrinho`; 
       console.log("Adicionando produto em:", url); // Para depuração
-  
+      
       const response = await fetch(url, {
         method: 'POST',
         headers: {
@@ -160,6 +161,7 @@ const getImagemProduto = (caminhoImagem) => {
         body: JSON.stringify({
           produtoId: produto.id,
           quantidade: qtd,
+          id_cliente, 
           lojaId: lojaId // Mantenha isso se o backend espera
         }),
       });
