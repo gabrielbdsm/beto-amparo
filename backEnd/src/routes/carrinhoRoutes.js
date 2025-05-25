@@ -46,22 +46,23 @@ async function getLojaIdBySlug(req, res, next) {
 
 // Rota para adicionar produto ao carrinho
 router.post('/:slug/carrinho', getLojaIdBySlug, async (req, res) => {
-    const { produtoId, quantidade } = req.body;
+    const { produtoId, quantidade, id_cliente } = req.body;
     const lojaId = req.lojaId; // Obtemos o lojaId do objeto req, que foi adicionado pelo middleware
    
 
-    if (!produtoId || !quantidade || !lojaId) {
-        return res.status(400).json({ erro: 'Produto ID, quantidade e ID da loja são obrigatórios.' });
+    if (!produtoId || !quantidade || !id_cliente || !lojaId) {
+        return res.status(400).json({ erro: 'Produto ID, quantidade, Cliente Id e ID da loja são obrigatórios.' });
     }
 
     try {
-        console.log(`Recebido para loja ${lojaId}: produtoId=${produtoId}, quantidade=${quantidade}`);
+        console.log(`Recebido para loja ${lojaId}: produtoId=${produtoId}, id_cliente=${id_cliente} quantidade=${quantidade}`);
 
         // Verificar se o produto já existe no carrinho para a MESMA LOJA
         const { data: existingItem, error: fetchError } = await supabase
             .from('carrinho')
             .select('*')
             .eq('produto_id', produtoId)
+            .eq ('id_cliente', id_cliente)
             .eq('loja_id', lojaId) // <--- FILTRANDO PELA NOVA COLUNA 'loja_id'
             .single();
 
@@ -85,6 +86,7 @@ router.post('/:slug/carrinho', getLojaIdBySlug, async (req, res) => {
                     {
                         produto_id: produtoId,
                         quantidade,
+                        id_cliente,
                         loja_id: lojaId // <--- SALVANDO O ID DA LOJA NA NOVA COLUNA
                     },
                 ]));
@@ -152,8 +154,9 @@ router.delete('/:slug/carrinho/:id', getLojaIdBySlug, async (req, res) => {
             .from('carrinho')
             .delete()
             .eq('id', id)
-            .eq('loja_id', lojaId); // <--- GARANTINDO QUE REMOVE APENAS DA LOJA CERTA
-
+            .eq('loja_id', lojaId) // <--- GARANTINDO QUE REMOVE APENAS DA LOJA CERTA
+            .select('*'); 
+            
         if (error) {
             console.error('Erro ao remover item do carrinho:', error);
             return res.status(500).json({ erro: 'Erro ao remover item do carrinho.' });
