@@ -4,22 +4,56 @@ import Image from "next/image";
 import { FaTrashAlt } from "react-icons/fa";
 import NavBar from "@/components/NavBar";
 import { useRouter } from "next/router";
-import FinalizarPedido from "./finalizarPedido";
+//import FinalizarPedido from "./finalizarPedido";
+import { useAuthCliente } from '../../hooks/useAuthCliente';
 
 export default function CarrinhoCliente({ empresaId }) {
-  const [itensCarrinho, setItensCarrinho] = useState([]);
-  const [subtotal, setSubtotal] = useState(0);
-  const [corPrimaria, setCorPrimaria] = useState("#3B82F6"); // Valor padrão
-
+  const { autenticado, cliente } = useAuthCliente();
   const router = useRouter();
   const { slug } = router.query;
 
+  const [itensCarrinho, setItensCarrinho] = useState([]);
+  const [subtotal, setSubtotal] = useState(0);
+  const [corPrimaria, setCorPrimaria] = useState("#3B82F6"); // Valor padrão
   const [lojaId, setLojaId] = useState(null);
+
   useEffect(() => {
-    console.log("slug atual:", slug);
+    if (!autenticado || !slug) return;
 
-    if (!slug) return;
+    console.log('Cliente logado:', cliente?.id, cliente?.nome);
 
+    const fetchData = async () => {
+      try {
+        setCarregando(true);
+
+        // Buscar dados da loja
+        const lojaResponse = await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/loja/slug/${slug}`);
+        if (!lojaResponse.ok) throw new Error("Erro ao buscar loja");
+        const lojaData = await lojaResponse.json();
+        setCorPrimaria(lojaData.cor_primaria || "#3B82F6");
+        setLojaId(lojaData.id);
+
+        // Buscar carrinho
+        const carrinhoResponse = await fetch(
+          `${process.env.NEXT_PUBLIC_EMPRESA_API}/loja/${slug}/carrinho`,
+          {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token_cliente')}`
+            }
+          }
+        );
+
+        if (!carrinhoResponse.ok) throw new Error("Erro ao buscar carrinho");
+        const carrinhoData = await carrinhoResponse.json();
+
+        setItensCarrinho(carrinhoData);
+        setSubtotal(carrinhoData.reduce((acc, item) => acc + item.quantidade * item.produto.preco, 0));
+      } catch (error) {
+        console.error("Erro ao carregar dados:", error);
+      } finally {
+        setCarregando(false);
+      }
+    };
     // Buscar a corPrimaria da loja
     async function fetchLoja() {
       try {
@@ -55,11 +89,50 @@ export default function CarrinhoCliente({ empresaId }) {
 
     fetchLoja();
     fetchCarrinho();
-  }, [slug]);
+  }, [slug, autenticado]);
+
+  if (!autenticado) {
+    return <div className="flex justify-center items-center h-screen">
+      <p>Redirecionando para login...</p>
+    </div>;
+  }
+
+  const getLocalStorageSafe = (key) => {
+    try {
+      const value = localStorage.getItem(key);
+      if (!value || value === "undefined" || value === "null") return null;
+      return JSON.parse(value);
+    } catch (e) {
+      console.error(`Erro ao ler ${key} do localStorage:`, e);
+      return null;
+    }
+  };
+
 
   const handleFinalizarCompra = async () => {
     try {
-      const id_cliente = 30; // você pode tornar isso dinâmico se necessário
+      // 1. Obtenção SEGURA dos dados do usuário (corrigindo o JSON.parse)
+      const getLocalStorageSafe = (key) => {
+        try {
+          const value = localStorage.getItem(key);
+          return value ? JSON.parse(value) : null;
+        } catch (e) {
+          console.error(`Erro ao ler ${key} do localStorage:`, e);
+          return null;
+        }
+      };
+
+      const user = getLocalStorageSafe("user") || {};
+      const token = localStorage.getItem('token_cliente');
+
+      // 2. Verificação completa de autenticação
+      if (!token || !user?.id) {
+        alert("Você precisa estar logado para finalizar a compra");
+        router.push(`/client/loginCliente?redirect=/loja/${slug}/carrinho`);
+        return;
+      }
+
+      const id_cliente = user.id;
       const dataPedido = new Date().toLocaleDateString('pt-BR'); // DD/MM/AAAA
       const status = 0; // Pedido ainda não confirmado
       const observacoes = ""; // vazio por padrão
@@ -69,7 +142,10 @@ export default function CarrinhoCliente({ empresaId }) {
       // 1. Criar pedido
       const pedidoResponse = await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/loja/${slug}/pedidos`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({
           id_cliente,
           id_loja: lojaId,
@@ -83,7 +159,8 @@ export default function CarrinhoCliente({ empresaId }) {
       const pedidoCriado = await pedidoResponse.json();
       if (!pedidoResponse.ok) {
         console.error("Erro ao criar pedido:", pedidoCriado);
-        throw new Error(pedidoCriado.erro || "Erro ao criar pedido");
+        //throw new Error(pedidoCriado.erro || "Erro ao criar pedido");
+        throw new Error(JSON.stringify(pedidoCriado));
       }
 
       const pedidoId = pedidoCriado.id;
@@ -92,7 +169,10 @@ export default function CarrinhoCliente({ empresaId }) {
       for (const item of itensCarrinho) {
         const itemResponse = await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/loja/${slug}/pedidos/item`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+             'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}` 
+            },
           body: JSON.stringify({
             pedido_id: pedidoId,
             produto_id: item.produto.id,
