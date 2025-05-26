@@ -120,14 +120,14 @@ export async function adicionarItemPedido(req, res) {
 }
 
 export async function obterPedidoPorId(req, res) {
-  const { id } = req.params;
+  const { pedidoId } = req.params;
 
   try {
     // Buscar o pedido pelo ID
     const { data: pedido, error: pedidoError } = await supabase
       .from('pedidos')
       .select('*')
-      .eq('id', id)
+      .eq('id', pedidoId)
       .single();
 
     if (pedidoError || !pedido) {
@@ -139,9 +139,9 @@ export async function obterPedidoPorId(req, res) {
       .from('pedido_itens')
       .select(`
         *,
-        produto:produto_id ( nome, imagem, descricao )
+        produto:produto_id ( nome, image, descricao, preco )
       `)
-      .eq('pedido_id', id);
+      .eq('pedido_id', pedidoId);
 
     if (itensError) {
       return res.status(500).json({ erro: 'Erro ao buscar itens do pedido' });

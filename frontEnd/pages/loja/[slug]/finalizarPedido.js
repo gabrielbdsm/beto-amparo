@@ -4,6 +4,13 @@ import { FiEdit, FiTrash2, FiChevronDown, FiChevronUp } from "react-icons/fi";
 import { useRouter } from "next/router";
 import NavBar from "@/components/NavBar";
 
+const getImagemProduto = (caminhoImagem) => {
+    if (!caminhoImagem) return null;
+    if (caminhoImagem.startsWith('http')) return caminhoImagem;
+    const baseUrl = 'https://cufzswdymzevdeonjgan.supabase.co/storage/v1/object/public';
+    return `${baseUrl}/imagens/clientes/${encodeURIComponent(caminhoImagem)}`;
+};
+
 export default function FinalizarPedido({ empresaId }) {
     const [itensCarrinho, setItensCarrinho] = useState([]);
     const [corPrimaria, setCorPrimaria] = useState("#3B82F6");
@@ -61,6 +68,7 @@ export default function FinalizarPedido({ empresaId }) {
 
                 const pedidoData = await pedidoResponse.json();
                 console.log("Pedido recebido:", pedidoData);
+                console.log("Itens do pedido:", pedidoData.itens);
 
                 // Verifique se existe uma lista de itens no pedido
                 if (pedidoData && pedidoData.itens) {
@@ -81,6 +89,8 @@ export default function FinalizarPedido({ empresaId }) {
                         telefone: clienteData.telefone
                     });
                 }
+
+
             } catch (error) {
                 console.error("Erro ao carregar dados:", error);
             }
