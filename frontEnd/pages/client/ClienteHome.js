@@ -14,8 +14,8 @@ export default function ClienteHome() {
 
   const [produtos, setProdutos] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
-  
-  // Função para remover acentos
+  const [bannerLoja, setBannerLoja] = useState(null);
+
   const removeAccents = (str) => {
     return str
       .normalize("NFD") // Decompõe caracteres acentuados (ex.: "á" vira "a" + acento)
@@ -35,6 +35,7 @@ export default function ClienteHome() {
   const [showSearch, setShowSearch] = useState(false);
   const [fotoLoja, setFotoLoja] = useState(null);
   const [corPrimaria, setCorPrimaria] = useState("#3B82F6"); // Valor padrão
+  const [corSecundaria, setCorSecundaria] = useState("#F3F4F6"); // Cor secundária padrão
 
   useEffect(() => {
     
@@ -68,6 +69,8 @@ export default function ClienteHome() {
         setNomeFantasia(data.nome_fantasia || "Sem nome fantasia");
         setFotoLoja(data.foto_loja || null);
         setCorPrimaria(data.cor_primaria || "#3B82F6"); // Atualiza com a cor da API
+        setCorSecundaria(data.cor_secundaria || "#F3F4F6"); // Atualiza com a cor secundária da API
+        setBannerLoja(data.banner || null);
       } catch (error) {
         console.error("Erro na requisição ao buscar empresa:", error.message || error);
         setNomeEmpresa("Erro ao carregar");
@@ -188,7 +191,7 @@ const getImagemProduto = (caminhoImagem) => {
   return (
     <div className="flex flex-col min-h-screen bg-gray-100">
       <header
-        className="text-white px-4 py-3 flex items-center justify-between shadow relative"
+        className="text-white px-4 py-3 flex items-center justify-between shadow relative z-20"
         style={{ backgroundColor: corPrimaria }}
       >
         {!showSearch && (
@@ -269,6 +272,56 @@ const getImagemProduto = (caminhoImagem) => {
           </div>
         )}
       </header>
+      {/* Banner personalizado ou imagem da loja */}
+      {bannerLoja ? (
+        <div className="w-full h-48 relative">
+          <Image
+            src={`${getImagemProduto(bannerLoja)}?v=${new Date().getTime()}`}
+            alt="Banner da loja"
+            fill
+            unoptimized
+            style={{ objectFit: 'cover' }}
+            className="rounded-none"
+          />
+        </div>
+      ) : (
+        <div
+          className="w-full h-48 flex items-center justify-between px-6 relative overflow-hidden"
+          style={{
+            background: `linear-gradient(to right, ${corSecundaria}, #1a202c)`,
+            backgroundImage: 'url("/bg-loja-padrao.svg")',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+          }}
+        >
+          <div className="text-white z-10">
+            <h2 className="text-2xl font-bold">Seja Bem-Vindo (a)!</h2>
+            <p className="text-sm mt-1">Explore nosso catálogo e faça seu pedido online</p>
+          </div>
+          <div className="h-full flex items-center z-10">
+            <Image
+              src="/carrinho-banner.svg"
+              alt="Carrinho"
+              width={200}
+              height={200}
+              className="object-contain"
+            />
+          </div>
+
+          {/* Overlay com textura sutil */}
+          <div className="absolute inset-0 opacity-10 pointer-events-none">
+            <Image
+              src="/bg-pattern.svg"
+              alt=""
+              fill
+              style={{ objectFit: 'cover' }}
+            />
+          </div>
+        </div>
+
+      )}
+
+
 
       <div className="bg-blue-50 border border-blue-200 rounded-md mx-4 my-4 mt-3 px-3 py-2 flex items-center gap-2 text-sm text-blue-800">
         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -284,7 +337,7 @@ const getImagemProduto = (caminhoImagem) => {
           </div>
         )}
         {produtosFiltrados.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-5 gap-x-6 gap-y-4">
             {produtosFiltrados.map((produto) => (
               <ProdutoCard
                 key={produto.id}
@@ -295,6 +348,7 @@ const getImagemProduto = (caminhoImagem) => {
                 onAdicionar={() => handleAdicionar(produto)}
                 getImagemProduto={getImagemProduto}
                 slug={site}
+                cor={corPrimaria}
 
               />
             ))}
