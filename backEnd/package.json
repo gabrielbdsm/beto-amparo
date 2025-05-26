@@ -7,6 +7,16 @@
   "scripts": {
     "dev": "nodemon src/app.js"
   },
+  "imports": { 
+    "#root/*": "./*",
+    "#src/*": "./src/*",
+    "#models/*": "./src/models/*",
+    "#controllers/*": "./src/controllers/*",
+    "#middleware/*": "./src/middleware/*",
+    "#validators/*": "./src/validators/*",
+    "#config/*": "./src/config/*",
+    "#routes/*": "./src/routes/*"
+  },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.4",
     "bcrypt": "^5.1.1",

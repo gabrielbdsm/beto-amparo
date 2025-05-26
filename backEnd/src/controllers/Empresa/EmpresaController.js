@@ -2,8 +2,6 @@ import { inserirEmpresa } from '../../models/EmpresaModel.js';
 import * as empresas from '../../models/EmpresaModel.js'
 import supabase from '../../config/SupaBase.js';
 
-
-
 export async function getEmpresaBySlug(req, res) {
   const slug = req.params.slug.toLowerCase(); 
 
@@ -35,3 +33,23 @@ export async function getEmpresaBySlug(req, res) {
     res.status(500).json({ erro: err.message });
   }
 }
+export const marcarPersonalizacaoCompleta = async (req, res) => {
+  // Assume que req.Id está disponível pelo middleware protectRoutes
+  const idEmpresa = req.Id;
+
+  if (!idEmpresa) {
+      return res.status(400).json({ mensagem: 'ID da empresa não fornecido.' });
+  }
+
+  try {
+      const { success, error } = await empresas.marcarPrimeiroLoginFeito(idEmpresa);
+      if (success) {
+          return res.status(200).json({ mensagem: 'Personalização marcada como completa.' });
+      } else {
+          return res.status(500).json({ mensagem: 'Erro ao marcar personalização.', erro: error });
+      }
+  } catch (err) {
+      console.error("Erro ao marcar personalização:", err);
+      return res.status(500).json({ mensagem: 'Erro interno do servidor.' });
+  }
+};

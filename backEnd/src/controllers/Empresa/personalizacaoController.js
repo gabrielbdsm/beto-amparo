@@ -1,9 +1,7 @@
-import { createClient } from '@supabase/supabase-js';
+import supabase from '../../config/SupaBase.js';
 import dotenv from 'dotenv';
-
+import * as lojaModel from '../../models/Loja.js';
 dotenv.config();
-
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
 
 export const criarPersonalizacao = async (req, res) => {
   try {
@@ -70,25 +68,41 @@ export const verificarSlug = async (req, res) => {
   }
 };
 
-export async function getLojaBySlug(req, res) {
-  const { slug } = req.params;
-  
-
+export const getLojaBySlug = async (req, res) => {
   try {
-    const { data: loja, error: erroLoja } = await supabase
-      .from('loja')
-      .select('*')
-      .eq('slug_loja', slug)
-      .single();
-      if (erroLoja || !loja) {
-        return res.status(404).json({ erro: 'Loja não encontrada' });
-      }
-      
+      const { slug } = req.params;
+      console.log('Controller: getLojaBySlug recebido para slug:', slug); // <-- NOVO LOG
 
-    return res.status(200).json(loja);
+      if (!slug) {
+          return res.status(400).json({ mensagem: 'Slug da loja não fornecido.' });
+      }
+
+      // Chama a função do modelo para buscar a loja completa
+      const { data: loja, error: modelError } = await lojaModel.buscarLojaPorSlugCompleta(slug);
+      console.log('Controller: Resultado de buscarLojaPorSlugCompleta:', loja, modelError); // <-- NOVO LOG
+
+      if (modelError) {
+          // Se o modelo retornou um erro (que não seja "não encontrado")
+          console.error('PersonalizacaoController: Erro do modelo ao buscar loja:', modelError);
+          // Você pode decidir enviar uma mensagem de erro mais genérica aqui
+          return res.status(500).json({ mensagem: 'Erro ao buscar dados da loja.', erro: modelError });
+      }
+
+      if (!loja) {
+          // Se o modelo retornou data: null (loja não encontrada)
+          console.log('PersonalizacaoController: Loja não encontrada para o slug:', slug);
+          return res.status(404).json({ mensagem: 'Loja não encontrada com o identificador fornecido.' });
+      }
+
+      // Se a loja foi encontrada, o objeto 'loja' já contém todos os campos
+      // selecionados em buscarLojaPorSlugCompleta ('id', 'nome_fantasia', 'foto_loja', etc.).
+      // Basta retornar o objeto 'loja' completo.
+      console.log('PersonalizacaoController: Loja encontrada, retornando dados.');
+      return res.status(200).json(loja); // Retorna o objeto completo da loja
 
   } catch (err) {
-    res.status(500).json({ erro: err.message });
+      console.error('PersonalizacaoController: Erro inesperado em getLojaBySlug:', err.message);
+      return res.status(500).json({ mensagem: 'Erro interno do servidor.', erro: err.message });
   }
-}
+};
 
