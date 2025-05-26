@@ -11,7 +11,7 @@ const supabase = createClient(
 
 const PersonalizacaoLoja = () => {
   const router = useRouter();
-  const { slug } = router.query;
+  const { slug } = router.query; // Este slug aqui é para o caso de você estar editando uma loja existente
 
   const [formData, setFormData] = useState({
     nomeFantasia: '',
@@ -55,6 +55,7 @@ const PersonalizacaoLoja = () => {
     setSlugError('');
 
     try {
+      // Use axios para sua API de backend Node.js
       const response = await axios.get(`${process.env.NEXT_PUBLIC_EMPRESA_API}/check-slug?slug=${slug}`);
       if (response.data.exists) {
         setSlugError('Este link já está em uso. Por favor, escolha outro.');
@@ -83,7 +84,8 @@ const PersonalizacaoLoja = () => {
       if (formData.fotoLoja) {
         const file = formData.fotoLoja;
         const fileExt = file.name.split('.').pop();
-        const fileName = `${Date.now()}.${fileExt}`;
+        // Crie um nome de arquivo único para evitar colisões no Supabase Storage
+        const fileName = `${Date.now()}-${file.name.replace(/[^a-z0-9.]/gi, '_')}`; 
         const filePath = `lojas/${fileName}`;
 
         const { error: uploadError } = await supabase.storage
@@ -104,14 +106,35 @@ const PersonalizacaoLoja = () => {
         corPrimaria: formData.corPrimaria,
         corSecundaria: formData.corSecundaria,
         slogan: formData.slogan,
-        fotoLoja: imageUrl,
+        fotoLoja: imageUrl, // URL da imagem salva no Supabase Storage
         slugLoja: formData.slugLoja,
       };
 
-      const response = await axios.post(`${process.env.NEXT_PUBLIC_EMPRESA_API}/personalizacao`, payload);
+      // 1. Enviar os dados de personalização para o backend
+      // Certifique-se de que este endpoint esteja recebendo o ID da empresa da sessão/token
+      const saveResponse = await axios.post(`${process.env.NEXT_PUBLIC_EMPRESA_API}/personalizacao`, payload, {
+        withCredentials: true // Importante para enviar cookies de sessão
+      });
+
+      if (saveResponse.status !== 200 && saveResponse.status !== 201) {
+        throw new Error(saveResponse.data?.message || 'Erro ao salvar personalização da loja.');
+      }
+
+      // 2. Marcar o primeiro login como feito após a personalização bem-sucedida
+      // Este endpoint (marcar-personalizacao-completa) precisa ser criado no seu backend EmpresaController.js
+      const markLoginResponse = await axios.put(`${process.env.NEXT_PUBLIC_EMPRESA_API}/marcar-personalizacao-completa`, {}, {
+        withCredentials: true // Importante para enviar cookies de sessão
+      });
+
+      if (markLoginResponse.status !== 200) {
+        // Logar o erro, mas não impedir o usuário de seguir se a personalização foi salva
+        console.error('Erro ao marcar primeiro login como completo:', markLoginResponse.data?.message || 'Erro desconhecido.');
+        // Você pode alertar o usuário ou apenas logar e seguir
+      }
+
 
       alert('Personalização da loja salva com sucesso!');
-      router.push(`/loja/${formData.slugLoja}`);
+      router.push(`/loja/${formData.slugLoja}`); // Redireciona para a página da loja personalizada
     } catch (error) {
       console.error('Erro ao salvar personalização:', error.response?.data || error.message);
       alert(`Erro ao salvar a personalização: ${error.response?.data?.message || error.message}`);
@@ -159,6 +182,7 @@ const PersonalizacaoLoja = () => {
                     onChange={handleChange}
                     placeholder="Ex: Loja da Felicidade"
                     className="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#3681B6] placeholder:text-gray-400"
+                    required // Adicionado required
                   />
                 </div>
 
@@ -176,6 +200,7 @@ const PersonalizacaoLoja = () => {
                     <button
                       type="button"
                       className="w-full sm:w-auto p-3 text-white rounded-xl bg-gradient-to-r from-[#3681B6] to-[#2e6e99] flex justify-center items-center hover:from-[#2e6e99] hover:to-[#3681B6]"
+                      onClick={() => document.getElementById('fotoLoja').click()} // Simula o clique no input file
                     >
                       <span>Escolher Arquivo</span>
                     </button>
@@ -216,6 +241,7 @@ const PersonalizacaoLoja = () => {
                     onChange={handleChange}
                     placeholder="Ex: Sua loja, sua alegria!"
                     className="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#3681B6] placeholder:text-gray-400"
+                    required // Adicionado required
                   />
                 </div>
 
@@ -245,7 +271,8 @@ const PersonalizacaoLoja = () => {
                   <h3 className="text-xl font-semibold" style={{ color: formData.corPrimaria }}>
                     {formData.nomeFantasia || 'Nome da Loja'}
                   </h3>
-                  <p className="text-sm" style={{ color: formData.corSecundaria }}>
+                  {/* Ajustado para usar corPrimaria se a secundaria for branca para melhor contraste */}
+                  <p className="text-sm" style={{ color: formData.corSecundaria === '#ffffff' ? '#333' : formData.corSecundaria }}>
                     {formData.slogan || 'Slogan da loja'}
                   </p>
                 </div>
@@ -271,6 +298,7 @@ const PersonalizacaoLoja = () => {
                 onChange={handleChange}
                 placeholder="exemplo-loja"
                 className="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#3681B6]"
+                required // Adicionado required
               />
               {isCheckingSlug ? (
                 <p className="text-sm text-blue-600 mt-1">Verificando disponibilidade...</p>
@@ -286,6 +314,7 @@ const PersonalizacaoLoja = () => {
                 type="button"
                 onClick={handleBack}
                 className="w-full bg-gray-300 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-400"
+                disabled={uploading} // Desabilita o botão enquanto está salvando
               >
                 Voltar
               </button>
@@ -293,7 +322,7 @@ const PersonalizacaoLoja = () => {
               <button
                 type="button"
                 onClick={handleSubmit}
-                disabled={uploading}
+                disabled={uploading || isCheckingSlug || slugError} // Desabilita se estiver enviando, verificando slug ou se houver erro no slug
                 className="w-full bg-gradient-to-r from-[#3681B6] to-[#2e6e99] text-white py-3 rounded-xl font-semibold hover:from-[#2e6e99] hover:to-[#3681B6] transition"
               >
                 {uploading ? 'Salvando...' : 'Salvar Personalização'}

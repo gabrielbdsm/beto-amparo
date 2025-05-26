@@ -29,6 +29,7 @@ export const inserirEmpresa = async ({
         site,
         email,
         senha,
+        primeiro_login_feito: false, // <-- Adicionando o campo com valor padrão false (ou 0 para INTEGER)
       }]);
 
     if (error) return { error: error.message };
@@ -41,36 +42,95 @@ export const inserirEmpresa = async ({
 export async function buscarEmpresaPorId(id) {
   const { data, error } = await supabase
     .from('empresas')
-    .select('*')
+    .select('*') // O '*' já incluirá o campo 'primeiro_login_feito' se ele existir
     .eq('id', id)
     .single();
 
-  if (error) throw error;
-  return data;
-};
+  if (error) {
+    // É uma boa prática não "throw" diretamente aqui para permitir que o controller lide com o erro
+    // Por exemplo, se single() não encontrar nada, ele retorna um erro.
+    if (error.code === 'PGRST116') { // Código para "Row not found" no Supabase (PostgREST)
+      return { data: null, error: 'Empresa não encontrada.' };
+    }
+    return { data: null, error: error.message };
+  }
+  return { data }; // Retorna como objeto { data: ..., error: ... } para consistência
+}
 
 export async function LoginEmpresa(email, senha) {
-  const { data, error } = await supabase
+  // Primeiro, busca a empresa pelo email
+  const { data: empresaDataArray, error: selectError } = await supabase
     .from('empresas')
     .select('*')
-    .eq('email', email)
+    .eq('email', email);
 
- 
-    const senhaCorreta = await bcrypt.compare(senha, data[0].senha);
-    if (!senhaCorreta) {
-      return { error: 'Senha incorreta', data: null };
+  if (selectError) {
+    // Trata erros de consulta ao Supabase
+    return { error: `Erro ao buscar empresa: ${selectError.message}`, data: null };
+  }
+
+  if (!empresaDataArray || empresaDataArray.length === 0) {
+    return { error: 'Email ou senha inválidos', data: null }; // Mensagem genérica por segurança
+  }
+
+  if (empresaDataArray.length > 1) {
+    return { error: 'Erro de duplicidade de email. Contate o suporte.', data: null };
+  }
+
+  const empresa = empresaDataArray[0]; // Pega o primeiro (e único) resultado
+
+  // Compara a senha
+  const senhaCorreta = await bcrypt.compare(senha, empresa.senha);
+  if (!senhaCorreta) {
+    return { error: 'Email ou senha inválidos', data: null }; // Mensagem genérica por segurança
+  }
+
+  // Se tudo estiver correto, retorna os dados da empresa (que incluirá 'primeiro_login_feito')
+  return { data: empresa, error: null };
+}
+
+// NOVO: Função para marcar o primeiro login como feito
+export const marcarPrimeiroLoginFeito = async (idEmpresa) => {
+  try {
+    const { data, error } = await supabase
+      .from('empresas')
+      .update({ primeiro_login_feito: true })
+      .eq('id', idEmpresa);
+
+    if (error) {
+      console.error("Erro no Supabase ao marcar primeiro login feito:", error);
+      return { success: false, error: error.message };
     }
-  if (error) {
-    throw new Error(`Erro ao fazer login: ${error.message}`);
+    return { success: true, data: data }; // data aqui pode ser nula dependendo da config do Supabase
+  } catch (err) {
+    console.error("Erro inesperado ao marcar primeiro login feito:", err);
+    return { success: false, error: err.message };
   }
+};
 
-  if (!data || data.length === 0) {
-    return { error: 'Email ou senha inválidos' };
+
+// Sua função findNomeFantasiaBySlug (mantida como está)
+export async function findNomeFantasiaBySlug(slug) {
+  if (!slug) {
+    throw new Error("Slug é obrigatório para buscar a empresa.");
   }
+  try {
+    const { data: empresa, error } = await supabase
+      .from('loja')
+      .select('nome_fantasia')
+      .eq('slug_loja', slug)
+      .single();
 
-  if (data.length > 1) {
-    return { error: 'Erro de duplicidade de email. Contate o suporte.' };
+    if (error) {
+      console.error("Model Error: Supabase ao buscar empresa por slug:", error);
+      if (error.code === 'PGRST116') {
+        return null;
+      }
+      throw new Error(`Erro no banco de dados: ${error.message}`);
+    }
+    return empresa;
+  } catch (err) {
+    console.error("Model Error: Erro inesperado em findEmpresaBySlug:", err);
+    throw err;
   }
-
-  return { data: data[0] };
 }

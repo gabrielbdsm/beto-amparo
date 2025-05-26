@@ -6,12 +6,13 @@ import clienteRoutes from './routes/clienteRoutes.js';
 import carrinhoRoutes from './routes/carrinhoRoutes.js';
 import lojaRoutes from './routes/lojaRoutes.js';
 import pedidoRoutes from './routes/pedidoRoutes.js';
+import categoriaRoutes from './routes/categoriaRoutes.js';
 import cors from 'cors';
 import multer from 'multer';
 import path from 'path';
 import cookieParser from "cookie-parser";
 
-
+import supabase from './config/SupaBase.js';
 dotenv.config();
 const app = express();
 
@@ -76,12 +77,11 @@ app.use(produtosRoutes);
 app.use(clienteRoutes);
 app.use(pedidoRoutes);
 app.use('/loja', carrinhoRoutes);
-app.use(lojaRoutes);//essa linha fica SEMPRE depois de carrinho. Não remova!!! Dallyla aqui
-
+app.use('/categorias', categoriaRoutes);
+app.use('/loja', lojaRoutes);
 app.get('/', (req, res) => {
   res.send('API do Beto Amparo está no ar!');
 });
-
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
   console.log(`Clique no link para abrir: http://localhost:${PORT}`);

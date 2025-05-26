@@ -1,137 +1,175 @@
+// backend/models/ProdutoModel.js
 import supabase from '../config/SupaBase.js';
 
-export const inserirProduto = async ({ id_loja, nome, categoria, image, preco, descricao, tamanhos, controlarEstoque, quantidade }) => {
-  try {
-    const {  error } = await supabase
-      .from('produto')
-      .insert([{
-        id_loja,
-        nome,
-        image,
-        categoria,
-        preco,
-        descricao,
-        tamanhos, // Já é um array, será armazenado como JSON
-        controlar_estoque: controlarEstoque, // Boolean
-        quantidade: quantidade || 0, // Integer
-      }]);
-    
-    if (error) {
-      return {  error: error.message };
-    }
-
-    return {  error: null };
-  } catch (err) {
-    return {  error: err.message };
-  }
-};
-
-export const listarProdutos = async () => {
-  try {
-    const { data, error } = await supabase
-      .from('produto')
-      .select('*');
-
-    if (error) {
-      return { data: null, error: error.message };
-    }
-
-    return { data };
-  } catch (err) {
-    return { data: null, error: err.message };
-  }
-};
-
-export const deletarProduto = async (id) => {
-  try {
-    const { data, error } = await supabase
-      .from('produto')
-      .delete()
-      .eq('id', id);
-      
-    if (error) {
-      return {  error: error.message };
-    }
-
-    return { data, error: null };
-  } catch (err) {
-    return {  error: err.message };
-  }
-};
-
-export const atualizarProduto = async (id, camposAtualizados) => {
-  try {
-    const { data, error } = await supabase
-      .from('produto')
-      .update(camposAtualizados)
-      .eq('id', id);
-    
-    if (error) {
-      return { data: null, error: error.message };
-    }
-
-    return { error: null };
-  } catch (err) {
-    return { data: null, error: err.message };
-  }
-};
-
-export const listarProdutoPorId = async (id) => {
-  try {
-    const { data, error } = await supabase
-      .from('produto')
-      .select('*')
-      .eq('id', id);
-
-    if (error) {
-      return { data: null, error: error.message };
-    }
-
-    return { data };
-  } catch (err) {
-    return { data: null, error: err.message };
-  }
-};
-
-export const listarProdutosPorEmpresa = async (id_empresa) => {
-  const data_loja =  await supabase
-    .from("loja")
-    .select("*")
-    .eq("id_empresa",id_empresa); 
-
-  if (data_loja.error) {
-    return { data: null, error: data_loja.error.message };
-  }
-  const id_loja = data_loja.data[0].id;
-  if (!id_loja) {
-    return { data: null, error: "Loja não encontrada" };
-  }
-
-  const { data, error } =  await supabase
-    .from("produto")
-    .select("*")
-    .eq("id_loja",id_loja); 
+// --- Função para inserir um novo produto ---
+export const inserirProduto = async ({ id_loja, nome, categoria_id, image, preco, descricao, tamanhos, controlar_estoque, quantidade }) => {
     try {
+        const { data, error } = await supabase
+            .from('produto')
+            .insert([{
+                id_loja, // <--- USANDO id_loja AQUI
+                nome,
+                image,
+                categoria_id,
+                preco,
+                descricao,
+                tamanhos,
+                controlar_estoque,
+                quantidade: quantidade || 0,
+                ativo: true,
+            }])
+            .select('*');
 
-    if (error) {
-      return { data: null, error: error.message };
+        if (error) {
+            console.error('ProdutoModel: Erro ao inserir produto:', error);
+            return { data: null, error: error.message };
+        }
+
+        return { data: data[0], error: null };
+    } catch (err) {
+        console.error('ProdutoModel: Erro inesperado em inserirProduto:', err);
+        return { data: null, error: err.message };
     }
-
-    return { data };
-  } catch (err) {
-    return { data: null, error: err.message };
-  }
 };
 
+// --- Função para listar todos os produtos (sem filtro de loja ou empresa) ---
+export const listarProdutos = async () => {
+    try {
+        const { data, error } = await supabase
+            .from('produto')
+            .select(`
+                *,
+                categorias (
+                    nome,
+                    id
+                )
+            `);
+
+        if (error) {
+            console.error('ProdutoModel: Erro ao listar todos os produtos:', error);
+            return { data: null, error: error.message };
+        }
+
+        return { data, error: null };
+    } catch (err) {
+        console.error('ProdutoModel: Erro inesperado em listarProdutos:', err);
+        return { data: null, error: err.message };
+    }
+};
+
+// ... (Função deletarProduto mantida) ...
+
+// --- Função para atualizar um produto ---
+export const atualizarProduto = async (id, camposAtualizados) => {
+    try {
+        const { data, error } = await supabase
+            .from('produto')
+            .update(camposAtualizados)
+            .eq('id', id)
+            .select('*');
+
+        if (error) {
+            console.error('ProdutoModel: Erro ao atualizar produto:', error);
+            return { data: null, error: error.message };
+        }
+
+        return { data: data[0], error: null };
+    } catch (err) {
+        console.error('ProdutoModel: Erro inesperado em atualizarProduto:', err);
+        return { data: null, error: err.message };
+    }
+};
+
+// --- Função para listar produto por ID ---
+export const listarProdutoPorId = async (id) => {
+    try {
+        const { data, error } = await supabase
+            .from('produto')
+            .select(`
+                *,
+                categorias (
+                    nome,
+                    id
+                )
+            `)
+            .eq('id', id)
+            .single();
+
+        if (error) {
+            console.error('ProdutoModel: Erro ao listar produto por ID:', error);
+            return { data: null, error: error.message };
+        }
+
+        return { data, error: null };
+    } catch (err) {
+        console.error('ProdutoModel: Erro inesperado em listarProdutoPorId:', err);
+        return { data: null, error: err.message };
+    }
+};
+
+// --- Função para listar produtos por empresa ---
+export const listarProdutosPorEmpresa = async (id_empresa) => {
+    try {
+        const { data: lojas_da_empresa, error: error_loja } = await supabase
+            .from("loja")
+            .select("id")
+            .eq("id_empresa", id_empresa);
+
+        if (error_loja) {
+            console.error('ProdutoModel: Erro ao buscar lojas da empresa:', error_loja);
+            return { data: null, error: error_loja.message };
+        }
+        if (!lojas_da_empresa || lojas_da_empresa.length === 0) {
+            return { data: [], error: null };
+        }
+
+        const ids_lojas = lojas_da_empresa.map(loja => loja.id);
+
+        const { data, error } = await supabase
+            .from("produto")
+            .select(`
+                *,
+                categorias (
+                    nome,
+                    id
+                )
+            `)
+            .in("id_loja", ids_lojas); // <--- USANDO id_loja AQUI
+
+        if (error) {
+            console.error('ProdutoModel: Erro ao listar produtos por loja:', error);
+            return { data: null, error: error.message };
+        }
+
+        return { data, error: null };
+    } catch (err) {
+        console.error('ProdutoModel: Erro inesperado em listarProdutosPorEmpresa:', err.message, err.stack);
+        return { data: null, error: err.message };
+    }
+};
+
+// --- Função para listar produtos por loja ---
 export const listarProdutosPorLoja = async (lojaId) => {
-  
-  
-  const data = await supabase
-    .from("produto")
-    .select("*")
-    .eq("id_loja", lojaId); 
+    try {
+        const { data, error } = await supabase
+            .from("produto")
+            .select(`
+                *,
+                categorias (
+                    nome,
+                    id
+                )
+            `)
+            .eq("id_loja", lojaId); // <--- USANDO id_loja AQUI
 
-    return data;
+        if (error) {
+            console.error('ProdutoModel: Erro ao listar produtos por loja:', error.message);
+            return { data: null, error: error.message };
+        }
+
+        return { data, error: null };
+    } catch (err) {
+        console.error('ProdutoModel: Erro inesperado em listarProdutosPorLoja:', err.message, err.stack);
+        return { data: null, error: err.message };
+    }
 };
-
-
