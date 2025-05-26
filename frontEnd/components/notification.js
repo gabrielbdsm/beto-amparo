@@ -38,9 +38,9 @@ export default function FloatingNotificationsTop() {
       <div className="fixed top-4 right-4 z-50">
         <button
           onClick={() => setShowToasts((prev) => !prev)}
-          className="relative p-2 bg-white rounded-full shadow hover:bg-gray-100"
+          className="relative p-2 bg-gray-800 rounded-full shadow hover:bg-gray-700" // Corrigido aqui para fundo escuro no botão
         >
-          <BellIcon className="w-6 h-6 text-gray-700" />
+          <BellIcon className="w-6 h-6 text-gray-200" /> {/* Cor do ícone para contrastar */}
           {toasts.length > 0 && (
             <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
               {toasts.length}
@@ -56,9 +56,9 @@ export default function FloatingNotificationsTop() {
             <div
               key={toast.id}
               onClick={() => fecharToast(toast.id)}
-              className="bg-white border border-gray-300 shadow-lg rounded-lg px-4 py-3 w-80 cursor-pointer transition hover:bg-gray-50"
+              className="bg-gray-800 border border-gray-700 shadow-lg rounded-lg px-4 py-3 w-80 cursor-pointer transition hover:bg-gray-700" // Corrigido aqui para fundo escuro no toast
             >
-              <p className="text-sm">
+              <p className="text-sm text-gray-100"> {/* Corrigido aqui para texto claro */}
                 Pedido <strong>#{toast.id}</strong> está <strong>{toast.status}</strong>
               </p>
               <p className="text-xs text-gray-400">Clique para fechar</p>

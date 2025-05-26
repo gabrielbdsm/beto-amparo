@@ -44,7 +44,7 @@ router.put('/produtos/ativar/:id', routePrivate, produto.ativarProduto);
 // Listar produtos por loja (para clientes e para a dashboard)
 // O controlador 'listarProdutosPorLoja' agora deve filtrar por 'ativo=true' por padrão
 router.get('/produtos/loja/:slug', produto.listarProdutosPorLoja); // Rota original com slug
-
+router.get('/produto/:id', produto.buscarProdutoPorId);
 // Listar produtos por empresa (privado, se houver necessidade de listar todos os produtos da empresa, ativos e inativos)
 router.get('/produtos/empresa/:empresaId', routePrivate, produto.listarProdutosPorEmpresa);
 

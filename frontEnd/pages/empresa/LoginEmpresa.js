@@ -29,7 +29,7 @@ export default function LoginEmpresa() {
 
             if (primeiroLoginFeito === false) {
                 // Se for o primeiro login, redireciona para personalização
-                redirectPath = '/empresa/personalizar';
+                redirectPath = '/empresa/${slugLoja}/personalizacao-loja';
             } else if (returnTo) {
                 // Se existe um 'returnTo' na URL, usa ele
                 redirectPath = returnTo;
@@ -38,7 +38,7 @@ export default function LoginEmpresa() {
                 redirectPath = `/empresa/${slugLoja}/dashboard`;
             } else {
                 // Último fallback, se nada se aplicar
-                redirectPath = '/empresa/dashboard'; 
+                redirectPath = '/empresa/loginEmpresa'; 
             }
 
             console.log('LoginEmpresa - useEffect: Redirecionando APÓS LOGIN para:', redirectPath);

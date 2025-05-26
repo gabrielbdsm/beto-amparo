@@ -11,16 +11,10 @@ export default function ClienteHome() {
 
     const [lojaId, setLojaId] = useState(null);
     const [nomeFantasia, setNomeFantasia] = useState("Carregando...");
-    const [fotoLoja, setFotoLoja] = useState(null);
-    const [corPrimaria, setCorPrimaria] = useState("#3B82F6");
-
-    const [loadingLoja, setLoadingLoja] = useState(true);
-    const [errorLoja, setErrorLoja] = useState(null);
 
     const [produtos, setProdutos] = useState([]);
-    const [loadingProdutos, setLoadingProdutos] = useState(false);
-    const [errorProdutos, setErrorProdutos] = useState(null);
     const [searchTerm, setSearchTerm] = useState("");
+    const [bannerLoja, setBannerLoja] = useState(null);
 
     const removeAccents = (str) => {
         return str
@@ -38,87 +32,86 @@ export default function ClienteHome() {
     const [mensagem, setMensagem] = useState('');
     const [corMensagem, setCorMensagem] = useState('');
     const [showSearch, setShowSearch] = useState(false);
-
-    const API_BASE_URL = process.env.NEXT_PUBLIC_EMPRESA_API || 'http://localhost:4000';
+    const [fotoLoja, setFotoLoja] = useState(null);
+    const [corPrimaria, setCorPrimaria] = useState("#3B82F6");
+    const [corSecundaria, setCorSecundaria] = useState("#F3F4F6");
 
     useEffect(() => {
-        if (!site) {
-            setLoadingLoja(false);
-            return;
-        }
-        async function fetchLojaInfo() {
-            setLoadingLoja(true);
-            setErrorLoja(null);
+        if (!site) return;
+
+        async function fetchEmpresa() {
             try {
-                const url = `${API_BASE_URL}/loja/slug/${site}`;
-                console.log("Frontend: Buscando dados da loja em:", url);
+                const url = `${process.env.NEXT_PUBLIC_EMPRESA_API}/loja/slug/${site}`;
                 const response = await fetch(url);
+
                 if (!response.ok) {
                     let errorMessage = `Erro HTTP ${response.status}: ${response.statusText}`;
                     try {
                         const errorData = await response.json();
-                        errorMessage = errorData.mensagem || errorData.message || errorMessage;
-                    } catch (jsonError) {}
-                    console.error("Frontend: Erro na resposta da API (loja):", errorMessage);
-                    throw new Error(errorMessage);
+                        if (errorData.message) {
+                            errorMessage += ` - ${errorData.message}`;
+                        }
+                    } catch (jsonError) {
+                    }
+
+                    console.error("Erro na resposta da API:", errorMessage);
+                    setNomeFantasia("Erro ao carregar");
+                    return;
                 }
+
                 const data = await response.json();
-                console.log("Frontend: Dados da loja da API recebidos:", data);
                 setLojaId(data.id);
                 setNomeFantasia(data.nome_fantasia || "Sem nome fantasia");
                 setFotoLoja(data.foto_loja || null);
                 setCorPrimaria(data.cor_primaria || "#3B82F6");
+                setCorSecundaria(data.cor_secundaria || "#F3F4F6");
+                setBannerLoja(data.banner || null);
             } catch (error) {
-                console.error("Frontend: Erro na requisição ao buscar empresa:", error.message || error);
-                setErrorLoja(error.message || "Erro ao carregar dados da loja.");
-                setNomeFantasia("Erro ao carregar loja");
-                setLojaId(null);
-            } finally {
-                setLoadingLoja(false);
+                console.error("Erro na requisição ao buscar empresa:", error.message || error);
+                setNomeFantasia("Erro ao carregar");
             }
         }
-        fetchLojaInfo();
+
+        fetchEmpresa();
     }, [site]);
 
+
     useEffect(() => {
-        if (!lojaId || errorLoja) {
-            setLoadingProdutos(false);
-            return;
-        }
+        if (!site) return; // Alterado de !lojaId para !site
+
         async function fetchProdutos() {
-            setLoadingProdutos(true);
-            setErrorProdutos(null);
             try {
-                const url = `${API_BASE_URL}/produtos/loja/${site}`;
-                console.log("Frontend: Buscando produtos da loja em:", url);
+                // CORREÇÃO APLICADA AQUI: Use 'site' (o slug) na URL
+                const url = `${process.env.NEXT_PUBLIC_EMPRESA_API}/produtos/loja/${site}`;
                 const response = await fetch(url);
+
                 if (!response.ok) {
-                    let errorMessage = `Erro HTTP ${response.status}: ${response.statusText}`;
-                    try {
-                        const errorData = await response.json();
-                        errorMessage = errorData.mensagem || errorData.message || errorMessage;
-                    } catch (jsonError) {}
-                    console.error("Frontend: Erro na resposta da API (produtos):", errorMessage);
-                    throw new Error(errorMessage);
-                }
-                const data = await response.json();
-                console.log("Frontend: Produtos da API recebidos:", data);
-                if (!Array.isArray(data)) {
-                    console.warn("Frontend: API de produtos retornou dados não-array. Tratando como array vazio.", data);
+                    console.error("Erro na resposta da API de produtos:", response.statusText);
                     setProdutos([]);
-                } else {
-                    setProdutos(data);
+                    return;
                 }
+
+                const data = await response.json();
+                
+                if (Array.isArray(data)) {
+                    setProdutos(data);
+                } else if (data && Array.isArray(data.produtos)) {
+                    setProdutos(data.produtos);
+                } else if (data && Array.isArray(data.itens)) {
+                    setProdutos(data.itens);
+                } else {
+                    console.warn("API de produtos retornou dados em formato inesperado:", data);
+                    setProdutos([]);
+                }
+
             } catch (error) {
-                console.error("Frontend: Erro ao buscar produtos:", error.message || error);
-                setErrorProdutos(error.message || "Erro ao carregar produtos.");
+                console.error("Erro ao buscar produtos:", error.message);
                 setProdutos([]);
-            } finally {
-                setLoadingProdutos(false);
             }
         }
+
         fetchProdutos();
-    }, [lojaId, errorLoja, site]);
+    }, [site]); // Alterado de [lojaId] para [site]
 
     const handleShareClick = async () => {
         if (navigator.share) {
@@ -169,42 +162,47 @@ export default function ClienteHome() {
         try {
             const id_cliente = 30;
             const qtd = quantidades[produto.id] || 1;
-            console.log(`Adicionando ${qtd}x ${produto.nome} ao carrinho...`);
-            const url = `${API_BASE_URL}/carrinho`;
-            console.log("Frontend: Adicionando produto em:", url);
+
+            const url = `${process.env.NEXT_PUBLIC_EMPRESA_API}/loja/${site}/carrinho`;
+
             const response = await fetch(url, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ produtoId: produto.id, quantidade: qtd, id_cliente, lojaId: lojaId }),
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    produtoId: produto.id,
+                    quantidade: qtd,
+                    id_cliente,
+                    lojaId: lojaId
+                }),
             });
+
             const data = await response.json();
+
             if (!response.ok) {
-                console.error('Frontend: Erro no backend ao adicionar ao carrinho:', data.erro || data.message);
-                throw new Error(data.erro || data.message || 'Erro desconhecido');
+                throw new Error(data.erro || 'Erro desconhecido');
             }
-            console.log(`Frontend: Produto ${produto.nome} adicionado com sucesso.`);
+
             setMensagem('Produto adicionado ao carrinho!');
             setCorMensagem('text-green-600');
         } catch (err) {
-            console.error('Frontend: Erro ao adicionar ao carrinho:', err);
+            console.error('Erro ao adicionar ao carrinho:', err);
             setMensagem(`Erro: ${err.message}`);
             setCorMensagem('text-red-600');
         }
+
         setTimeout(() => setMensagem(''), 3000);
     };
 
     return (
         <div className="flex flex-col min-h-screen bg-gray-100">
-            {/* Header da Loja - LAYOUT AJUSTADO AQUI */}
             <header
-                className="text-white px-4 py-3 flex items-center shadow relative"
+                className="text-white px-4 py-3 flex items-center justify-between shadow relative z-20"
                 style={{ backgroundColor: corPrimaria }}
             >
-                {/* Lado Esquerdo: Logo e Nome da Loja */}
-                <div className="flex items-center gap-2 flex-grow-0 flex-shrink-0">
-                    {loadingLoja ? (
-                        <div className="w-10 h-10 rounded-full bg-gray-300 animate-pulse"></div>
-                    ) : (
+                {!showSearch && (
+                    <div className="flex items-center gap-2">
                         <div className="w-10 h-10 rounded-full overflow-hidden">
                             <Image
                                 src={fotoLoja ? getImagemProduto(fotoLoja) : "/fallback.png"}
@@ -214,15 +212,11 @@ export default function ClienteHome() {
                                 className="object-cover w-full h-full"
                             />
                         </div>
-                    )}
-                    <h1 className="text-lg font-bold whitespace-nowrap">
-                        {loadingLoja ? "Carregando..." : errorLoja ? "Erro ao carregar loja" : nomeFantasia}
-                    </h1>
-                </div>
-
-                {/* Centro: Barra de Busca (aparece quando showSearch é true) */}
+                        <h1 className="text-lg font-bold">{nomeFantasia}</h1>
+                    </div>
+                )}
                 {showSearch && (
-                    <div className="flex items-center bg-white rounded-full px-3 py-1 w-full max-w-sm mx-auto shadow flex-grow"> {/* max-w-sm para caber melhor */}
+                    <div className="flex items-center bg-white rounded-full px-3 py-1 w-full max-w-xl mx-auto shadow">
                         <svg
                             xmlns="http://www.w3.org/2000/svg"
                             className="w-4 h-4 mr-2"
@@ -244,10 +238,8 @@ export default function ClienteHome() {
                         </button>
                     </div>
                 )}
-
-                {/* Lado Direito: Botões de Ação (aparecem quando showSearch é false) */}
                 {!showSearch && (
-                    <div className="flex items-center gap-3 flex-grow-0 flex-shrink-0 ml-auto"> {/* ml-auto para empurrar para a direita */}
+                    <div className="flex items-center gap-3 ml-auto">
                         <button
                             onClick={() => setShowSearch(true)}
                             className="flex flex-col items-center cursor-pointer"
@@ -287,9 +279,53 @@ export default function ClienteHome() {
                     </div>
                 )}
             </header>
+            {bannerLoja ? (
+                <div className="w-full h-48 relative">
+                    <Image
+                        src={`${getImagemProduto(bannerLoja)}?v=${new Date().getTime()}`}
+                        alt="Banner da loja"
+                        fill
+                        unoptimized
+                        style={{ objectFit: 'cover' }}
+                        className="rounded-none"
+                    />
+                </div>
+            ) : (
+                <div
+                    className="w-full h-48 flex items-center justify-between px-6 relative overflow-hidden"
+                    style={{
+                        background: `linear-gradient(to right, ${corSecundaria}, #1a202c)`,
+                        backgroundImage: 'url("/bg-loja-padrao.svg")',
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center',
+                    }}
+                >
+                    <div className="text-white z-10">
+                        <h2 className="text-2xl font-bold">Seja Bem-Vindo (a)!</h2>
+                        <p className="text-sm mt-1">Explore nosso catálogo e faça seu pedido online</p>
+                    </div>
+                    <div className="h-full flex items-center z-10">
+                        <Image
+                            src="/carrinho-banner.svg"
+                            alt="Carrinho"
+                            width={200}
+                            height={200}
+                            className="object-contain"
+                        />
+                    </div>
 
-            {/* ... restante do componente (Atendimento, Mensagens, Produtos) ... */}
-            {/* Mensagem de Atendimento */}
+                    <div className="absolute inset-0 opacity-10 pointer-events-none">
+                        <Image
+                            src="/bg-pattern.svg"
+                            alt=""
+                            fill
+                            style={{ objectFit: 'cover' }}
+                        />
+                    </div>
+                </div>
+
+            )}
+
             <div className="bg-blue-50 border border-blue-200 rounded-md mx-4 my-4 mt-3 px-3 py-2 flex items-center gap-2 text-sm text-blue-800">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -297,38 +333,14 @@ export default function ClienteHome() {
                 Atendimento: <strong>Segunda a Sexta, das 08h às 18h</strong>
             </div>
 
-            {/* Se houver erro ao carregar a loja inteira */}
-            {errorLoja && (
-                <div className="text-center text-red-600 mt-4 text-lg">
-                    Erro ao carregar os dados da loja: {errorLoja}
-                </div>
-            )}
-
-            {/* Conteúdo principal - Produtos */}
             <div className="flex-1 px-4 overflow-y-auto pb-24">
                 {mensagem && (
                     <div className={`text-center mb-4 font-medium ${corMensagem}`}>
                         {mensagem}
                     </div>
                 )}
-
-                {/* Mostrar carregamento de produtos */}
-                {loadingProdutos && !errorProdutos && (
-                    <div className="text-center text-gray-600 mt-10 text-lg">
-                        Carregando produtos...
-                    </div>
-                )}
-
-                {/* Mostrar erro de produtos */}
-                {errorProdutos && (
-                    <div className="text-center text-red-600 mt-10 text-lg">
-                        Erro ao carregar produtos: {errorProdutos}
-                    </div>
-                )}
-
-                {/* Mostrar produtos ou mensagem de ausência de produtos */}
-                {!loadingProdutos && !errorProdutos && produtosFiltrados.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {produtosFiltrados.length > 0 ? (
+                    <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-5 gap-x-6 gap-y-4">
                         {produtosFiltrados.map((produto) => (
                             <ProdutoCard
                                 key={produto.id}
@@ -339,20 +351,17 @@ export default function ClienteHome() {
                                 onAdicionar={() => handleAdicionar(produto)}
                                 getImagemProduto={getImagemProduto}
                                 slug={site}
+                                cor={corPrimaria}
+
                             />
                         ))}
                     </div>
                 ) : (
-                    // Mensagem para quando não há produtos (após carregamento e sem erros)
-                    !loadingProdutos && !errorProdutos && (
-                        <div className="text-center text-gray-600 mt-10 text-lg">
-                            Nenhum produto disponível no momento.
-                        </div>
-                    )
+                    <div className="text-center text-gray-600 mt-10 text-lg">
+                        Nenhum produto disponível no momento.
+                    </div>
                 )}
             </div>
-
-            {/* NavBar */}
             <NavBar site={site} corPrimaria={corPrimaria} />
         </div>
     );

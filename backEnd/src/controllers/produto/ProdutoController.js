@@ -266,10 +266,12 @@ export const buscarProdutoPorId = async (req, res) => {
 console.log('DEBUG: ProdutoController.js: buscarProdutoPorId exportado.');
 
 
+
 export const listarProdutosPorLoja = async (req, res) => {
     console.log('DEBUG: ProdutoController.js: Chamando listarProdutosPorLoja!');
     try {
         const { slug } = req.params;
+        console.log('DEBUG: Slug recebido na API de produtos:', slug); // <--- ADICIONE ESTA LINHA!
         const { ativo } = req.query;
 
         let idDaLojaNoDB;
