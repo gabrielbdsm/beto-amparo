@@ -38,7 +38,7 @@ export default function Pedidos() {
     // Buscar pedidos
     async function fetchPedidos() {
       try {
-        const res = await fetch(`http://localhost:4000/empresa/${slug}/pedidos`);
+        const res = await fetch(`http://localhost:4000/loja/${slug}/pedidos`);
         console.log(res)
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
         const data = await res.json();
@@ -94,7 +94,7 @@ export default function Pedidos() {
                 className="bg-white border border-gray-300 rounded-md p-4 w-full text-black shadow"
               >
                 <p><strong>ID do pedido:</strong> {pedido.id}</p>
-                <p><strong>Data:</strong> {new Date(pedido.data).toLocaleDateString()}</p>
+                <p><strong>Data:</strong> {pedido.data}</p>
                 <p><strong>Total:</strong> R$ {(Number(pedido.total) || 0).toFixed(2)}</p>
                 <p><strong>Status:</strong> {traduzirStatus(pedido.status)}</p>
                 <p><strong>Observações:</strong> {pedido.observacoes || 'Nenhuma'}</p>
