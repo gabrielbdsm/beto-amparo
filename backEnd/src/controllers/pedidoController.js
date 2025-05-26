@@ -40,7 +40,7 @@ export async function listarPedidosPorEmpresa(req, res) {
 export async function criarPedido(req, res) {
   try {
     const { id_cliente, id_loja, data, total, status, observacoes } = req.body;
-    
+
     console.log('Dados recebidos:', { id_cliente, id_loja, data, total, observacoes });
 
     // Validação explícita de cada campo obrigatório
@@ -119,6 +119,44 @@ export async function adicionarItemPedido(req, res) {
   }
 }
 
+export async function obterPedidoPorId(req, res) {
+  const { id } = req.params;
+
+  try {
+    // Buscar o pedido pelo ID
+    const { data: pedido, error: pedidoError } = await supabase
+      .from('pedidos')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (pedidoError || !pedido) {
+      return res.status(404).json({ erro: 'Pedido não encontrado' });
+    }
+
+    // Buscar os itens relacionados a esse pedido
+    const { data: itens, error: itensError } = await supabase
+      .from('pedido_itens')
+      .select(`
+        *,
+        produto:produto_id ( nome, imagem, descricao )
+      `)
+      .eq('pedido_id', id);
+
+    if (itensError) {
+      return res.status(500).json({ erro: 'Erro ao buscar itens do pedido' });
+    }
+
+    res.json({
+      ...pedido,
+      itens: itens || []
+    });
+  } catch (error) {
+    console.error('Erro ao obter pedido por ID:', error);
+    res.status(500).json({ erro: 'Erro interno ao obter pedido' });
+  }
+}
+
 export async function finalizarPedido(req, res) {
   const { slug } = req.params;
   const { metodoPagamento, enderecoEntrega, cupom, clienteId } = req.body;
@@ -161,7 +199,7 @@ export async function finalizarPedido(req, res) {
       .single();
 
     if (pedidoError || !pedido) {
-      return res.status(404).json({ 
+      return res.status(404).json({
         erro: 'Nenhum pedido aberto encontrado ou pedido já finalizado',
         sugestao: '/carrinho'
       });
@@ -170,10 +208,10 @@ export async function finalizarPedido(req, res) {
     // 3. Validação de estoque e cálculo de totais
     let itensInvalidos = [];
     let subtotal = 0;
-    
+
     for (const item of pedido.pedido_itens) {
       subtotal += item.quantidade * item.produto.preco;
-      
+
       if (item.produto.estoque < item.quantidade) {
         itensInvalidos.push({
           produto: item.produto.nome,
@@ -206,9 +244,9 @@ export async function finalizarPedido(req, res) {
         // Verifica se o cupom está dentro da validade
         const hoje = new Date();
         const validoAte = new Date(cupomValido.valido_ate);
-        
+
         if (hoje <= validoAte) {
-          desconto = cupomValido.tipo === 'porcentagem' 
+          desconto = cupomValido.tipo === 'porcentagem'
             ? subtotal * (cupomValido.valor_desconto / 100)
             : cupomValido.valor_desconto;
         }
@@ -236,7 +274,10 @@ export async function finalizarPedido(req, res) {
     // 7. Retornar resposta com dados completos
     res.status(200).json({
       sucesso: true,
-      pedido: pedidoFinalizado,
+      pedido: {
+        ...pedidoFinalizado,
+        itens: pedido.pedido_itens // <-- Aqui está a adição necessária
+      },
       resumo: {
         subtotal,
         desconto,

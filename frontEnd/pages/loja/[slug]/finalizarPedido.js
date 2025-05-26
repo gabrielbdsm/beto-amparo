@@ -24,10 +24,14 @@ export default function FinalizarPedido({ empresaId }) {
     const [enderecos, setEnderecos] = useState([]); // Estado inicial vazio
     const [enderecoEntrega, setEnderecoEntrega] = useState({});
     const [cartoes, setCartoes] = useState([]);
-    
+
 
     const router = useRouter();
     const { slug } = router.query;
+    const { pedidoId } = router.query;
+    console.log("slug:", slug);
+    console.log("pedidoId:", pedidoId);
+    //const pedidoId = router.query.pedidoId;
 
     // Função toggleSection para controlar as seções expansíveis
     const toggleSection = (section) => {
@@ -42,16 +46,30 @@ export default function FinalizarPedido({ empresaId }) {
 
     // useEffect para carregar dados (mantido da versão anterior)
     useEffect(() => {
-        if (!slug) return;
+        const { id } = router.query;
+
+        if (!slug || !pedidoId) return;
 
         const fetchData = async () => {
             try {
-                // ... (código existente para loja e carrinho)
+                // Buscar dados do pedido usando o ID
+                const pedidoResponse = await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/loja/${slug}/pedidos/${pedidoId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token_cliente')}`
+                    }
+                });
 
-                // Buscar dados do cliente E SEUS ENDEREÇOS
+                const pedidoData = await pedidoResponse.json();
+                console.log("Pedido recebido:", pedidoData);
+
+                // Verifique se existe uma lista de itens no pedido
+                if (pedidoData && pedidoData.itens) {
+                    setItensCarrinho(pedidoData.itens);
+                }
+
+                // Buscar dados do cliente
                 const clienteId = getClienteId();
                 if (clienteId) {
-                    // 1. Busca dados básicos do cliente
                     const clienteResponse = await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/clientes/${clienteId}`, {
                         headers: { 'Authorization': `Bearer ${localStorage.getItem('token_cliente')}` }
                     });
@@ -62,18 +80,6 @@ export default function FinalizarPedido({ empresaId }) {
                         email: clienteData.email,
                         telefone: clienteData.telefone
                     });
-
-                    // 2. Busca TODOS os endereços do cliente (endpoint separado)
-                    const enderecosResponse = await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/clientes/${clienteId}/enderecos`, {
-                        headers: { 'Authorization': `Bearer ${localStorage.getItem('token_cliente')}` }
-                    });
-                    const enderecosData = await enderecosResponse.json();
-
-                    setEnderecos(enderecosData); // Atualiza a lista completa
-
-                    // 3. Define o endereço principal como padrão
-                    const enderecoPrincipal = enderecosData.find(e => e.principal) || {};
-                    setEnderecoEntrega(enderecoPrincipal);
                 }
             } catch (error) {
                 console.error("Erro ao carregar dados:", error);
@@ -81,7 +87,8 @@ export default function FinalizarPedido({ empresaId }) {
         };
 
         fetchData();
-    }, [slug]);
+    }, [router.query]);
+
     // Cálculos
     const subtotal = itensCarrinho.reduce((acc, item) => acc + (item.produto.preco * item.quantidade), 0);
     const total = subtotal + frete - desconto;
@@ -156,8 +163,20 @@ export default function FinalizarPedido({ empresaId }) {
             );
 
             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.erro || "Erro ao finalizar pedido");
+                let errorMessage = "Erro ao finalizar pedido";
+
+                try {
+                    const errorData = await response.json();
+                    errorMessage = errorData.erro || errorMessage;
+                } catch (e) {
+                    const text = await response.text();
+                    console.error("Resposta inesperada (HTML?):", text);
+                }
+
+                throw new Error(errorMessage);
+
+                /*const errorData = await response.json();
+                throw new Error(errorData.erro || "Erro ao finalizar pedido");*/
             }
 
             const { pedido } = await response.json();

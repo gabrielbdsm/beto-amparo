@@ -104,11 +104,17 @@ export default function Pedidos() {
                   <button
                     className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded"
                     style={{ backgroundColor: corPrimaria }}
-                    onClick={() => router.push(`/loja/${slug}/finalizarPedido`)}
+                    onClick={() =>
+                      router.push({
+                        pathname: `/loja/${slug}/finalizarPedido`,
+                        query: { pedidoId: pedido.id }, // ajuste aqui com o nome real do seu objeto
+                      })
+                    }
                   >
                     Finalizar
                   </button>
                 </div>
+
 
 
               </div>

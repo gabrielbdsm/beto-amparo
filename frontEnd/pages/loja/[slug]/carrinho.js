@@ -158,8 +158,15 @@ export default function CarrinhoCliente({ empresaId }) {
 
       const pedidoCriado = await pedidoResponse.json();
       if (!pedidoResponse.ok) {
+        if (pedidoCriado?.error === 'Token inválido ou expirado') {
+          localStorage.removeItem('token_cliente');
+          localStorage.removeItem('user');
+          alert('Sua sessão expirou. Faça login novamente.');
+          router.push(`/client/loginCliente?redirect=/loja/${slug}/carrinho`);
+          return;
+        }
+
         console.error("Erro ao criar pedido:", pedidoCriado);
-        //throw new Error(pedidoCriado.erro || "Erro ao criar pedido");
         throw new Error(JSON.stringify(pedidoCriado));
       }
 
@@ -170,9 +177,9 @@ export default function CarrinhoCliente({ empresaId }) {
         const itemResponse = await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/loja/${slug}/pedidos/item`, {
           method: 'POST',
           headers: {
-             'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}` 
-            },
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
           body: JSON.stringify({
             pedido_id: pedidoId,
             produto_id: item.produto.id,
