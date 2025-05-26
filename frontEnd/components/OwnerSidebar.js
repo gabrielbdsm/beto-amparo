@@ -62,7 +62,7 @@ export default function OwnerSidebar({ children, slug }) {
     }
   };
 
-  const ownerAreaPath = slug ? `/empresa/${slug}/dashboard` : '/empresa/donoarea'; // Fallback
+  const ownerAreaPath = '/empresa/donoarea';
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row">
