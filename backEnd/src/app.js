@@ -6,6 +6,7 @@ import clienteRoutes from './routes/clienteRoutes.js';
 import carrinhoRoutes from './routes/carrinhoRoutes.js';
 import lojaRoutes from './routes/lojaRoutes.js';
 import pedidoRoutes from './routes/pedidoRoutes.js';
+import enderecoRoutes from './routes/enderecoRoutes.js';
 import cors from 'cors';
 import multer from 'multer';
 import path from 'path';
@@ -75,6 +76,7 @@ app.use(empresaRoutes);
 app.use(produtosRoutes);
 app.use(clienteRoutes);
 app.use(pedidoRoutes);
+app.use(enderecoRoutes); 
 app.use('/loja', carrinhoRoutes);
 app.use(lojaRoutes);//essa linha fica SEMPRE depois de carrinho. Não remova!!! Dallyla aqui
 

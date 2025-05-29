@@ -29,7 +29,16 @@ export default function FinalizarPedido({ empresaId }) {
         endereco: {}
     });
     const [enderecos, setEnderecos] = useState([]); // Estado inicial vazio
-    const [enderecoEntrega, setEnderecoEntrega] = useState({});
+    const [enderecoEntrega, setEnderecoEntrega] = useState({
+        rua: "",
+        numero: "",
+        complemento: "",
+        bairro: "",
+        cep: "",
+        cidade: "",
+        estado: ""
+    });
+
     const [cartoes, setCartoes] = useState([]);
 
 
@@ -49,6 +58,45 @@ export default function FinalizarPedido({ empresaId }) {
     const getClienteId = () => {
         const userData = localStorage.getItem('user');
         return userData ? JSON.parse(userData).id : null;
+    };
+
+    // Verifica se já existe endereço para o cliente
+    const verificarEnderecoExistente = async (clienteId) => {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/clientes/${clienteId}/endereco`, {
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token_cliente')}`
+            }
+        });
+
+        if (!response.ok) {
+            console.error("Erro ao verificar endereço:", response.status);
+            return false;
+        }
+
+        const data = await response.json();
+        return data && data.length > 0;
+    };
+
+    // Salva o endereço do cliente
+    const salvarEnderecoCliente = async (clienteId) => {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/clientes/${clienteId}/endereco`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token_cliente')}`
+            },
+            body: JSON.stringify({
+                rua: enderecoEntrega.rua,
+                numero: enderecoEntrega.numero,
+                complemento: enderecoEntrega.complemento,
+                bairro: enderecoEntrega.bairro,
+                cep: enderecoEntrega.cep,
+                cidade: enderecoEntrega.cidade,
+                estado: enderecoEntrega.estado
+            })
+        });
+
+        if (!response.ok) throw new Error("Erro ao salvar endereço");
     };
 
     // useEffect para carregar dados (mantido da versão anterior)
@@ -82,12 +130,31 @@ export default function FinalizarPedido({ empresaId }) {
                         headers: { 'Authorization': `Bearer ${localStorage.getItem('token_cliente')}` }
                     });
                     const clienteData = await clienteResponse.json();
+                    
+                    const enderecoResponse = await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/enderecos?clienteId=${clienteId}`);
+                    if (!enderecoResponse.ok) {
+                        console.warn("Falha ao buscar endereço. Status:", enderecoResponse.status);
+                        return;
+                    }
+                    const enderecoData = await enderecoResponse.json();
 
                     setDadosCliente({
                         nome: clienteData.nome,
                         email: clienteData.email,
                         telefone: clienteData.telefone
                     });
+
+                    if (enderecoData && enderecoData.length > 0) {
+                        setEnderecoEntrega({
+                            rua: enderecoData[0].rua,
+                            numero: enderecoData[0].numero,
+                            complemento: enderecoData[0].complemento || "",
+                            bairro: enderecoData[0].bairro,
+                            cep: enderecoData[0].cep,
+                            cidade: enderecoData[0].cidade,
+                            estado: enderecoData[0].estado
+                        });
+                    }
                 }
 
 
@@ -142,6 +209,11 @@ export default function FinalizarPedido({ empresaId }) {
         try {
             const clienteId = getClienteId();
             if (!clienteId) throw new Error("Usuário não autenticado");
+
+            const enderecoExistente = await verificarEnderecoExistente(clienteId);
+            if (!enderecoExistente || enderecoEditado) {
+                await salvarEnderecoCliente(clienteId);
+            }
 
             const payload = {
                 metodoPagamento,
