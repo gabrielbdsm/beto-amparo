@@ -9,11 +9,13 @@ export default function ProdutoCard({
   onAumentar,
   onDiminuir,
   getImagemProduto,
+  slug,
+  cor
 }) {
   const [imageSrc, setImageSrc] = useState(getImagemProduto(produto.image));
 
   const handleCardClick = () => {
-    window.location.href = `/produto/${produto.id}`;
+    window.location.href = `produto/${slug}/${produto.id}`;
   };
 
   const handleAdicionarClick = (event) => {
@@ -27,54 +29,40 @@ export default function ProdutoCard({
 
   return (
     <div 
-      className="bg-white rounded-xl shadow-md p-4 flex items-center justify-between hover:scale-105 hover:shadow-lg transition duration-300 w-full sm:max-w-md lg:max-w-lg"
+      className="bg-white rounded-xl shadow-md p-3 w-40 sm:w-48 md:w-56 lg:w-64 flex flex-col items-center cursor-pointer"
       onClick={handleCardClick} 
     >
-        <div className="relative w-20 aspect-square">
-            <Image
-                src={imageSrc}
-                alt={produto.nome}
-                fill
-                className="rounded-lg object-cover"
-                unoptimized
-                onError={() => setImageSrc("/frontEnd/public/fallback.png")}
-            />
-        </div>
+      <div className="relative w-full h-32 sm:h-36 md:h-40 aspect-[4/3]">
+        <Image
+          src={imageSrc}
+          alt={produto.nome}
+          fill
+          className="rounded-md object-cover"
+          unoptimized
+          onError={() => setImageSrc("/frontEnd/public/fallback.png")}
+        />
+      </div>
 
-      <div className="flex-1 mx-4">
-        <h2 className="text-base font-semibold text-gray-800 truncate">{produto.nome}</h2>
-        <p className="text-sm text-gray-500 line-clamp-2">{produto.descricao}</p>
-        <p className="text-green-600 font-bold mt-1 whitespace-nowrap">
-            R$ {parseFloat(produto.preco).toFixed(2)}
+      <div className="w-full text-center mt-2">
+        <h2 className="text-sm sm:text-base font-semibold text-gray-800 truncate">{produto.nome}</h2>
+        <p className="text-xs text-gray-500 line-clamp-2">{produto.descricao}</p>
+        <p className="text-green-600 font-bold mt-1">
+          R$ {parseFloat(produto.preco).toFixed(2)}
         </p>
       </div>
 
-      <div className="flex items-center gap-2">
-        <div className="flex border rounded-md overflow-hidden">
-            <button
-                onClick={(event) => { onDiminuir(event); handleQuantidadeClick(event); }}
-                className="w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center border-r text-sm sm:text-base hover:bg-gray-100"
-            >
-                −
-            </button>
-            <span className="w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center text-xs sm:text-sm font-medium text-gray-700">
-                {quantidade}
-            </span>
-            <button
-                onClick={(event) => { onAumentar(event); handleQuantidadeClick(event); }}
-                className="w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center border-l text-sm sm:text-base hover:bg-gray-100"
-            >
-                +
-            </button>
-        </div>
+      <button
+        onClick={handleAdicionarClick}
+        className="mt-2 px-2 py-1 text-white rounded text-xs sm:text-sm font-medium flex items-center gap-1 transition-all"
+        style={{ backgroundColor: cor }}
+        onMouseEnter={(e) => e.currentTarget.style.filter = "brightness(90%)"}
+        onMouseLeave={(e) => e.currentTarget.style.filter = "brightness(100%)"}
+      >
+        <Image src="/icons/cart_icon.svg" alt="Carrinho" width={14} height={14} />
+        Adicionar
+      </button>
 
-        <button
-            onClick={handleAdicionarClick} 
-            className="ml-2 sm:ml-3 px-2 py-1 sm:px-4 sm:py-2 bg-blue-500 text-white rounded hover:bg-blue-600 text-xs sm:text-sm font-medium flex items-center gap-1 sm:gap-2"        >
-            <Image src="/icons/cart_icon.svg" alt="Carrinho" width={14} height={14} />
-            Adicionar
-        </button>
-      </div>
     </div>
+
   );
 }
