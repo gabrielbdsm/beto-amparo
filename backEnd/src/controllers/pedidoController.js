@@ -161,6 +161,7 @@ export async function finalizarPedido(req, res) {
   const { slug } = req.params;
   const { metodoPagamento, enderecoEntrega, cupom, clienteId } = req.body;
 
+
   // Validação inicial dos dados obrigatórios
   if (!metodoPagamento || !enderecoEntrega || !clienteId) {
     return res.status(400).json({ erro: 'Dados incompletos para finalização' });
@@ -173,7 +174,7 @@ export async function finalizarPedido(req, res) {
       .select('id, tempo_preparo_padrao')
       .eq('slug_loja', slug)
       .single();
-
+    console.log(loja)
     if (lojaError || !loja) {
       return res.status(404).json({ erro: 'Loja não encontrada' });
     }

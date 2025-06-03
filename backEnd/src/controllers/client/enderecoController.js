@@ -3,15 +3,20 @@ import supabase from '../../config/SupaBase.js';
 export const buscarEnderecoCliente = async (req, res) => {
     try {
         const { clienteId } = req.params;
-        
+
+
+
         const { data, error } = await supabase
             .from('enderecos_entrega')
             .select('*')
             .eq('cliente_id', clienteId)
             .single();
 
+
+
+
         if (error) throw error;
-        
+
         if (!data) {
             return res.status(404).json({ message: 'Endereço não encontrado' });
         }
@@ -35,7 +40,7 @@ export const salvarEnderecoCliente = async (req, res) => {
             .single();
 
         let result;
-        
+
         if (existente) {
             // Atualiza endereço existente
             const { data, error } = await supabase
@@ -47,6 +52,7 @@ export const salvarEnderecoCliente = async (req, res) => {
 
             if (error) throw error;
             result = data;
+
         } else {
             // Cria novo endereço
             const { data, error } = await supabase

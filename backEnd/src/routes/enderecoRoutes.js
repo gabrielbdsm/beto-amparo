@@ -1,5 +1,5 @@
 import express from 'express';
-import { 
+import {
     buscarEnderecoCliente,
     salvarEnderecoCliente
 } from '../controllers/client/enderecoController.js';

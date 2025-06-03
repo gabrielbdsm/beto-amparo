@@ -21,7 +21,7 @@ class EnderecoEntrega {
     this.bairro = bairro;
     this.cidade = cidade;
     this.estado = estado;
-    this.telefone = telefone;
+    //this.telefone = telefone;
     this.clienteId = clienteId; 
     this.lojaId = lojaId;
   }
