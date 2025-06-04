@@ -4,7 +4,7 @@ import * as AuthController from '../controllers/Empresa/AuthController.js'; // <
 import * as EmpresaModel from '../models/EmpresaModel.js';
 import { routePrivate } from '../middleware/protectRoutes.js';
 import * as EmpresaController from '../controllers/Empresa/EmpresaController.js'; 
-
+import { atualizarPersonalizacao, criarPersonalizacao, getLojaBySlug, verificarSlug  } from '../controllers/Empresa/personalizacaoController.js';
 const router = express.Router();
 
 import { enviarEmailRecuperacao } from '../controllers/recuperarSenhaController.js';
@@ -13,9 +13,14 @@ import { definirNovaSenha } from '../controllers/redefinirSenhaController.js';
 router.post('/recuperar-senha',enviarEmailRecuperacao);
 router.post('/nova-senha', definirNovaSenha);
 
+router.put('/empresa/personalizacao/:slug', atualizarPersonalizacao);
+router.post('/empresa/personalizacao', criarPersonalizacao);
+router.get('/empresa/personalizacao/:slug', getLojaBySlug);
+router.get('/empresa/verificar-slug', verificarSlug);
+
 router.post('/addEmpresa', AuthController.criarEmpresa);
 router.post('/loginEmpresa', AuthController.loginEmpresa);
-router.get('/logout', AuthController.logout);
+router.post('/logout', AuthController.logout);
 router.get('/verifyAuthStatus', routePrivate, (req, res) => {
   // Se o middleware routePrivate passou, significa que o usuário está autenticado
   res.status(200).json({ mensagem: 'Autenticado.' });
