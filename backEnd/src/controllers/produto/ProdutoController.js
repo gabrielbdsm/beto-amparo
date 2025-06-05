@@ -1,21 +1,15 @@
 // backend/controllers/produto/ProdutoController.js
 
-console.log('DEBUG: ProdutoController.js: INÍCIO DO ARQUIVO'); // Primeiro log
 
 import * as produtoModel from '../../models/ProdutoModel.js';
-console.log('DEBUG: ProdutoController.js: produtoModel importado');
 
 import { validarProduto } from '../../validators/ProdutoValidators.js';
-console.log('DEBUG: ProdutoController.js: validarProduto importado');
 
 import * as ImageModel from '../../models/ImageModel.js';
-console.log('DEBUG: ProdutoController.js: ImageModel importado');
 
 import * as lojaModel from '../../models/Loja.js';
-console.log('DEBUG: ProdutoController.js: lojaModel importado');
 
 import supabase from '../../config/SupaBase.js';
-console.log('DEBUG: ProdutoController.js: supabase importado');
 
 export const criarProduto = async (req, res) => {
     console.log('DEBUG: ProdutoController.js: Chamando criarProduto!');
@@ -135,7 +129,6 @@ export const criarProduto = async (req, res) => {
         });
     }
 };
-console.log('DEBUG: ProdutoController.js: criarProduto exportado.');
 
 
 // 2. FUNÇÃO getProdutos (Listar Todos os Produtos)
@@ -152,7 +145,6 @@ export const getProdutos = async (req, res) => {
         res.status(500).json({ mensagem: "Erro inesperado ao listar todos os produtos.", erro: error.message });
     }
 };
-console.log('DEBUG: ProdutoController.js: getProdutos exportado.');
 
 
 // FUNÇÃO inativarProduto (REINCORPORADA E CORRETA)
@@ -193,7 +185,6 @@ export const inativarProduto = async (req, res) => {
         });
     }
 };
-console.log('DEBUG: ProdutoController.js: inativarProduto exportado.');
 
 
 // FUNÇÃO ativarProduto (REINCORPORADA E CORRETA)
@@ -234,7 +225,6 @@ export const ativarProduto = async (req, res) => {
         });
     }
 };
-console.log('DEBUG: ProdutoController.js: ativarProduto exportado.');
 
 
 // FUNÇÃO buscarProdutoPorId (Mantida, mas com ajuste de select)
@@ -263,7 +253,6 @@ export const buscarProdutoPorId = async (req, res) => {
         res.status(500).json({ message: 'Erro interno do servidor', details: err.message });
     }
 };
-console.log('DEBUG: ProdutoController.js: buscarProdutoPorId exportado.');
 
 
 
@@ -321,7 +310,6 @@ export const listarProdutosPorLoja = async (req, res) => {
         });
     }
 };
-console.log('DEBUG: ProdutoController.js: listarProdutosPorLoja exportado.');
 
 
 export const listarProdutosPorEmpresa = async (req, res) => {
@@ -542,6 +530,3 @@ export const atualizarProduto = async (req, res) => {
         });
     }
 };
-console.log('DEBUG: ProdutoController.js: atualizarProduto exportado.');
-
-console.log('DEBUG: ProdutoController.js: FIM DO ARQUIVO.');

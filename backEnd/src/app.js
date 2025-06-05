@@ -72,7 +72,6 @@ app.post('/upload', (req, res) => {
   });
 });
 
-
 app.use(empresaRoutes);
 app.use(produtosRoutes);
 app.use(clienteRoutes);
