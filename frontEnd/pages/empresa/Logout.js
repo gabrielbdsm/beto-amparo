@@ -11,7 +11,7 @@ export default function LogoutButton() {
     try {
       const response = await fetch(process.env.NEXT_PUBLIC_EMPRESA_API + '/logout', {
 
-        method: 'GET',
+        method: 'POST',
         credentials: 'include', 
       });
      
