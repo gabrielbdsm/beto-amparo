@@ -4,8 +4,11 @@ import * as AuthController from '../controllers/Empresa/AuthController.js'; // <
 import * as EmpresaModel from '../models/EmpresaModel.js';
 import { routePrivate } from '../middleware/protectRoutes.js';
 import * as EmpresaController from '../controllers/Empresa/EmpresaController.js'; 
+
+import { atualizarPersonalizacao, criarPersonalizacao, getLojaBySlug, verificarSlug  } from '../controllers/Empresa/personalizacaoController.js';
 import * as HorariosController from '../controllers/Empresa/horariosCotroller.js'; 
 import { empresaPrivate } from '../middleware/protectRouterEmpresa.js'; // <-- CORRIGIDO AQUI!
+
 const router = express.Router();
 
 import { enviarEmailRecuperacao } from '../controllers/recuperarSenhaController.js';
@@ -14,14 +17,20 @@ import { definirNovaSenha } from '../controllers/redefinirSenhaController.js';
 router.post('/recuperar-senha',enviarEmailRecuperacao);
 router.post('/nova-senha', definirNovaSenha);
 
+router.put('/empresa/personalizacao/:slug', atualizarPersonalizacao);
+router.post('/empresa/personalizacao', criarPersonalizacao);
+router.get('/empresa/personalizacao/:slug', getLojaBySlug);
+router.get('/empresa/verificar-slug', verificarSlug);
+
 router.post('/addEmpresa', AuthController.criarEmpresa);
 router.post('/loginEmpresa', AuthController.loginEmpresa);
+
+router.post('/logout', AuthController.logout);
+
 router.get('/logout', AuthController.logout);
 router.get('/empresa/horarios',empresaPrivate, HorariosController.getDatasConfiguradasByEmpresa);
 router.post('/empresa/horarios',empresaPrivate, HorariosController.saveDatasConfiguradas);
 router.delete('/empresa/horarios/:data',empresaPrivate, HorariosController.deleteDataConfigurada);
-
-
 
 router.get('/verifyAuthStatus', routePrivate, (req, res) => {
   // Se o middleware routePrivate passou, significa que o usuário está autenticado
