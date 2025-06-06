@@ -53,10 +53,6 @@ export async function criarPedido(req, res) {
       return res.status(400).json({ erro: 'Campos obrigatórios ausentes' });
     }
 
-    if (!id_cliente || !id_loja || !data || !total || status === undefined) {
-      return res.status(400).json({ erro: 'Campos obrigatórios ausentes' });
-    }
-
     const { data: novoPedido, error } = await supabase
       .from('pedidos')
       .insert([
@@ -197,45 +193,70 @@ export async function finalizarPedido(req, res) {
       });
     }
 
-    // 2. Buscar e validar pedido aberto
-    const { data: pedido, error: pedidoError } = await supabase
-      .from('pedidos')
-      .select(`
-        *,
-        pedido_itens:pedido_itens(
-          *,
-          produto:produtos(
-            id,
-            nome,
-            estoque,
-            preco
-          )
-        )
-      `)
-      .eq('id_loja', loja.id)
-      .eq('id_cliente', clienteId)
-      //.eq('status', 'aberto')
-      .eq('status', 0)
-      .single();
+    const pedidoId = itens?.[0]?.pedido_id;
 
-    if (pedidoError || !pedido) {
-      return res.status(404).json({
-        erro: 'Nenhum pedido aberto encontrado ou pedido já finalizado',
-        sugestao: '/carrinho'
+    if (!pedidoId) {
+      return res.status(400).json({
+        erro: 'pedido_id não encontrado nos itens',
+        detalhes: 'Certifique-se de que os itens possuem pedido_id válido'
       });
     }
 
-    // 3. Validação de estoque e cálculo de totais
+    // 2. Buscar e validar pedido aberto
+    const { data: pedido, error: pedidoError } = await supabase
+  .from('pedidos')
+  .select('*')
+  .eq('id', pedidoId)
+  .eq('id_cliente', clienteId)
+  .eq('id_loja', loja.id)
+  .eq('status', 0)
+  .single();
+
+    // Buscar os itens do pedido
+const { data: pedido_itens, error: itensError } = await supabase
+  .from('pedido_itens')
+  .select(`*, produto:produto_id ( nome, preco, quantidade )`)  // traz info do produto relacionado
+  .eq('pedido_id', pedidoId);
+
+if (itensError) {
+  return res.status(500).json({ erro: 'Erro ao buscar itens do pedido' });
+}
+
+// Agora, insira os itens dentro do objeto pedido para usar depois
+pedido.pedido_itens = pedido_itens || [];
+
+  if (pedidoError) {
+  console.error("Erro ao buscar pedido:", pedidoError);
+  return res.status(500).json({
+    erro: 'Erro ao buscar pedido',
+    detalhes: pedidoError.message || pedidoError
+  });
+  }
+
+  if (!pedido) {
+    return res.status(404).json({
+      erro: 'Nenhum pedido encontrado',
+      detalhes: {
+        pedidoId,
+        clienteId,
+        lojaId: loja.id,
+        statusEsperado: 0
+      }
+    });
+  }
+
+
+    // 3. Validação de quantidade e cálculo de totais
     let itensInvalidos = [];
     let subtotal = 0;
 
     for (const item of pedido.pedido_itens) {
       subtotal += item.quantidade * item.produto.preco;
 
-      if (item.produto.estoque < item.quantidade) {
+      if (item.produto.quantidade < item.quantidade) {
         itensInvalidos.push({
           produto: item.produto.nome,
-          disponivel: item.produto.estoque,
+          disponivel: item.produto.quantidade,
           solicitado: item.quantidade
         });
       }
@@ -243,7 +264,7 @@ export async function finalizarPedido(req, res) {
 
     if (itensInvalidos.length > 0) {
       return res.status(400).json({
-        erro: 'Estoque insuficiente',
+        erro: 'quantidade insuficiente',
         itens: itensInvalidos,
         sugestao: '/carrinho'
       });
@@ -276,15 +297,23 @@ export async function finalizarPedido(req, res) {
     // 5. Cálculo do total final
     const totalFinal = subtotal - desconto + (pedido.taxa_entrega || 0);
 
-    // 6. Transação para atualizar pedido e estoque
-    const { data: pedidoFinalizado, error: transacaoError } = await supabase.rpc('finalizar_pedido', {
-      pedido_id: pedido.id,
-      novo_status: 'finalizado',
-      metodo_pagamento: metodoPagamento,
-      endereco_entrega: enderecoEntrega,
+    // 6. Transação para atualizar pedido e quantidade
+    const { data, error: transacaoError } = await supabase.rpc('finalizar_pedido', {
+      
       desconto_aplicado: desconto,
+      endereco_entrega: enderecoEntrega,
+      metodo_pagamento: metodoPagamento,
+      novo_status: 'finalizado',
+      pedido_id: pedido.id,
       total_pago: totalFinal,
     });
+
+    if (transacaoError) {
+      throw new Error(`Falha na transação: ${transacaoError.message}`);
+    }
+
+    const pedidoFinalizado = Array.isArray(data) ? data[0] : data;
+
 
     if (transacaoError) {
       throw new Error(`Falha na transação: ${transacaoError.message}`);
