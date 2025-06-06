@@ -159,24 +159,42 @@ export async function obterPedidoPorId(req, res) {
 
 export async function finalizarPedido(req, res) {
   const { slug } = req.params;
-  const { metodoPagamento, enderecoEntrega, cupom, clienteId } = req.body;
+  const { metodoPagamento, enderecoEntrega, cupom, clienteId, itens } = req.body;
+  console.log("BODY recebido em finalizarPedido:", req.body);
+  console.log("slug:", slug);
 
-
-  // Validação inicial dos dados obrigatórios
-  if (!metodoPagamento || !enderecoEntrega || !clienteId) {
-    return res.status(400).json({ erro: 'Dados incompletos para finalização' });
+  // Validação reforçada
+  if (!slug || !metodoPagamento || !enderecoEntrega || !clienteId || !Array.isArray(itens)) {
+    return res.status(400).json({
+      erro: 'Dados incompletos',
+      campos_necessarios: {
+        slug: !slug,
+        metodoPagamento: !metodoPagamento,
+        enderecoEntrega: !enderecoEntrega,
+        clienteId: !clienteId,
+        itens: !itens
+      }
+    });
   }
 
   try {
     // 1. Validação da loja
     const { data: loja, error: lojaError } = await supabase
-      .from('lojas')
-      .select('id, tempo_preparo_padrao')
+      .from('loja')
+      .select('id')
       .eq('slug_loja', slug)
       .single();
-    console.log(loja)
-    if (lojaError || !loja) {
-      return res.status(404).json({ erro: 'Loja não encontrada' });
+
+    if (lojaError) {
+      console.error('Erro Supabase:', lojaError);
+      return res.status(500).json({ erro: 'Erro ao buscar loja' });
+    }
+    if (!loja) {
+      return res.status(404).json({
+        erro: 'Loja não encontrada',
+        slug_procurado: slug,
+        sugestao: 'Verifique o slug da loja'
+      });
     }
 
     // 2. Buscar e validar pedido aberto
@@ -196,7 +214,8 @@ export async function finalizarPedido(req, res) {
       `)
       .eq('id_loja', loja.id)
       .eq('id_cliente', clienteId)
-      .eq('status', 'aberto')
+      //.eq('status', 'aberto')
+      .eq('status', 0)
       .single();
 
     if (pedidoError || !pedido) {
@@ -265,7 +284,6 @@ export async function finalizarPedido(req, res) {
       endereco_entrega: enderecoEntrega,
       desconto_aplicado: desconto,
       total_pago: totalFinal,
-      tempo_preparo: loja.tempo_preparo_padrao
     });
 
     if (transacaoError) {
@@ -290,10 +308,11 @@ export async function finalizarPedido(req, res) {
     });
 
   } catch (error) {
-    console.error('Erro ao finalizar pedido:', error);
+    console.error('Erro detalhado:', error);
     res.status(500).json({
-      erro: error.message || 'Erro interno ao finalizar pedido',
-      sugestao: '/contato'
+      erro: 'Erro interno',
+      detalhes: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 }

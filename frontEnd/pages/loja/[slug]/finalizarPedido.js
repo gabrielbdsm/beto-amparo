@@ -20,10 +20,8 @@ export async function getServerSideProps(context) {
         };
     }
 
-    // Se precisar de dados iniciais do servidor, faça o fetch aqui
-    // Mas como sua página já faz no useEffect, pode retornar vazio:
     return {
-        props: {}, // Isso evitará o erro do JSON
+        props: {},
     };
 }
 
@@ -153,7 +151,6 @@ export default function FinalizarPedido({ empresaId, initialData }) {
             setEnderecoEditado(true);
             alert("Endereço salvo com sucesso!");
 
-            // Recarregar os endereços
             const enderecoResponse = await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/clientes/${clienteId}/endereco`, {
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('token_cliente')}`
@@ -205,7 +202,6 @@ export default function FinalizarPedido({ empresaId, initialData }) {
                     setItensCarrinho(pedidoData.itens);
                 }
 
-                // Buscar dados do cliente
                 const clienteId = getClienteId();
 
                 if (clienteId) {
@@ -272,28 +268,11 @@ export default function FinalizarPedido({ empresaId, initialData }) {
             return;
         }
 
-        // const camposObrigatorios = ['rua', 'numero', 'bairro', 'cep', 'cidade', 'estado'];
-        // const enderecoCompleto = camposObrigatorios.every(
-        //     campo => enderecoEntrega[campo]
-        // );
-
-        // console.log("endereco", enderecoCompleto)
-
-        // if (!enderecoCompleto) {
-        //     alert("Preencha todos os campos obrigatórios do endereço!");
-        //     return;
-        // }
-
         setLoading(true);
 
         try {
             const clienteId = getClienteId();
             if (!clienteId) throw new Error("Usuário não autenticado");
-
-            const enderecoExistente = await verificarEnderecoExistente(clienteId);
-            // if (!enderecoExistente || enderecoEditado) {
-            //     await salvarEnderecoCliente(clienteId);
-            // }
 
             const payload = {
                 metodoPagamento,
@@ -308,8 +287,11 @@ export default function FinalizarPedido({ empresaId, initialData }) {
                     estado: enderecoEntrega.estado,
                 },
                 cupom: cupom.trim() !== "" ? cupom : null,
-                clienteId
+                clienteId,
+                itens: itensCarrinho 
             };
+
+            console.log("Payload enviado para finalizar pedido:", payload);
 
             const response = await fetch(
                 `${process.env.NEXT_PUBLIC_EMPRESA_API}/loja/${slug}/pedidos/finalizar`,
@@ -323,19 +305,23 @@ export default function FinalizarPedido({ empresaId, initialData }) {
                 }
             );
 
+            // Leia o corpo da resposta apenas uma vez
+            const responseText = await response.text();
+
             if (!response.ok) {
                 let errorMessage = "Erro ao finalizar pedido";
                 try {
-                    const errorData = await response.json();
+                    const errorData = JSON.parse(responseText); // Tente analisar como JSON
                     errorMessage = errorData.erro || errorMessage;
                 } catch (e) {
-                    const text = await response.text();
-                    console.error("Resposta inesperada:", text);
+                    console.error("Resposta inesperada ou não JSON:", responseText);
+                    // Se não for JSON, use a mensagem de erro padrão ou o texto da resposta
+                    errorMessage = `Erro do servidor: ${responseText.substring(0, 100)}...`; // Limita o texto para não poluir o alerta
                 }
                 throw new Error(errorMessage);
             }
 
-            const { pedido } = await response.json();
+            const { pedido } = JSON.parse(responseText); // Analise como JSON se a resposta for OK
             router.push(`/${slug}/pedido/confirmacao/${pedido.id}`);
 
         } catch (error) {
@@ -813,8 +799,23 @@ export default function FinalizarPedido({ empresaId, initialData }) {
                             className="mt-1 mr-2"
                         />
                         <span className="text-sm">
-                            Li e aceito os <a href="#" className="text-blue-600">Termos de Uso</a> e <a href="#" className="text-blue-600">Política de Privacidade</a>.
-                            Também concordo com a <a href="#" className="text-blue-600">Política de Trocas e Devoluções</a>.
+                            Li e aceito os <a
+                                href="/termos/termos.html"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-600 hover:underline"
+                            >Termos de Uso</a> e <a
+                                href="/termos/termos.html"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-600 hover:underline"
+                            >Política de Privacidade</a>.
+                            Também concordo com a <a
+                                href="/termos/politicaTrocas.html"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-600 hover:underline"
+                            >Política de Trocas e Devoluções</a>.
                         </span>
                     </label>
                 </div>
