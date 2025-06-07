@@ -10,6 +10,7 @@ export default function Pedidos() {
   const [pedidos, setPedidos] = useState([]);
   const [corPrimaria, setCorPrimaria] = useState("#3B82F6"); // Valor padrão
   const [corSecundaria, setCorSecundaria] = useState("#F3F4F6"); // Valor padrão
+  const [nome_fantasia, setNomeFantasia] = useState("");
   const [pedidoSelecionado, setPedidoSelecionado] = useState(null);
   const [showModal, setShowModal] = useState(false);
 
@@ -43,6 +44,7 @@ export default function Pedidos() {
         const data = await response.json();
         setCorPrimaria(data.cor_primaria || "#3B82F6");
         setCorSecundaria(data.cor_secundaria || "#F3F4F6");
+        setNomeFantasia(data.nome_fantasia || slug);
       } catch (error) {
         console.error("Erro ao buscar loja:", error);
         setCorPrimaria("#3B82F6");
@@ -98,7 +100,7 @@ export default function Pedidos() {
         style={{ backgroundColor: corPrimaria, color: textColor }}
       >
         <h1 className="text-xl font-bold" style={{ color: textColor }}>
-          Seus pedidos em {slug}
+          Seus pedidos em {nome_fantasia || slug}
         </h1>
       </header>
 
@@ -119,7 +121,7 @@ export default function Pedidos() {
                 <p><strong>Status:</strong> {traduzirStatus(pedido.status)}</p>
                 <p><strong>Observações:</strong> {pedido.observacoes || 'Nenhuma'}</p>
 
-                {(pedido.status === 0 || pedido.status === '0') && (
+                {(['0', '1', '2'].includes(String(pedido.status))) && (
                   <div className="mt-4 flex justify-center">
                     <button
                       onClick={() => abrirModalCancelamento(pedido)}

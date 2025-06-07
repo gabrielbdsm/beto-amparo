@@ -19,8 +19,10 @@ const orderCancellationController = {
         return res.status(404).json({ error: "Pedido não encontrado" });
       }
 
-      // Status que bloqueiam cancelamento: 4 (finalizado), 3 (pronto para entrega), 5 (cancelado)
-      if ([3,4,5].includes(pedido.status)) {
+      // Só permite cancelamento se o status for 0, 1 ou 2
+      const statusNum = Number(pedido.status);
+      const statusPermitidos = [0, 1, 2];
+      if (!statusPermitidos.includes(statusNum)) {
         return res.status(400).json({ error: "Pedido não pode ser cancelado nesse status." });
       }
 
