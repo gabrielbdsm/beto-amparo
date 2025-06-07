@@ -1,6 +1,6 @@
 import supabase from '../../config/SupaBase.js';
 import dotenv from 'dotenv';
-import * as lojaModel from '../../models/Loja.js';
+import * as LojaModel from '../../models/Loja.js';
 dotenv.config();
 
 export const criarPersonalizacao = async (req, res) => {
@@ -52,9 +52,9 @@ export const verificarSlug = async (req, res) => {
     }
 
     const { data, error } = await supabase
-      .from('loja')
-      .select('slug_loja')
-      .eq('slug_loja', slug)
+      .from('Loja')
+      .select('slug_Loja')
+      .eq('slug_Loja', slug)
       .single();
 
     if (error && error.code !== 'PGRST116') {
@@ -74,35 +74,74 @@ export const getLojaBySlug = async (req, res) => {
       console.log('Controller: getLojaBySlug recebido para slug:', slug); // <-- NOVO LOG
 
       if (!slug) {
-          return res.status(400).json({ mensagem: 'Slug da loja não fornecido.' });
+          return res.status(400).json({ mensagem: 'Slug da Loja não fornecido.' });
       }
 
-      // Chama a função do modelo para buscar a loja completa
-      const { data: loja, error: modelError } = await lojaModel.buscarLojaPorSlugCompleta(slug);
-      console.log('Controller: Resultado de buscarLojaPorSlugCompleta:', loja, modelError); // <-- NOVO LOG
+      // Chama a função do modelo para buscar a Loja completa
+      const { data: Loja, error: modelError } = await LojaModel.buscarLojaPorSlugCompleta(slug);
+      console.log('Controller: Resultado de buscarLojaPorSlugCompleta:', Loja, modelError); // <-- NOVO LOG
 
       if (modelError) {
           // Se o modelo retornou um erro (que não seja "não encontrado")
-          console.error('PersonalizacaoController: Erro do modelo ao buscar loja:', modelError);
+          console.error('PersonalizacaoController: Erro do modelo ao buscar Loja:', modelError);
           // Você pode decidir enviar uma mensagem de erro mais genérica aqui
-          return res.status(500).json({ mensagem: 'Erro ao buscar dados da loja.', erro: modelError });
+          return res.status(500).json({ mensagem: 'Erro ao buscar dados da Loja.', erro: modelError });
       }
 
-      if (!loja) {
-          // Se o modelo retornou data: null (loja não encontrada)
+      if (!Loja) {
+          // Se o modelo retornou data: null (Loja não encontrada)
           console.log('PersonalizacaoController: Loja não encontrada para o slug:', slug);
           return res.status(404).json({ mensagem: 'Loja não encontrada com o identificador fornecido.' });
       }
 
-      // Se a loja foi encontrada, o objeto 'loja' já contém todos os campos
-      // selecionados em buscarLojaPorSlugCompleta ('id', 'nome_fantasia', 'foto_loja', etc.).
-      // Basta retornar o objeto 'loja' completo.
       console.log('PersonalizacaoController: Loja encontrada, retornando dados.');
-      return res.status(200).json(loja); // Retorna o objeto completo da loja
+      return res.status(200).json(Loja); // Retorna o objeto completo da Loja
 
   } catch (err) {
       console.error('PersonalizacaoController: Erro inesperado em getLojaBySlug:', err.message);
       return res.status(500).json({ mensagem: 'Erro interno do servidor.', erro: err.message });
   }
 };
+
+export const atualizarPersonalizacao = async (req, res) => {
+  try {
+    const { slug } = req.params;
+    const { nome_fantasia, cor_primaria, cor_secundaria, slogan, foto_loja, slug_loja, banner } = req.body;
+
+    if (!slug) {
+      return res.status(400).json({ mensagem: 'Slug da Loja não fornecido.' });
+    }
+
+    // Atualiza a Loja com base no slug
+    const { data, error } = await supabase
+      .from('loja')
+      .update({
+        nome_fantasia: nome_fantasia,
+        cor_primaria: cor_primaria,
+        cor_secundaria: cor_secundaria,
+        slogan: slogan || null,
+        foto_loja: foto_loja || null,
+        slug_loja: slug_loja,
+        banner: banner,
+      })
+      .eq('slug_loja', slug)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Erro ao atualizar Loja:', error.message);
+      return res.status(500).json({ mensagem: 'Erro ao atualizar personalização da Loja.', erro: error.message });
+    }
+
+    if (!data) {
+      return res.status(404).json({ mensagem: 'Loja não encontrada com o slug fornecido.' });
+    }
+
+    return res.status(200).json({ mensagem: 'Personalização atualizada com sucesso.', Loja: data });
+  } catch (err) {
+    console.error('Erro inesperado ao atualizar Loja:', err.message);
+    return res.status(500).json({ mensagem: 'Erro interno do servidor.', erro: err.message });
+  }
+};
+
 
