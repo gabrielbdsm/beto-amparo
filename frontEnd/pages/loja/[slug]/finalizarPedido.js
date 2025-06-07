@@ -36,6 +36,8 @@ export default function FinalizarPedido({ empresaId, initialData }) {
     const [aceiteTermos, setAceiteTermos] = useState(false);
     const [frete, setFrete] = useState(0);
     const [desconto, setDesconto] = useState(0);
+    const [pedidoFinalizado, setPedidoFinalizado] = useState(false);
+    const [pedidoInfo, setPedidoInfo] = useState(null); // guardar dados que vão para o comprovante
     const [dadosCliente, setDadosCliente] = useState({
         nome: "",
         email: "",
@@ -288,7 +290,7 @@ export default function FinalizarPedido({ empresaId, initialData }) {
                 },
                 cupom: cupom.trim() !== "" ? cupom : null,
                 clienteId,
-                itens: itensCarrinho 
+                itens: itensCarrinho
             };
 
             console.log("Payload enviado para finalizar pedido:", payload);
@@ -307,6 +309,13 @@ export default function FinalizarPedido({ empresaId, initialData }) {
 
             // Leia o corpo da resposta apenas uma vez
             const responseText = await response.text();
+
+            if (response.ok) {
+                const pedidoConfirmado = JSON.parse(responseText); // salva os dados do pedido
+                setPedidoFinalizado(true);
+                setPedidoInfo(pedidoConfirmado); // dados úteis p/ comprovante
+                return;
+            }
 
             if (!response.ok) {
                 let errorMessage = "Erro ao finalizar pedido";
@@ -338,6 +347,17 @@ export default function FinalizarPedido({ empresaId, initialData }) {
             setLoading(false);
         }
     };
+
+    const handleVerComprovante = () => {
+        // Redireciona para a rota dinâmica do Next.js que está em pages/comprovante/[pedidoId].js
+        router.push(`/comprovante/${pedidoId}`);
+    };
+
+    const handleVoltar = () => {
+        // Redireciona para a página da loja com slug dinâmico, atenção ao parâmetro 'slug'
+        router.push(`/loja/${slug}`); // Aqui o 'slug' é variável dinâmica da rota loja/[slug]/pedidos.js
+    };
+
 
     return (
         <div className="flex flex-col min-h-screen bg-gray-50 text-black">
@@ -848,6 +868,23 @@ export default function FinalizarPedido({ empresaId, initialData }) {
                     <p className="text-center mt-3 text-xs text-gray-500">
                         Ao confirmar, você concorda com os termos e condições acima.
                     </p>
+                    {/* Botões pós-finalização */}
+                    {pedidoFinalizado && (
+                        <div className="mt-6 flex flex-col items-center gap-3">
+                            <button
+                                onClick={handleVerComprovante}
+                                className="w-full md:w-auto bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 font-semibold"
+                            >
+                                Ver Comprovante
+                            </button>
+                            <button
+                                onClick={handleVoltar}
+                                className="w-full md:w-auto bg-gray-300 text-gray-800 py-2 px-4 rounded-lg hover:bg-gray-400 font-semibold"
+                            >
+                                Voltar
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
 
