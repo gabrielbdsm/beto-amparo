@@ -1,6 +1,15 @@
 import { buscarPedidosPorSlug } from '../models/PedidoModel.js';
 import supabase from '../config/SupaBase.js';
 
+// Adicione temporariamente no início do controller:
+console.log('Status atual do pedido 81:',
+  await supabase
+    .from('pedidos')
+    .select('status, data_finalizacao')
+    .eq('id', 81)
+    .single()
+);
+
 export async function listarPedidosPorEmpresa(req, res) {
   const { slug } = req.params;
 
@@ -40,6 +49,9 @@ export async function listarPedidosPorEmpresa(req, res) {
 export async function criarPedido(req, res) {
   try {
     const { id_cliente, id_loja, data, total, status, observacoes } = req.body;
+    //const statusFinal = status !== undefined && status !== null ? status : 'aberto';
+    const statusFinal = typeof status === 'string' && status.trim() ? status : 'aberto';
+
 
     console.log('Dados recebidos:', { id_cliente, id_loja, data, total, observacoes });
 
@@ -61,7 +73,8 @@ export async function criarPedido(req, res) {
           id_loja,
           data,
           total,
-          status,
+          status: statusFinal,
+          status_finalizarPedido: 'aberto',
           observacoes
         }
       ])
@@ -168,8 +181,18 @@ export async function finalizarPedido(req, res) {
         metodoPagamento: !metodoPagamento,
         enderecoEntrega: !enderecoEntrega,
         clienteId: !clienteId,
-        itens: !itens
+        itens: !itens,
+        status: normalizarStatus(pedidoFinalizado.status)
       }
+    });
+  }
+
+  const pedidoId = itens?.[0]?.pedido_id;
+  // No início da função, valide se pedidoId existe
+  if (!pedidoId) {
+    return res.status(400).json({
+      erro: 'ID do pedido não fornecido',
+      sugestao: 'Verifique se os itens possuem pedido_id válido'
     });
   }
 
@@ -204,46 +227,71 @@ export async function finalizarPedido(req, res) {
 
     // 2. Buscar e validar pedido aberto
     const { data: pedido, error: pedidoError } = await supabase
-  .from('pedidos')
-  .select('*')
-  .eq('id', pedidoId)
-  .eq('id_cliente', clienteId)
-  .eq('id_loja', loja.id)
-  .eq('status', 0)
-  .single();
+      .from('pedidos')
+      .select('*')
+      .eq('id', pedidoId)
+      .eq('id_cliente', clienteId)
+      .eq('id_loja', loja.id)
+      //.eq('status', 'aberto')
+      .eq('status_finalizarPedido', 'aberto')
+      .single();
+
+    if (pedidoError || !pedido) {
+      console.error("Erro ao buscar pedido:", pedidoError);
+      return res.status(404).json({
+        erro: 'Nenhum pedido aberto encontrado',
+        detalhes: {
+          pedidoId,
+          clienteId,
+          lojaId: loja.id
+        }
+      });
+    }
+
+    // Adicione esta verificação ANTES de processar:
+    if (pedido.status === 'finalizado') {
+      return res.status(400).json({
+        erro: 'Pedido já finalizado',
+        detalhes: {
+          data_finalizacao: pedido.data_finalizacao,
+          status_atual: pedido.status
+        },
+        sugestao: 'Verifique seu histórico de pedidos'
+      });
+    }
 
     // Buscar os itens do pedido
-const { data: pedido_itens, error: itensError } = await supabase
-  .from('pedido_itens')
-  .select(`*, produto:produto_id ( nome, preco, quantidade )`)  // traz info do produto relacionado
-  .eq('pedido_id', pedidoId);
+    const { data: pedido_itens, error: itensError } = await supabase
+      .from('pedido_itens')
+      .select(`*, produto:produto_id ( nome, preco, quantidade )`)  // traz info do produto relacionado
+      .eq('pedido_id', pedidoId);
 
-if (itensError) {
-  return res.status(500).json({ erro: 'Erro ao buscar itens do pedido' });
-}
+    if (itensError) {
+      return res.status(500).json({ erro: 'Erro ao buscar itens do pedido' });
+    }
 
-// Agora, insira os itens dentro do objeto pedido para usar depois
-pedido.pedido_itens = pedido_itens || [];
+    // Agora, insira os itens dentro do objeto pedido para usar depois
+    pedido.pedido_itens = pedido_itens || [];
 
-  if (pedidoError) {
-  console.error("Erro ao buscar pedido:", pedidoError);
-  return res.status(500).json({
-    erro: 'Erro ao buscar pedido',
-    detalhes: pedidoError.message || pedidoError
-  });
-  }
+    if (pedidoError) {
+      console.error("Erro ao buscar pedido:", pedidoError);
+      return res.status(500).json({
+        erro: 'Erro ao buscar pedido',
+        detalhes: pedidoError.message || pedidoError
+      });
+    }
 
-  if (!pedido) {
-    return res.status(404).json({
-      erro: 'Nenhum pedido encontrado',
-      detalhes: {
-        pedidoId,
-        clienteId,
-        lojaId: loja.id,
-        statusEsperado: 0
-      }
-    });
-  }
+    if (!pedido) {
+      return res.status(404).json({
+        erro: 'Nenhum pedido encontrado',
+        detalhes: {
+          pedidoId,
+          clienteId,
+          lojaId: loja.id,
+          statusEsperado: 'aberto'
+        }
+      });
+    }
 
 
     // 3. Validação de quantidade e cálculo de totais
@@ -299,25 +347,36 @@ pedido.pedido_itens = pedido_itens || [];
 
     // 6. Transação para atualizar pedido e quantidade
     const { data, error: transacaoError } = await supabase.rpc('finalizar_pedido', {
-      
-      desconto_aplicado: desconto,
-      endereco_entrega: enderecoEntrega,
-      metodo_pagamento: metodoPagamento,
-      novo_status: 'finalizado',
-      pedido_id: pedido.id,
-      total_pago: totalFinal,
+      v_pedido_id: pedido.id,
+      v_metodo_pagamento: metodoPagamento,
+      v_endereco_entrega: enderecoEntrega,
+      v_cliente_id: clienteId,
+      v_total_pago: totalFinal,
+      v_desconto_aplicado: desconto
     });
 
-    if (transacaoError) {
-      throw new Error(`Falha na transação: ${transacaoError.message}`);
+
+
+    // Verifique se o status foi realmente atualizado
+    const { data: pedidoVerificado, error: verifError } = await supabase
+      .from('pedidos')
+      .select('status')
+      .eq('id', pedido.id)
+      .single();
+
+    if (verifError || pedidoVerificado.status !== 'finalizado') {
+      console.error("Resposta do Supabase RPC:", data);
+      console.error("Erro retornado pelo Supabase:", transacaoError);
+      throw new Error('Falha ao atualizar status do pedido');
     }
 
     const pedidoFinalizado = Array.isArray(data) ? data[0] : data;
 
-
     if (transacaoError) {
+      console.error("Erro ao finalizar pedido via RPC:", transacaoError);
       throw new Error(`Falha na transação: ${transacaoError.message}`);
     }
+
 
     // 7. Retornar resposta com dados completos
     res.status(200).json({

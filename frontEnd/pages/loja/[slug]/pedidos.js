@@ -53,14 +53,21 @@ export default function Pedidos() {
   }, [slug]);
 
   const traduzirStatus = (status) => {
-    switch (status) {
+    switch (String(status).toLowerCase()) { // Converte para string e padroniza
       case '0':
       case 0:
+      case 'aberto':
+      case 'aguardando':
         return 'Aguardando confirmação';
+
       case '1':
       case 1:
+      case 'finalizado':
+      case 'confirmado':
         return 'Confirmado';
+
       default:
+        console.warn('Status não mapeado:', status);
         return 'Status desconhecido';
     }
   };

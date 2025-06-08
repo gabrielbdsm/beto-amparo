@@ -189,6 +189,7 @@ export default function FinalizarPedido({ empresaId, initialData }) {
 
     useEffect(() => {
         const fetchData = async () => {
+            console.log('Status recebido da API:', pedidoId.status);
             try {
                 if (!slug || !pedidoId) return;
 
@@ -239,7 +240,7 @@ export default function FinalizarPedido({ empresaId, initialData }) {
         };
 
         fetchData();
-    }, [slug, pedidoId, mostrarFormulario]);
+    }, [slug, pedidoId, mostrarFormulario, pedidoId.status]);
 
     const subtotal = itensCarrinho.reduce((acc, item) => acc + (item.produto.preco * item.quantidade), 0);
     const total = subtotal + frete - desconto;
