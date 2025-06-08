@@ -33,7 +33,7 @@ const ClientForm = ({
 
   if (!selectedDate || !selectedTime) {
     return (
-      <Card className="medical-card">
+      <Card className="medical-card mb-7">
         <CardContent className="p-8 text-center">
           <Calendar className="h-12 w-12 text-gray-300 mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-gray-600 mb-2">
@@ -48,7 +48,7 @@ const ClientForm = ({
   }
 
   return (
-    <Card className="medical-card ">
+    <Card className="medical-card mb-7 ">
       <CardHeader className="pb-4">
         <CardTitle className="flex items-center text-xl text-gray-900">
           <CheckCircle className="mr-2 h-5 w-5 text-green-600" />

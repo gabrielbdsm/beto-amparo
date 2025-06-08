@@ -19,6 +19,10 @@ const nextConfig = {
         destination: '/client/agendamento', // Arquivo de destino
       },
       {
+        source: '/loja/:slug/visualizarAgendamento', // URL personalizada
+        destination: '/client/visualizarAgendamentoCliente', // Arquivo de destino
+      },
+      {
         source: '/:slug/carrinho',
         destination: '/client/carrinho', 
       },
