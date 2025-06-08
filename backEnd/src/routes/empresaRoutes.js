@@ -5,6 +5,7 @@ import * as EmpresaModel from '../models/EmpresaModel.js';
 import { routePrivate } from '../middleware/protectRoutes.js';
 import * as EmpresaController from '../controllers/Empresa/EmpresaController.js'; 
 import * as HorariosController from '../controllers/Empresa/horariosCotroller.js'; 
+import * as agendamentoEmpresaController from '../controllers/Empresa/AgendamentoEmpresaController.js'; // <-- CORRIGIDO AQUI!
 import { empresaPrivate } from '../middleware/protectRouterEmpresa.js'; // <-- CORRIGIDO AQUI!
 const router = express.Router();
 
@@ -20,7 +21,9 @@ router.get('/logout', AuthController.logout);
 router.get('/empresa/horarios',empresaPrivate, HorariosController.getDatasConfiguradasByEmpresa);
 router.post('/empresa/horarios',empresaPrivate, HorariosController.saveDatasConfiguradas);
 router.delete('/empresa/horarios/:data',empresaPrivate, HorariosController.deleteDataConfigurada);
-
+router.get('/empresa/agendamentos', empresaPrivate, agendamentoEmpresaController.getAgendamentosController);
+router.delete('/empresa/agendamentos', empresaPrivate, agendamentoEmpresaController.deleteAgendamentoController);
+router.put('/empresa/agendamentos', empresaPrivate, agendamentoEmpresaController.updateAgendamentoController);
 
 
 router.get('/verifyAuthStatus', routePrivate, (req, res) => {

@@ -53,6 +53,10 @@ const nextConfig = {
         source: '/empresa/adicionarProduto', 
         destination: '/empresa/AdicionarProduto', 
       },
+      {
+        source: '/empresa/meusAgendamentos', 
+        destination: '/empresa/visualizacaoAgendamento', 
+      },
       
     ];
   },

@@ -138,3 +138,22 @@ export async function buscarLojaPorSlugCompleta(slug) {
         return { data: null, error: err.message };
     }
 }
+export const getLojaByIdEmpresa = async (id_empresa) => {
+    try {
+        const { data, error } = await supabase
+            .from('loja')
+            .select('slug_loja')
+            .eq('id_empresa', id_empresa)
+            .single();
+
+        if (error) {
+            console.error('LojaModel: Erro ao buscar loja por ID da empresa:', error.message);
+            return { data: null, error: error.message };
+        }
+
+        return { data, error: null };
+    } catch (err) {
+        console.error('LojaModel: Erro inesperado :', err.message);
+        return { data: null, error: err.message };
+    }
+}

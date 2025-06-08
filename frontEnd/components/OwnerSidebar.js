@@ -2,15 +2,17 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, use } from 'react';
 import { Clock } from "lucide-react"
+
+
 
 // Helper component para os itens de navegação
 // Adiciona uma prop 'onClick' para lidar com ações como logout
 function NavItem({ icon, label, path, currentSlug, onClick }) {
   const router = useRouter();
   const fullPath = currentSlug ? `/empresa/${currentSlug}${path}` : path;
-
+ 
   // Renderiza um botão se houver onClick, senão um Link
   if (onClick) {
     return (
@@ -35,9 +37,48 @@ function NavItem({ icon, label, path, currentSlug, onClick }) {
   );
 }
 
-export default function OwnerSidebar({ children, slug }) {
+export default   function  OwnerSidebar ({ children, slug })  {
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [slugEmpresa, setSlugEmpresa] = useState('');
+
+  useEffect(() => {
+
+    const getSlug = async() => {
+      try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/empresa/loja/slug`, {
+          method: 'GET',
+          credentials: 'include', 
+          
+        });
+  
+        if (response.ok) {
+          const data = await response.json();
+     
+         return  setSlugEmpresa( data || '')
+
+        } else {
+  
+          console.error('OwnerSidebar: Falha ao obter slug da empresa');
+          return ;
+        }
+      } catch (error) {
+        console.error('OwnerSidebar: Erro ao buscar slug da empresa:', error);
+        return ;
+      }
+  
+      
+    };
+    getSlug();
+    
+   }, []);
+   if (!slug) {
+    slug = slugEmpresa; 
+   }
+
+ 
+   
+
 
   // Função de logout integrada diretamente na sidebar
   const handleLogout = async () => {
@@ -111,6 +152,7 @@ export default function OwnerSidebar({ children, slug }) {
             <NavItem icon="/icons/paint_white.svg" label="Personalizar Loja" path="/personalizacao-loja" currentSlug={slug} />
             <NavItem icon="/icons/help_white.svg" label="Suporte" path="/suporte" currentSlug={slug} />
             <NavItem icon="/icons/clock_white.svg"  label="Horarios" path="/empresa/horarioEmpresa"  />
+            <NavItem icon= "/icons/notes.png" label="Meus agendamentos" path="/empresa/meusAgendamentos"  />
           </div>
         </div>
         
