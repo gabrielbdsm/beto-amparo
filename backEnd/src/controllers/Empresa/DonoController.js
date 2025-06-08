@@ -42,7 +42,6 @@ class DonoController {
     }
   }
 
-<<<<<<< HEAD
   async getLojaPorNomeEmpresa(req, res) {
   try {
     const { nomeEmpresa } = req.params;
@@ -78,10 +77,6 @@ class DonoController {
     return res.status(500).json({ error: 'Erro interno do servidor' });
   }
 }
-
-
-=======
->>>>>>> develop
 }
 
 export default new DonoController();
