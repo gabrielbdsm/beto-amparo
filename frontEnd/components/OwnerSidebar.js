@@ -149,7 +149,7 @@ export default   function  OwnerSidebar ({ children, slug })  {
             {/* Itens de navegação */}
             <NavItem icon="/icons/dashboard_white.svg" label="Dashboard" path="/dashboard" currentSlug={slug} />
             <NavItem icon="/icons/add_white.svg" label="Meus Produtos" path="/produtos" currentSlug={slug} />
-            <NavItem icon="/icons/paint_white.svg" label="Personalizar Loja" path="/personalizacao-loja" currentSlug={slug} />
+            <NavItem icon="/icons/paint_white.svg" label="Personalizar Loja" path="/personalizacao" currentSlug={slug} />
             <NavItem icon="/icons/help_white.svg" label="Suporte" path="/suporte" currentSlug={slug} />
             <NavItem icon="/icons/clock_white.svg"  label="Horarios" path="/empresa/horarioEmpresa"  />
             <NavItem icon= "/icons/notes.png" label="Meus agendamentos" path="/empresa/meusAgendamentos"  />
