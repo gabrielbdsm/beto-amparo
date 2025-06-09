@@ -140,7 +140,6 @@ export async function buscarLojaPorSlugCompleta(slug) {
         return { data: null, error: { message: `Erro inesperado: ${err.message}`, code: 'UNEXPECTED_ERROR' } };
     }
 }
-<<<<<<< HEAD
 export async function buscarLojasPorEmpresaId(empresaId) {
     console.log('DEBUG: LojaModel: Buscando lojas para empresa ID:', empresaId);
     try {
@@ -160,7 +159,6 @@ export async function buscarLojasPorEmpresaId(empresaId) {
         return { data: null, error: { message: `Erro inesperado: ${err.message}` } };
     }
 }
-=======
 export const getLojaByIdEmpresa = async (id_empresa) => {
     try {
         const { data, error } = await supabase
@@ -180,4 +178,3 @@ export const getLojaByIdEmpresa = async (id_empresa) => {
         return { data: null, error: err.message };
     }
 }
->>>>>>> 3df95ff4e293d782bbd06c8a2c6fef9b74deef8d

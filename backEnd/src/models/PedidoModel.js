@@ -197,3 +197,15 @@ export async function getDadosVendasAgregados(idLoja, periodo = 'semana') {
 
   return { data: { labels, totals }, error: null };
 }
+export async function buscarPedidoPorId(pedidoId) {
+  if (!pedidoId) throw new Error("ID do pedido é obrigatório");
+  
+  const { data, error } = await supabase
+    .from('pedidos')
+    .select('*')
+    .eq('id', pedidoId)
+    .single();
+
+  if (error) throw error;
+  return data;
+}
