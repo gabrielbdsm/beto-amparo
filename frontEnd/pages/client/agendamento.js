@@ -319,6 +319,7 @@ const AppointmentBooking = () => {
             <div className={`flex-1 h-1 rounded ${currentStep >= 2 ? 'bg-blue-200' : 'bg-gray-300'}`}></div>
 
             {/* Passo 2 */}
+
             <div className={`flex items-center space-x-2 ${currentStep >= 2 ? 'text-blue-600' : 'text-gray-400'}`}>
               <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${currentStep >= 2 ? 'bg-blue-600 text-white' : 'bg-gray-300 text-gray-600'}`}>
                 2
@@ -330,6 +331,7 @@ const AppointmentBooking = () => {
             <div className={`flex-1 h-1 rounded ${currentStep >= 3 ? 'bg-blue-200' : 'bg-gray-300'}`}></div>
 
             {/* Passo 3 */}
+
             <div className={`flex items-center space-x-2 ${currentStep >= 3 ? 'text-blue-600' : 'text-gray-400'}`}>
               <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${currentStep >= 3 ? 'bg-blue-600 text-white' : 'bg-gray-300 text-gray-600'}`}>
                 3

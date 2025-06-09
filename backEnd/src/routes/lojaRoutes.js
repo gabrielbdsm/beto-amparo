@@ -1,6 +1,8 @@
 import express from 'express';
 import { criarPersonalizacao, verificarSlug , getLojaBySlug } from '../controllers/Empresa/personalizacaoController.js';
 import { listarProdutosPorLoja } from '../controllers/produto/ProdutoController.js';
+import { empresaPrivate } from '../middleware/protectRouterEmpresa.js';
+import * as lojaController from '../controllers/Empresa/lojaController.js';
 const router = express.Router();
 
 // Rota GET de teste
@@ -23,5 +25,5 @@ router.post('/personalizacao', criarPersonalizacao);
 router.get('/check-slug', verificarSlug);
 router.get('/slug/:slug', getLojaBySlug);
 router.get('/produtos/loja/:slug', listarProdutosPorLoja); // Mantenha esta como sua rota original
-
+router.get('/empresa/loja/slug', empresaPrivate ,  lojaController.getSlugByEmpresaController);
 export default router;
