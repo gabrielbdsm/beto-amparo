@@ -47,5 +47,6 @@ router.get('/produtos/loja/:slug', produto.listarProdutosPorLoja); // Rota origi
 router.get('/produto/:id', produto.buscarProdutoPorId);
 // Listar produtos por empresa (privado, se houver necessidade de listar todos os produtos da empresa, ativos e inativos)
 router.get('/produtos/empresa/:empresaId', routePrivate, produto.listarProdutosPorEmpresa);
-
+router.delete('/produtos/excluir/:id', produto.deleteProduto);
+router.put('/produtos/estoque/:id', produto.ajustarEstoqueProduto);
 export default router

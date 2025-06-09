@@ -1,4 +1,5 @@
 // components/ConfirmationModal.js
+
 import React from 'react';
 
 export default function ConfirmationModal({
@@ -8,16 +9,15 @@ export default function ConfirmationModal({
   onConfirm,
   onCancel,
   isConfirming = false,
-  actionLabel = 'Confirmar' // NOVA PROP: label para o botão de ação (ex: 'Inativar', 'Ativar', 'Excluir')
+  actionLabel = 'Confirmar'
 }) {
   if (!isOpen) return null;
 
   // Define a cor do botão de ação com base na label
-  // Você pode ajustar estas classes Tailwind CSS conforme suas cores
   const buttonColorClass = actionLabel === 'Inativar' ? 'bg-red-600 hover:bg-red-700' :
                            actionLabel === 'Ativar'   ? 'bg-green-600 hover:bg-green-700' :
-                           'bg-blue-600 hover:bg-blue-700'; // Cor padrão se não for 'Inativar' ou 'Ativar'
-
+                           actionLabel === 'Excluir'  ? 'bg-red-600 hover:bg-red-700' : // Adicionado para "Excluir"
+                           'bg-blue-600 hover:bg-blue-700'; // Cor padrão
 
   return (
     <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -38,7 +38,7 @@ export default function ConfirmationModal({
             className={`px-4 py-2 text-white rounded-md transition duration-200 ${buttonColorClass}`}
             disabled={isConfirming}
           >
-            {isConfirming ? `${actionLabel}ndo...` : actionLabel} {/* Texto dinâmico */}
+            {isConfirming ? `${actionLabel}ndo...` : actionLabel}
           </button>
         </div>
       </div>
