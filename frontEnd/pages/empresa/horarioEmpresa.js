@@ -412,7 +412,7 @@ export default function HorariosPorData({ tipo = "agendamento" }) {
   // Renderização condicional baseada no estado de carregamento
   if (isLoading) {
     return (
-      <OwnerSidebar slug={"empresa"}>
+      <OwnerSidebar slug={""}>
         <div className="max-w-3xl mx-auto p-4 md:p-6 text-center">
           <p className="text-lg text-gray-500">Carregando horários...</p>
           {/* Você pode adicionar um spinner SVG ou componente de spinner aqui */}
@@ -422,7 +422,7 @@ export default function HorariosPorData({ tipo = "agendamento" }) {
   }
 
   return (
-    <OwnerSidebar slug={"empresa"}>
+    <OwnerSidebar slug={""}>
       <div className="max-w-3xl mx-auto p-4 md:p-6 bg-white rounded-xl shadow-2xl font-sans">
         <h1 className="text-xl md:text-2xl font-bold text-[#3681B6] mb-6 text-center tracking-tight">
           {tipo === "agendamento" ? "Configurar Horários Disponíveis para Agendamento" : "Configurar Horário de Funcionamento"}
