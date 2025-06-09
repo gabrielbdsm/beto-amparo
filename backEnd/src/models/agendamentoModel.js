@@ -30,3 +30,17 @@ export const agendamentoInsert =  async (dataConfig) => {
   
     return agendamentos.length > 0;
   };
+
+export const getAgendamentosByCliente = async (id_cliente , slug) => {
+    const { data, error } = await supabase
+      .from("agendamentos")
+      .select("*")
+      .eq("id_cliente", id_cliente)
+      .eq("slug", slug)
+      .order("data", { ascending: true })
+      .order("time", { ascending: true });
+
+    if (error) throw new Error("Erro ao buscar agendamentos do cliente: " + error.message);
+
+    return data;
+  }
