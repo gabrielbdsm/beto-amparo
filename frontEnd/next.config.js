@@ -17,6 +17,14 @@ const nextConfig = {
         destination: '/client/produto',
       },
       {
+        source: '/loja/:slug/agendamento',
+        destination: '/client/agendamento',
+      },
+      {
+        source: '/loja/:slug/visualizarAgendamento',
+        destination: '/client/visualizarAgendamentoCliente',
+      },
+      {
         source: '/:slug/carrinho',
         destination: '/client/carrinho',
       },
@@ -47,6 +55,10 @@ const nextConfig = {
       {
         source: '/empresa/adicionarProduto',
         destination: '/empresa/AdicionarProduto',
+      },
+      {
+        source: '/empresa/meusAgendamentos',
+        destination: '/empresa/visualizacaoAgendamento',
       },
     ];
   },
