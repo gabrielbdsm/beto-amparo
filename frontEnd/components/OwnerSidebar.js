@@ -33,6 +33,7 @@ function NavItem({ icon, label, path, currentSlug, onClick }) {
 }
 
 export default function OwnerSidebar({ children, slug }) {
+  console.log("OwnerSidebar -> slug recebido:", slug);
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [slugEmpresa, setSlugEmpresa] = useState('');
