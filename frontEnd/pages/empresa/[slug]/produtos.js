@@ -1,4 +1,5 @@
 // pages/empresa/[slug]/produtos.js
+
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/router';
 import Image from 'next/image';
@@ -27,7 +28,7 @@ export default function ProdutosDaLoja() {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [productToHandle, setProductToHandle] = useState(null);
-  const [actionType, setActionType] = useState('');
+  const [actionType, setActionType] = useState(''); // 'inativar'
   const [isConfirmingAction, setIsConfirmingAction] = useState(false);
 
   // Função de Editar Produto
@@ -50,7 +51,7 @@ export default function ProdutosDaLoja() {
   };
 
   const handleConfirmAction = async () => {
-    if (!productToHandle || actionType !== 'inativar') return;
+    if (!productToHandle || actionType !== 'inativar') return; // Ação só para inativar aqui
 
     setIsConfirmingAction(true);
     setError(null);
@@ -96,10 +97,6 @@ export default function ProdutosDaLoja() {
         setLoading(true);
         setError(null);
 
-        // A URL de busca de produtos: Certifique-se de que seu backend retorna o nome da categoria
-        // Se seu backend retorna um objeto aninhado 'categorias' com a propriedade 'nome',
-        // esta URL e a lógica abaixo funcionarão bem.
-        // Ex: { id: 1, nome: "Produto X", categorias: { id: 101, nome: "Eletrônicos" }, ... }
         const response = await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/produtos/loja/${slug}?ativo=true`, {
           headers: {
             'Content-Type': 'application/json',
@@ -124,9 +121,7 @@ export default function ProdutosDaLoja() {
             .filter(p => p.hasOwnProperty('ativo') ? p.ativo === true : true)
             .map(p => ({
                 ...p,
-                // Acessa o nome da categoria. Assume que a categoria vem como um objeto aninhado { id: ..., nome: ... }
-                // Esta linha é crucial. Se o seu backend retorna a categoria de forma diferente, ajuste-a.
-                categoria_nome: p.categorias?.nome || 'Outros' 
+                categoria_nome: p.categorias?.nome || 'Outros'
             }));
         setProdutos(activeProducts);
         console.log("Frontend: Produtos ativos recebidos com sucesso:", activeProducts);
@@ -149,17 +144,17 @@ export default function ProdutosDaLoja() {
     }
     const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL ? process.env.NEXT_PUBLIC_BACKEND_URL.replace(/\/+$/, '') : '';
     if (imagePathOrFullUrl) {
+      // Usando 'produto.image' aqui, verifique a consistência com seu AdminProductCard
       return `${baseUrl}/uploads/produtos/${imagePathOrFullUrl}`;
     }
     return '/placeholder.png';
   };
 
-  // Lógica para Agrupar Produtos por Categoria (inalterada na lógica, mas agora usa 'categoria_nome')
+  // Lógica para Agrupar Produtos por Categoria
   const produtosPorCategoria = useMemo(() => {
     const grouped = {};
     produtos.forEach(produto => {
-      // Usa a propriedade 'categoria_nome' que garantimos no useEffect
-      const categoria = produto.categoria_nome || 'Outros'; 
+      const categoria = produto.categoria_nome || 'Outros';
       if (!grouped[categoria]) {
         grouped[categoria] = [];
       }
@@ -194,14 +189,12 @@ export default function ProdutosDaLoja() {
           <p className="mt-2 text-sm text-gray-500">Verifique os logs do terminal do seu backend para mais detalhes.</p>
         </div>
       ) : Object.keys(produtosPorCategoria).length > 0 ? (
-        // Renderiza produtos agrupados por categoria com Swiper
         <div>
           {Object.entries(produtosPorCategoria).map(([categoria, produtosDaCategoria]) => (
             <div key={categoria} className="mb-8">
               <h2 className="text-2xl font-bold text-gray-800 mb-4 border-b-2 border-gray-300 pb-2">
                 {categoria}
               </h2>
-              {/* O Swiper para cada categoria */}
               <Swiper
                 modules={[Navigation, Pagination]}
                 spaceBetween={20}
@@ -218,18 +211,19 @@ export default function ProdutosDaLoja() {
                     spaceBetween: 30,
                   },
                 }}
-                className="mySwiper" // Adicione uma classe para estilização opcional
+                className="mySwiper"
               >
                 {produtosDaCategoria.map((produto) => (
                   <SwiperSlide key={produto.id}>
-                    {/* REMOVIDA A DIV w-full flex justify-center */}
-                    {/* Deixa o AdminProductCard gerenciar sua própria largura dentro do slide */}
                     <AdminProductCard
                       produto={produto}
                       getImagemProduto={getImagemProduto}
-                      onEdit={handleEditProduct}
-                      onDelete={() => handleOpenConfirmModal(produto, 'inativar')}
-                      buttonLabel="Inativar"
+                      onEdit={handleEditProduct} // Passa a função de edição
+                      // *** CORREÇÃO AQUI para o botão de Inativar ***
+                      onStatusChange={() => handleOpenConfirmModal(produto, 'inativar')} // CHAMA A FUNÇÃO DE INATIVAR
+                      buttonLabel="Inativar" // Label para o botão
+                      // Não passe onPermanentDelete aqui, pois não queremos a lixeira nesta página
+                      // onPermanentDelete={undefined} ou simplesmente não passar a prop.
                     />
                   </SwiperSlide>
                 ))}
