@@ -12,7 +12,7 @@ pnpm-debug.log*
 # ambiente
 .env
 .env.*.local
-
+.env.local
 # sistema operacional
 .DS_Store
 Thumbs.db

@@ -1,270 +1,211 @@
-// pages/empresa/[slug]/dashboard.js
+// frontEnd/pages/empresa/[slug]/dashboard.js
 
-import { useEffect, useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/router';
-import Image from 'next/image'; // Necessário para OwnerSidebar
+
+// Importe seus componentes
 import OwnerSidebar from '@/components/OwnerSidebar';
+import HistoricoVendasTable from '@/components/HistoricoVendasTable';
+import VendasChart from '@/components/VendasChart';
+import ControleEstoqueTable from '@/components/ControleEstoqueTable';
 
-export default function Dashboard() {
+
+export default function DashboardPage() {
   const router = useRouter();
-  const [nomeEmpresa, setNomeEmpresa] = useState("Carregando...");
-  // Estados para os pedidos
-  const [pedidos, setPedidos] = useState([]);
-  const [loadingPedidos, setLoadingPedidos] = useState(true);
-  const [errorPedidos, setErrorPedidos] = useState(null);
+  const { slug } = router.query; // Este é o SLUG DA LOJA (ex: 'ben-burguer')
 
-  const { slug } = router.query; // Obtém o slug da URL (da loja)
+  // Estados de dados
+  const [historicoPedidos, setHistoricoPedidos] = useState([]);
+  const [dadosGrafico, setDadosGrafico] = useState({ labels: [], totals: [] });
+  const [produtosEstoque, setProdutosEstoque] = useState([]);
+
+  // Estados de loading
+  const [loadingPedidos, setLoadingPedidos] = useState(true);
+  const [loadingGrafico, setLoadingGrafico] = useState(true);
+  const [loadingEstoque, setLoadingEstoque] = useState(true);
+
+  // Estados de erro
+  const [errorPedidos, setErrorPedidos] = useState(null);
+  const [errorGrafico, setErrorGrafico] = useState(null);
+  const [errorEstoque, setErrorEstoque] = useState(null);
+
+  // NOVO: Adicione um estado para o ID da empresa (virá do token)
+  const [autenticatedEmpresaId, setAutenticatedEmpresaId] = useState(null);
+
 
   useEffect(() => {
-    // 1. Lógica de autenticação (placeholder)
-    const isAuthenticated = true;
-    if (!isAuthenticated) {
-      router.push('/LoginEmpresa');
-      return;
-    }
+    console.log('DEBUG: DashboardPage - useEffect disparado. Router pronto:', router.isReady, 'Slug da loja:', slug);
+    if (!router.isReady || !slug) return;
 
-    if (!slug) {
-        console.log("DEBUG(Dashboard): Slug da loja não disponível. Aguardando...");
-        return;
-    }
+    const redirectToLogin = (errorData) => {
+      const targetUrl = errorData.redirectTo || `/empresa/LoginEmpresa?returnTo=${encodeURIComponent(router.asPath)}`;
+      router.push(targetUrl);
+    };
 
-    // Função para buscar o nome da empresa (AParentemente funcionando)
-    async function fetchNomeEmpresaParaDashboard() {
-      try {
-        // Esta URL é a que você confirmou que está funcionando para o nome
-        const url = `${process.env.NEXT_PUBLIC_EMPRESA_API}/loja/slug/${slug}`;
-        console.log("DEBUG(Dashboard): Chamando backend para buscar nome da loja em:", url);
+    // Função para obter o ID da empresa a partir do token (precisa de um endpoint no backend)
+    const fetchEmpresaIdFromToken = async () => {
+        try {
+            // Este endpoint deve retornar o ID da empresa do token logado
+            const response = await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/dono/empresa-id`, { credentials: 'include' });
+            if (response.status === 401) {
+                const errorData = await response.json();
+                redirectToLogin(errorData);
+                return null;
+            }
+            if (!response.ok) {
+                throw new Error('Falha ao obter ID da empresa do token.');
+            }
+            const data = await response.json();
+            console.log('DEBUG: DashboardPage - ID da empresa do token recebido:', data.empresaId);
+            setAutenticatedEmpresaId(data.empresaId); // Define o estado
+            return data.empresaId;
+        } catch (err) {
+            console.error('DEBUG: DashboardPage - Erro ao obter ID da empresa do token:', err.message);
+            // setError aqui se quiser mostrar erro na UI
+            redirectToLogin({}); // Força redirect em caso de erro grave
+            return null;
+        }
+    };
 
-        const response = await fetch(url);
+    // Ações de fetch para o dashboard
+    const fetchAllDashboardData = async () => {
+        const currentAuthenticatedEmpresaId = await fetchEmpresaIdFromToken();
+        if (!currentAuthenticatedEmpresaId) return; // Se falhou em obter o ID, para por aqui
 
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({ message: "Erro desconhecido" }));
-          console.error("DEBUG(Dashboard): Erro da API do backend ao buscar nome:", response.status, errorData.message);
-          throw new Error(errorData.message || `Falha na requisição ao backend: ${response.status} ${response.statusText}`);
+        // Agora, passe o SLUG para as APIs de histórico e gráfico
+        // E o ID da empresa do token para a autorização no backend.
+
+        // Fetch Histórico de Pedidos
+        setLoadingPedidos(true);
+        setErrorPedidos(null);
+        try {
+            console.log('DEBUG: DashboardPage - Fetching histórico de pedidos para slug:', slug);
+            // A API do backend agora precisa aceitar o slug da loja
+            const response = await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/pedidos/historico/loja/${slug}`, { credentials: 'include' }); // MUDADO: /loja/:slug
+            
+            if (!response.ok) {
+              const errorData = await response.json();
+              if (response.status === 401) { redirectToLogin(errorData); return; }
+              throw new Error(errorData.mensagem || `Falha ao carregar histórico de pedidos: ${response.status}`);
+            }
+            const data = await response.json();
+            console.log('DEBUG: DashboardPage - Histórico de pedidos recebido:', data);
+            setHistoricoPedidos(data);
+        } catch (err) {
+            setErrorPedidos(err.message);
+            console.error('DEBUG: DashboardPage - Erro ao buscar histórico de pedidos:', err);
+        } finally {
+            setLoadingPedidos(false);
         }
 
-        const data = await response.json();
-        console.log("DEBUG(Dashboard): Dados da loja recebidos para o dashboard:", data);
-        setNomeEmpresa(data.nome_fantasia || "Nome não disponível");
-      } catch (error) {
-        console.error("DEBUG(Dashboard): Erro ao carregar nome da empresa:", error.message);
-        setNomeEmpresa("Erro");
-      }
-    }
-
-    // Função para buscar os pedidos (precisa de correção no backend para o 404)
-    async function fetchPedidos() {
-      setLoadingPedidos(true);
-      setErrorPedidos(null);
-      try {
-        // Esta é a URL que está dando 404 Not Found no backend
-        const url = `${process.env.NEXT_PUBLIC_EMPRESA_API}/pedidos/loja/${slug}`;
-        console.log("DEBUG(Dashboard): Buscando pedidos em:", url);
-
-        const response = await fetch(url);
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({ message: "Erro desconhecido" }));
-          throw new Error(errorData.message || `Falha ao buscar pedidos: ${response.status}`);
+        // Fetch Dados para Gráfico
+        setLoadingGrafico(true);
+        setErrorGrafico(null);
+        try {
+            console.log('DEBUG: DashboardPage - Fetching dados para gráfico para slug:', slug);
+            // A API do backend agora precisa aceitar o slug da loja
+            const response = await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/pedidos/grafico/loja/${slug}?periodo=semana`, { credentials: 'include' }); // MUDADO: /loja/:slug
+            if (!response.ok) {
+                 const errorData = await response.json();
+                 if (response.status === 401) { redirectToLogin(errorData); return; }
+                 throw new Error(errorData.mensagem || `Falha ao carregar dados do gráfico: ${response.status}`);
+            }
+            const data = await response.json();
+            console.log('DEBUG: DashboardPage - Dados do gráfico recebidos:', data);
+            setDadosGrafico(data);
+        } catch (err) {
+            setErrorGrafico(err.message);
+            console.error('DEBUG: DashboardPage - Erro ao buscar dados do gráfico:', err);
+        } finally {
+            setLoadingGrafico(false);
         }
-        const data = await response.json();
 
-        // Adaptação dos dados do DB para o frontend
-        const adaptedPedidos = data.map(pedido => ({
-            ...pedido,
-            valor_total: parseFloat(pedido.total || '0'), // 'total' é VARCHAR no DB, converter para float
-            data_pedido: pedido.data, // 'data' é VARCHAR no DB
-            status: convertStatusIntToText(pedido.status) // 'status' é INT8 no DB, converter para texto
-        }));
+        // Fetch Produtos para Controle de Estoque (já usava slug, então ok)
+        setLoadingEstoque(true);
+        setErrorEstoque(null);
+        try {
+            console.log('DEBUG: DashboardPage - Fetching produtos para estoque para slug:', slug);
+            const response = await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/produtos/loja/${slug}`, { credentials: 'include' });
+            if (!response.ok) {
+                 const errorData = await response.json();
+                 if (response.status === 401) { redirectToLogin(errorData); return; }
+                 throw new Error(errorData.mensagem || `Falha ao carregar produtos para estoque: ${response.status}`);
+            }
+            const data = await response.json();
+            console.log('DEBUG: DashboardPage - Produtos para estoque recebidos:', data);
+            setProdutosEstoque(data);
+        } catch (err) {
+            setErrorEstoque(err.message);
+            console.error('DEBUG: DashboardPage - Erro ao buscar produtos para estoque:', err);
+        } finally {
+            setLoadingEstoque(false);
+        }
+    };
 
-        setPedidos(adaptedPedidos);
-      } catch (error) {
-        console.error("DEBUG(Dashboard): Erro ao buscar pedidos:", error.message);
-        setErrorPedidos(error.message);
-      } finally {
-        setLoadingPedidos(false);
-      }
+    fetchAllDashboardData();
+
+  }, [router.isReady, slug, router]); 
+
+  // Função para obter a URL da imagem do produto (para ControleEstoqueTable se ela for usar imagens)
+  // Se essa função já existe em outro lugar ou é um helper, pode importá-la.
+  const getImagemProduto = (imagePathOrFullUrl) => {
+    if (imagePathOrFullUrl && (imagePathOrFullUrl.startsWith('http://') || imagePathOrFullUrl.startsWith('https://'))) {
+      return imagePathOrFullUrl;
     }
-
-    // Chamadas iniciais
-    fetchNomeEmpresaParaDashboard(); // Busca o nome da empresa
-    fetchPedidos(); // Busca os pedidos
-  }, [router, slug]);
-
-
-  // Funções de conversão de status (mantidas)
-  const convertStatusIntToText = (statusInt) => {
-    switch (statusInt) {
-      case 1: return 'pendente';
-      case 2: return 'em preparação';
-      case 3: return 'enviado';
-      case 4: return 'concluído';
-      case 5: return 'cancelado';
-      default: return 'desconhecido';
+    const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL ? process.env.NEXT_PUBLIC_BACKEND_URL.replace(/\/+$/, '') : '';
+    if (imagePathOrFullUrl) {
+      return `${baseUrl}/uploads/produtos/${imagePathOrFullUrl}`;
     }
-  };
-
-  const convertStatusTextToInt = (statusText) => {
-    switch (statusText) {
-      case 'pendente': return 1;
-      case 'em preparação': return 2;
-      case 'enviado': return 3;
-      case 'concluído': return 4;
-      case 'cancelado': return 5;
-      default: return 0;
-    }
-  };
-
-
-  // Função para alterar o status do pedido
-  const handleStatusChange = async (pedidoId, newStatusText) => {
-    const newStatusInt = convertStatusTextToInt(newStatusText); // Converte para INT8 para o DB
-
-    try {
-      const url = `${process.env.NEXT_PUBLIC_EMPRESA_API}/pedidos/${pedidoId}/status`;
-      console.log(`DEBUG(Dashboard): Alterando status do pedido ${pedidoId} para ${newStatusText} (${newStatusInt})`);
-
-      const response = await fetch(url, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatusInt }), // Envia o INT8 para o DB
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: "Erro desconhecido" }));
-        throw new Error(errorData.message || `Falha ao atualizar status: ${response.status}`);
-      }
-
-      // Atualiza o estado dos pedidos no frontend
-      setPedidos(prevPedidos =>
-        prevPedidos.map(pedido =>
-          pedido.id === pedidoId ? { ...pedido, status: newStatusText } : pedido
-        )
-      );
-      console.log(`Status do pedido ${pedidoId} atualizado para ${newStatusText} com sucesso!`);
-    } catch (error) {
-      console.error("DEBUG(Dashboard): Erro ao atualizar status:", error.message);
-      alert(`Erro ao atualizar status: ${error.message}`);
-    }
+    return '/placeholder.png';
   };
 
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row">
-      <OwnerSidebar />
+    <OwnerSidebar slug={slug}>
+      <div className="p-8 max-w-6xl mx-auto bg-white rounded-lg shadow-md min-h-[600px]">
+        <h1 className="text-3xl font-bold text-[#3681B6] mb-6">Dashboard da Empresa</h1>
 
-      <main className="flex-1 bg-gray-100 p-6 md:p-8">
-        {/* Título: "Gerenciamento, Nome da Loja" */}
-        <h1 className="text-2xl font-bold text-gray-600 mb-6 text-center">
-          Gerenciamento, {nomeEmpresa}
-        </h1>
-
-        {/* --- Tabela de Pedidos --- */}
-        <section className="bg-white rounded shadow p-6 mb-8">
-          <h2 className="text-xl font-semibold text-gray-700 mb-4">Pedidos Recentes</h2>
-
-          {loadingPedidos && (
-            <p className="text-center text-gray-500">Carregando pedidos...</p>
+        {/* Gráfico de Vendas */}
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">Vendas por Período</h2>
+          {loadingGrafico ? (
+            <p>Carregando dados do gráfico...</p>
+          ) : errorGrafico ? (
+            <p className="text-red-500">Erro ao carregar gráfico: {errorGrafico}</p>
+          ) : (
+            <VendasChart labels={dadosGrafico.labels} totals={dadosGrafico.totals} />
           )}
-          {errorPedidos && (
-            <p className="text-center text-red-500">Erro ao carregar pedidos: {errorPedidos}</p>
-          )}
+        </div>
 
-          {!loadingPedidos && !errorPedidos && pedidos.length === 0 && (
-            <p className="text-center text-gray-500">Nenhum pedido encontrado para esta loja.</p>
+        {/* Histórico de Pedidos */}
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">Histórico de Pedidos</h2>
+          {loadingPedidos ? (
+            <p>Carregando histórico de pedidos...</p>
+          ) : errorPedidos ? (
+            <p className="text-red-500">Erro ao carregar pedidos: {errorPedidos}</p>
+          ) : historicoPedidos.length === 0 ? (
+            <p>Nenhum pedido encontrado para esta loja.</p>
+          ) : (
+            <HistoricoVendasTable pedidos={historicoPedidos} />
           )}
+        </div>
 
-          {!loadingPedidos && !errorPedidos && pedidos.length > 0 && (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      ID
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Cliente
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Produtos
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Valor
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Data
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th scope="col" className="relative px-6 py-3">
-                      <span className="sr-only">Ações</span>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {pedidos.map((pedido) => (
-                    <tr key={pedido.id}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {pedido.id}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                        {pedido.cliente?.nome || 'N/A'}
-                        {pedido.cliente?.telefone && ` (${pedido.cliente.telefone})`}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-700">
-                        {pedido.itens_pedido && pedido.itens_pedido.length > 0 ? (
-                          pedido.itens_pedido.map(item => (
-                            <div key={item.id}>
-                              {item.quantidade}x {item.produto?.nome || 'Produto desconhecido'}
-                            </div>
-                          ))
-                        ) : 'N/A'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                        R$ {typeof pedido.valor_total === 'number' ? pedido.valor_total.toFixed(2) : '0.00'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                        {/* Formatação da data que é VARCHAR */}
-                        {pedido.data_pedido && !isNaN(new Date(pedido.data_pedido))
-                          ? new Date(pedido.data_pedido).toLocaleString('pt-BR')
-                          : pedido.data_pedido || 'N/A'
-                        }
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        <span className={`
-                          px-2 inline-flex text-xs leading-5 font-semibold rounded-full
-                          ${pedido.status === 'pendente' ? 'bg-yellow-100 text-yellow-800' : ''}
-                          ${pedido.status === 'em preparação' ? 'bg-blue-100 text-blue-800' : ''}
-                          ${pedido.status === 'enviado' ? 'bg-purple-100 text-purple-800' : ''}
-                          ${pedido.status === 'concluído' ? 'bg-green-100 text-green-800' : ''}
-                          ${pedido.status === 'cancelado' ? 'bg-red-100 text-red-800' : ''}
-                        `}>
-                          {pedido.status}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <select
-                          className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
-                          value={pedido.status || ''}
-                          onChange={(e) => handleStatusChange(pedido.id, e.target.value)}
-                        >
-                          <option value="pendente">Pendente</option>
-                          <option value="em preparação">Em Preparação</option>
-                          <option value="enviado">Enviado</option>
-                          <option value="concluído">Concluído</option>
-                          <option value="cancelado">Cancelado</option>
-                        </select>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+        {/* Controle de Estoque */}
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">Controle de Estoque</h2>
+          {loadingEstoque ? (
+            <p>Carregando produtos para estoque...</p>
+          ) : errorEstoque ? (
+            <p className="text-red-500">Erro ao carregar estoque: {errorEstoque}</p>
+          ) : produtosEstoque.length === 0 ? (
+            <p>Nenhum produto encontrado para controle de estoque.</p>
+          ) : (
+            // Passe os produtos e a função getImagemProduto para a tabela de estoque
+            <ControleEstoqueTable produtos={produtosEstoque} slugLoja={slug} getImagemProduto={getImagemProduto} /* Adicione a função para ajustar estoque aqui */ />
           )}
-        </section>
-
-        {/* --- Outras Seções do Dashboard (REMOVIDAS) --- */}
-      </main>
-    </div>
+        </div>
+      </div>
+    </OwnerSidebar>
   );
 }
