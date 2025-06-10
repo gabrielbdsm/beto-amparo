@@ -97,6 +97,93 @@ class ClienteController {
       return res.status(500).json({ error: 'Erro ao remover cliente' });
     }
   }
+
+  async atualizarPontos(req, res) {
+    try {
+      const id = req.params.id;
+      const { total_pontos } = req.body;
+
+      if (typeof total_pontos !== 'number') {
+        return res.status(400).json({ error: 'O campo total_pontos deve ser um número.' });
+      }
+
+      const { data, error } = await supabase
+        .from('clientes')
+        .update({ total_pontos })
+        .eq('id', id)
+        .select();
+
+      if (error) throw error;
+
+      if (!data || data.length === 0) {
+        return res.status(404).json({ error: 'Cliente não encontrado.' });
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: 'Pontos atualizados com sucesso.',
+        cliente: data[0]
+      });
+
+    } catch (error) {
+      console.error('Erro ao atualizar pontos do cliente:', error);
+      return res.status(500).json({ error: 'Erro ao atualizar pontos do cliente.' });
+    }
+  }
+
+  async ganharPontos(req, res) {
+    try {
+      const id = req.params.id;
+      const { valorTotalCompra, usouPontos } = req.body;
+
+      if (typeof valorTotalCompra !== 'number' || valorTotalCompra <= 0) {
+        return res.status(400).json({ error: 'O campo valorTotalCompra deve ser um número positivo.' });
+      }
+
+      if (typeof usouPontos !== 'boolean') {
+        return res.status(400).json({ error: 'O campo usouPontos deve ser um booleano (true ou false).' });
+      }
+
+      // Se o cliente usou pontos, ele NÃO ganha novos pontos
+      if (usouPontos) {
+        return res.status(200).json({ message: 'Cliente utilizou pontos nesta compra, não será creditado novos pontos.' });
+      }
+
+      // Cálculo correto: 1 ponto a cada R$10 gastos
+      const pontosGanhos = Math.floor(valorTotalCompra / 10);
+
+      // Busca os pontos atuais do cliente
+      const { data: cliente, error: erroBusca } = await supabase
+        .from('clientes')
+        .select('total_pontos')
+        .eq('id', id)
+        .single();
+
+      if (erroBusca) throw erroBusca;
+      if (!cliente) return res.status(404).json({ error: 'Cliente não encontrado.' });
+
+      const novosPontos = cliente.total_pontos + pontosGanhos;
+
+      const { data, error } = await supabase
+        .from('clientes')
+        .update({ total_pontos: novosPontos })
+        .eq('id', id)
+        .select();
+
+      if (error) throw error;
+
+      return res.status(200).json({
+        success: true,
+        message: `Compra concluída. ${pontosGanhos} ponto(s) adicionados ao cliente.`,
+        cliente: data[0]
+      });
+
+    } catch (error) {
+      console.error('Erro ao calcular pontos:', error);
+      return res.status(500).json({ error: 'Erro ao calcular pontos.' });
+    }
+  }
+
 }
 
 export default new ClienteController();

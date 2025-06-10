@@ -8,12 +8,16 @@ import { useRouter } from "next/router";
 export default function CarrinhoCliente({ empresaId }) {
   const [itensCarrinho, setItensCarrinho] = useState([]);
   const [subtotal, setSubtotal] = useState(0);
-  const [corPrimaria, setCorPrimaria] = useState("#3B82F6"); // Valor padrão
-
-  const router = useRouter(); 
-  const { slug } = router.query; 
-  
+  const [corPrimaria, setCorPrimaria] = useState("#3B82F6");
   const [lojaId, setLojaId] = useState(null);
+
+  const [totalPontosCliente, setTotalPontosCliente] = useState(0);
+  const [pontosParaUsar, setPontosParaUsar] = useState(0);
+  const [descontoAplicado, setDescontoAplicado] = useState(0);
+
+  const router = useRouter();
+  const { slug } = router.query;
+  
   useEffect(() => {
     console.log("slug atual:", slug);
 
@@ -32,8 +36,8 @@ export default function CarrinhoCliente({ empresaId }) {
         console.error("Erro ao buscar loja:", error);
         setCorPrimaria("#3B82F6"); // Fallback em caso de erro
       }
-    }
-
+    }   
+    
     // Buscar itens do carrinho
     async function fetchCarrinho() {
       try {
@@ -52,10 +56,48 @@ export default function CarrinhoCliente({ empresaId }) {
       }
     }
 
+
+    async function fetchCliente() {
+      try {
+        const id_cliente = 30; // depois tornar dinâmico
+        const url = `${process.env.NEXT_PUBLIC_EMPRESA_API}/clientes/${id_cliente}`;
+        const response = await fetch(url);
+        if (!response.ok) throw new Error("Erro ao buscar cliente");
+        const data = await response.json();
+        setTotalPontosCliente(data.total_pontos || 0);
+        setPontosParaUsar(data.total_pontos || 0); // por padrão usar todos
+      } catch (error) {
+        console.error("Erro ao buscar cliente:", error);
+      }
+    }
+
+    fetchCliente();
     fetchLoja();
     fetchCarrinho();
   }, [slug]);
 
+    const aplicarDesconto = () => {
+    const pontosDisponiveis = Math.min(pontosParaUsar, totalPontosCliente);
+
+    // ⚠️ Corrigir: Só permite desconto para múltiplos de 10 pontos
+    const pontosEmDezena = Math.floor(pontosDisponiveis / 10) * 10;
+
+    if (pontosEmDezena < 10) {
+      alert("É necessário no mínimo 10 pontos para obter desconto.");
+      return;
+    }
+
+    const percentualDesconto = pontosEmDezena; // Ex: 20 pontos = 20% de desconto
+    const valorDesconto = (subtotal * percentualDesconto) / 100;
+
+    setPontosParaUsar(pontosEmDezena);
+    setDescontoAplicado(valorDesconto);
+  };
+
+  
+
+  const totalFinal = Math.max(0, subtotal - descontoAplicado);
+  
   const handleFinalizarCompra = async () => {
   try {
     const id_cliente = 30; // você pode tornar isso dinâmico se necessário
@@ -73,7 +115,8 @@ export default function CarrinhoCliente({ empresaId }) {
         id_cliente,
         id_loja: lojaId,
         data: dataPedido,
-        total: subtotal,
+        total: totalFinal,
+        desconto: descontoAplicado,
         status,
         observacoes
       }),
@@ -118,6 +161,26 @@ export default function CarrinhoCliente({ empresaId }) {
         console.error(`Erro ao remover item ${item.id} do carrinho`);
       }
     }
+   // 4. Atualizar pontos 
+   const usouPontos = descontoAplicado > 0;
+
+    if (usouPontos) {
+      // Cliente usou pontos → desconta os pontos usados
+      const urlAtualizaPontos = `${process.env.NEXT_PUBLIC_EMPRESA_API}/clientes/${id_cliente}/pontos`;
+      await fetch(urlAtualizaPontos, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ total_pontos: totalPontosCliente - pontosParaUsar }),
+      });
+    } else {
+      // Cliente não usou pontos → GANHA novos pontos
+      const urlGanharPontos = `${process.env.NEXT_PUBLIC_EMPRESA_API}/clientes/${id_cliente}/ganhar-pontos`;
+      await fetch(urlGanharPontos, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ valorTotalCompra: subtotal, usouPontos: false }),
+      });
+    }
 
     alert("Compra finalizada com sucesso!");
     setItensCarrinho([]);
@@ -135,6 +198,7 @@ export default function CarrinhoCliente({ empresaId }) {
       const novosItens = itensCarrinho.filter((item) => item.id !== id);
       setItensCarrinho(novosItens);
       const novoSubtotal = novosItens.reduce((acc, item) => acc + item.quantidade * item.produto.preco, 0);
+      setTotalPontosCliente((prev) => prev - pontosGastos + novosPontosGanhos); 
       setSubtotal(novoSubtotal);
       
       // CORREÇÃO AQUI: Adicione '/loja/' ao caminho da API
@@ -155,6 +219,7 @@ export default function CarrinhoCliente({ empresaId }) {
     return `${baseUrl}/imagens/clientes/${encodeURIComponent(caminhoImagem)}`;
   };
 
+
   return (
     <div className="flex flex-col min-h-screen bg-white text-black">
       <header
@@ -166,6 +231,36 @@ export default function CarrinhoCliente({ empresaId }) {
 
       <div className="flex-1 px-4 py-6">
         <div className="max-w-2xl mx-auto">
+          <div className="my-4">
+            <label htmlFor="pontos" className="block text-sm text-gray-700">Usar pontos:</label>
+            <input
+              id="pontos"
+              type="number"
+              value={pontosParaUsar}
+              onChange={(e) => {
+                const novoValor = parseInt(e.target.value, 10);
+                if (!isNaN(novoValor) && novoValor >= 0 && novoValor <= totalPontosCliente) {
+                  setPontosParaUsar(novoValor);
+                }
+              }}
+              className="border p-2 rounded w-full"
+            />
+            <p className="text-sm text-gray-500">Você tem {totalPontosCliente} pontos disponíveis.</p>
+            <button
+              onClick={aplicarDesconto}
+              className="mt-2 px-4 py-2 rounded text-white"
+              style={{ backgroundColor: corPrimaria }}
+            >
+              Aplicar Desconto
+            </button>
+          </div>
+
+          {descontoAplicado > 0 && (
+            <div className="text-green-700 font-semibold mb-4">
+              Desconto aplicado: R$ {descontoAplicado.toFixed(2)}
+            </div>
+          )}
+
           {itensCarrinho.length === 0 ? (
             <p className="text-center text-gray-700 mt-10">Seu carrinho está vazio.</p>
           ) : (
@@ -185,9 +280,6 @@ export default function CarrinhoCliente({ empresaId }) {
                     <p className="text-sm text-gray-800">Valor unitário: R$ {item.produto.preco.toFixed(2)}</p>
                     <p className="text-sm text-gray-800">Qtd: {item.quantidade}</p>
                   </div>
-                  <div className="text-right font-semibold text-black">
-                    R$ {(item.produto.preco * item.quantidade).toFixed(2)}
-                  </div>
                   <button
                     onClick={() => handleRemoverItem(item.id)}
                     className="ml-4 text-red-500 hover:text-red-700"
@@ -197,9 +289,19 @@ export default function CarrinhoCliente({ empresaId }) {
                 </div>
               ))}
 
-              <div className="flex justify-between text-lg font-bold border-t pt-4 text-black">
-                <span>Total:</span>
+              <div className="flex justify-between font-bold border-t pt-4 text-black text-lg">
+                <span>Subtotal:</span>
                 <span>R$ {subtotal.toFixed(2)}</span>
+              </div>
+
+              <div className="flex justify-between text-black">
+                <span>Desconto aplicado:</span>
+                <span>R$ {descontoAplicado.toFixed(2)}</span>
+              </div>
+
+              <div className="flex justify-between text-black font-bold text-xl">
+                <span>Total final:</span>
+                <span>R$ {totalFinal.toFixed(2)}</span>
               </div>
 
               <button
