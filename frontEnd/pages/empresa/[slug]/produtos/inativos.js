@@ -1,21 +1,21 @@
 // pages/empresa/[slug]/produtos/inativos.js
-import { useState, useEffect, useMemo } from 'react'; // Adicionado useMemo
+
+// ... (seus imports existentes - NÃO MUDAR)
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/router';
 import Image from 'next/image';
 import Link from 'next/link';
 
-// Importa os módulos do Swiper
 import { Swiper, SwiperSlide } from 'swiper/react';
-import { Navigation, Pagination } from 'swiper/modules'; // Importe os módulos que vai usar
+import { Navigation, Pagination } from 'swiper/modules';
 
-// Importa os estilos do Swiper
 import 'swiper/css';
 import 'swiper/css/navigation';
 import 'swiper/css/pagination';
 
 import OwnerSidebar from '@/components/OwnerSidebar';
-import AdminProductCard from '@/components/AdminProductCard';
-import ConfirmationModal from '@/components/ConfirmationModal';
+import AdminProductCard from '@/components/AdminProductCard'; // Seu componente AdminProductCard
+import ConfirmationModal from '@/components/ConfirmationModal'; // Seu componente ConfirmationModal
 
 export default function ProdutosInativosPage() {
   const router = useRouter();
@@ -27,24 +27,17 @@ export default function ProdutosInativosPage() {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [productToHandle, setProductToHandle] = useState(null);
-  const [actionType, setActionType] = useState('');
+  const [actionType, setActionType] = useState(''); // Estado para 'ativar' ou 'excluirPermanentemente'
   const [isConfirmingAction, setIsConfirmingAction] = useState(false);
 
-  // Função para lidar com a ação de ativar (chamada pelo AdminProductCard)
+  // --- FUNÇÕES EXISTENTES PARA ATIVAR (ONDE O SEU Antigo 'onDelete' CHAMA) ---
   const handleOpenConfirmActivateModal = (product) => {
     setProductToHandle(product);
-    setActionType('ativar');
+    setActionType('ativar'); // Define o tipo de ação para 'ativar'
     setIsModalOpen(true);
   };
 
-  const handleCloseConfirmModal = () => {
-    setIsModalOpen(false);
-    setProductToHandle(null);
-    setActionType('');
-    setIsConfirmingAction(false);
-  };
-
-  const handleConfirmAction = async () => {
+  const handleConfirmActivate = async () => {
     if (!productToHandle || actionType !== 'ativar') return;
 
     setIsConfirmingAction(true);
@@ -81,6 +74,72 @@ export default function ProdutosInativosPage() {
     }
   };
 
+  // --- NOVAS FUNÇÕES PARA EXCLUIR PERMANENTEMENTE ---
+  const handleOpenConfirmDeletePermanentModal = (product) => {
+    setProductToHandle(product);
+    setActionType('excluirPermanentemente'); // Define o tipo de ação para 'excluirPermanentemente'
+    setIsModalOpen(true);
+  };
+
+  const handleConfirmDeletePermanent = async () => {
+    if (!productToHandle || actionType !== 'excluirPermanentemente') return;
+
+    setIsConfirmingAction(true);
+    setError(null);
+
+    // O endpoint DEVE ser ajustado para o seu backend para exclusão permanente
+    // Ex: DELETE /api/produtos/excluir/:id
+    const endpoint = `${process.env.NEXT_PUBLIC_EMPRESA_API}/produtos/excluir/${productToHandle.id}`;
+
+    try {
+      const response = await fetch(endpoint, {
+        method: 'DELETE', // Método HTTP DELETE para exclusão
+        credentials: 'include',
+      });
+
+      if (response.status === 401) {
+        const errorData = await response.json();
+        const targetUrl = errorData.redirectTo || `/empresa/LoginEmpresa?returnTo=${encodeURIComponent(router.asPath)}`;
+        router.push(targetUrl);
+        return;
+      }
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.mensagem || `Erro HTTP ${response.status} ao excluir produto permanentemente.`);
+      }
+
+      // Se a exclusão foi bem-sucedida (status 200, 204), remove o produto da lista inativos
+      setProdutosInativos(prevProdutos => prevProdutos.filter(p => p.id !== productToHandle.id));
+      alert('Produto excluído permanentemente com sucesso!');
+      handleCloseConfirmModal();
+
+    } catch (err) {
+      console.error(`Erro ao excluir produto permanentemente:`, err);
+      setError(err.message || `Não foi possível excluir o produto. Verifique o console do backend.`);
+      setIsConfirmingAction(false);
+    }
+  };
+
+  // --- FUNÇÃO ÚNICA PARA FECHAR O MODAL ---
+  const handleCloseConfirmModal = () => {
+    setIsModalOpen(false);
+    setProductToHandle(null);
+    setActionType('');
+    setIsConfirmingAction(false);
+  };
+
+  // --- FUNÇÃO UNIFICADA PARA CONFIRMAR AÇÃO DO MODAL ---
+  const handleConfirmAction = () => {
+    if (actionType === 'ativar') {
+      handleConfirmActivate();
+    } else if (actionType === 'excluirPermanentemente') {
+      handleConfirmDeletePermanent();
+    }
+    // Adicione mais tipos de ação aqui se precisar no futuro
+  };
+
+  // ... (SEU useEffect existente - NÃO MUDAR)
   useEffect(() => {
     if (!router.isReady || !slug) {
       return;
@@ -125,17 +184,21 @@ export default function ProdutosInativosPage() {
     fetchProdutosInativos();
   }, [slug, router.isReady, router]);
 
+  // ... (SUA função getImagemProduto existente - NÃO MUDAR)
   const getImagemProduto = (imagePathOrFullUrl) => {
     if (imagePathOrFullUrl && (imagePathOrFullUrl.startsWith('http://') || imagePathOrFullUrl.startsWith('https://'))) {
       return imagePathOrFullUrl;
     }
     if (imagePathOrFullUrl) {
+      // Use produto.imagem_url ou produto.image? Adapte aqui se necessário.
+      // No seu AdminProductCard.js, está usando 'produto.image'.
+      // Vamos manter a consistência com o AdminProductCard para evitar quebra.
       return `${process.env.NEXT_PUBLIC_BACKEND_URL || ''}/uploads/produtos/${imagePathOrFullUrl}`;
     }
     return '/placeholder.png';
   };
 
-  // Lógica para Agrupar Produtos por Categoria (mantida como está)
+  // ... (SUA lógica de produtosPorCategoria existente - NÃO MUDAR)
   const produtosPorCategoria = useMemo(() => {
     const grouped = {};
     produtosInativos.forEach(produto => {
@@ -171,7 +234,6 @@ export default function ProdutosInativosPage() {
           <p className="mt-2 text-sm text-gray-500">Verifique os logs do terminal do seu backend para mais detalhes.</p>
         </div>
       ) : Object.keys(produtosPorCategoria).length > 0 ? (
-        // Renderiza produtos agrupados por categoria com Swiper
         <div>
           {Object.entries(produtosPorCategoria).map(([categoria, produtosDaCategoria]) => (
             <div key={categoria} className="mb-8">
@@ -179,7 +241,7 @@ export default function ProdutosInativosPage() {
                 {categoria}
               </h2>
               <Swiper
-                modules={[Navigation, Pagination]} // Adicione os módulos de navegação e paginação
+                modules={[Navigation, Pagination]}
                 spaceBetween={20}
                 slidesPerView={1}
                 navigation
@@ -196,19 +258,22 @@ export default function ProdutosInativosPage() {
                 }}
                 className="mySwiper"
               >
-                {produtosDaCategoria.map((produto) => (
-                  <SwiperSlide key={produto.id}>
-                    <div className="w-full flex justify-center">
-                      <AdminProductCard
-                        produto={produto}
-                        getImagemProduto={getImagemProduto}
-                        onEdit={null} // Produtos inativos talvez não possam ser editados daqui
-                        onDelete={() => handleOpenConfirmActivateModal(produto)}
-                        buttonLabel="Ativar"
-                      />
-                    </div>
-                  </SwiperSlide>
-                ))}
+              {produtosDaCategoria.map((produto) => (
+                <SwiperSlide key={produto.id}>
+                  <div className="w-full flex justify-center">
+                    <AdminProductCard
+                      produto={produto}
+                      getImagemProduto={getImagemProduto}
+                      onEdit={null} // Mantido como null se não quiser edição de inativos
+                      // *** ESTA LINHA É A CHAVE PARA O BOTÃO DE ATIVAR/INATIVAR ***
+                      onStatusChange={() => handleOpenConfirmActivateModal(produto)} // Use onStatusChange AQUI
+                      buttonLabel="Ativar" // Este label controla o texto e o ícone do botão de status
+                      // *** ESTA LINHA É PARA A LIXEIRA DE EXCLUSÃO PERMANENTE ***
+                      onPermanentDelete={() => handleOpenConfirmDeletePermanentModal(produto)}
+                    />
+                  </div>
+                </SwiperSlide>
+              ))}
               </Swiper>
             </div>
           ))}
@@ -224,18 +289,33 @@ export default function ProdutosInativosPage() {
   return (
     <OwnerSidebar slug={slug}>
       {pageContent}
+      {/* Mantenha o seu ConfirmationModal dinâmico para 'ativar' ou 'excluirPermanentemente' */}
       <ConfirmationModal
         isOpen={isModalOpen}
-        title={actionType === 'ativar' ? 'Confirmar Ativação' : 'Ação Desconhecida'}
+        title={
+          actionType === 'ativar'
+            ? 'Confirmar Ativação'
+            : actionType === 'excluirPermanentemente'
+              ? 'Confirmar Exclusão Permanente'
+              : 'Ação Desconhecida'
+        }
         message={
           actionType === 'ativar'
             ? `Tem certeza que deseja ativar o produto "${productToHandle?.nome || ''}"? Ele voltará a aparecer na loja.`
-            : 'Confirma esta ação?'
+            : actionType === 'excluirPermanentemente'
+              ? `Tem certeza que deseja EXCLUIR PERMANENTEMENTE o produto "${productToHandle?.nome || ''}"? Esta ação não pode ser desfeita.`
+              : 'Confirma esta ação?'
         }
         onConfirm={handleConfirmAction}
         onCancel={handleCloseConfirmModal}
         isConfirming={isConfirmingAction}
-        actionLabel="Ativar" // Ação específica para este modal
+        actionLabel={
+          actionType === 'ativar'
+            ? 'Ativar'
+            : actionType === 'excluirPermanentemente'
+              ? 'Excluir'
+              : 'Confirmar'
+        }
       />
     </OwnerSidebar>
   );

@@ -1,4 +1,5 @@
-// pages/client/ClienteHome.js
+// frontEnd/pages/client/ClienteHome.js
+
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import NavBar from "@/components/NavBar";
@@ -11,7 +12,7 @@ const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.
 
 export default function ClienteHome() {
     const router = useRouter();
-    const { site } = router.query;
+    const { site } = router.query; // 'site' é o slug da loja
 
     const [lojaId, setLojaId] = useState(null);
     const [nomeFantasia, setNomeFantasia] = useState("Carregando...");
@@ -26,11 +27,23 @@ export default function ClienteHome() {
             .replace(/[\u0300-\u036f]/g, "");
     };
 
-    const produtosFiltrados = produtos.filter((produto) =>
-        removeAccents(produto.nome.toLowerCase()).includes(
+    // A filtragem agora deve ser feita APÓS o carregamento dos produtos,
+    // e deve considerar também a disponibilidade para o cliente.
+    const produtosFiltrados = produtos.filter((produto) => {
+        const matchesSearch = removeAccents(produto.nome.toLowerCase()).includes(
             removeAccents(searchTerm.toLowerCase())
-        )
-    );
+        );
+        
+        // Exclui produtos que foram marcados como indisponíveis automaticamente
+        // (por estarem esgotados no estoque)
+        // E também exclui produtos inativos (ativo: false) se a API não os filtra.
+        // A API 'listarProdutosPorLoja' já filtra por 'ativo=true' por padrão,
+        // então aqui só precisamos checar 'indisponivel_automatico'
+        const isActuallyAvailableToClient = !produto.indisponivel_automatico;
+
+        console.log(`DEBUG: ClienteHome - Filtrando produto ${produto.nome}: matchesSearch=${matchesSearch}, isActuallyAvailableToClient=${isActuallyAvailableToClient}`);
+        return matchesSearch && isActuallyAvailableToClient;
+    });
 
     const [quantidades, setQuantidades] = useState({});
     const [mensagem, setMensagem] = useState('');
@@ -41,11 +54,13 @@ export default function ClienteHome() {
     const [corSecundaria, setCorSecundaria] = useState("#F3F4F6");
 
     useEffect(() => {
+        console.log('DEBUG: ClienteHome - useEffect para fetchEmpresa disparado. Site:', site);
         if (!site) return;
 
         async function fetchEmpresa() {
             try {
                 const url = `${process.env.NEXT_PUBLIC_EMPRESA_API}/loja/slug/${site}`;
+                console.log('DEBUG: ClienteHome - Buscando dados da empresa:', url);
                 const response = await fetch(url);
 
                 if (!response.ok) {
@@ -56,14 +71,15 @@ export default function ClienteHome() {
                             errorMessage += ` - ${errorData.message}`;
                         }
                     } catch (jsonError) {
+                        console.error('DEBUG: ClienteHome - Erro ao parsear JSON de erro da empresa:', jsonError);
                     }
-
-                    console.error("Erro na resposta da API:", errorMessage);
+                    console.error("DEBUG: ClienteHome - Erro na resposta da API de empresa:", errorMessage);
                     setNomeFantasia("Erro ao carregar");
                     return;
                 }
 
                 const data = await response.json();
+                console.log('DEBUG: ClienteHome - Dados da empresa recebidos:', data);
                 setLojaId(data.id);
                 setNomeFantasia(data.nome_fantasia || "Sem nome fantasia");
                 setFotoLoja(data.foto_loja || null);
@@ -71,7 +87,7 @@ export default function ClienteHome() {
                 setCorSecundaria(data.cor_secundaria || "#F3F4F6");
                 setBannerLoja(data.banner || null);
             } catch (error) {
-                console.error("Erro na requisição ao buscar empresa:", error.message || error);
+                console.error("DEBUG: ClienteHome - Erro na requisição ao buscar empresa:", error.message || error);
                 setNomeFantasia("Erro ao carregar");
             }
         }
@@ -81,21 +97,25 @@ export default function ClienteHome() {
 
 
     useEffect(() => {
-        if (!site) return; // Alterado de !lojaId para !site
+        console.log('DEBUG: ClienteHome - useEffect para fetchProdutos disparado. Site:', site);
+        if (!site) return;
 
         async function fetchProdutos() {
             try {
-                // CORREÇÃO APLICADA AQUI: Use 'site' (o slug) na URL
+                // A API 'listarProdutosPorLoja' no backend já adiciona 'status_estoque' e 'indisponivel_automatico'
+                // e filtra por 'ativo=true' por padrão.
                 const url = `${process.env.NEXT_PUBLIC_EMPRESA_API}/produtos/loja/${site}`;
+                console.log('DEBUG: ClienteHome - Buscando produtos da loja:', url);
                 const response = await fetch(url);
 
                 if (!response.ok) {
-                    console.error("Erro na resposta da API de produtos:", response.statusText);
+                    console.error("DEBUG: ClienteHome - Erro na resposta da API de produtos:", response.statusText);
                     setProdutos([]);
                     return;
                 }
 
                 const data = await response.json();
+                console.log('DEBUG: ClienteHome - Produtos brutos recebidos da API:', data);
                 
                 if (Array.isArray(data)) {
                     setProdutos(data);
@@ -104,42 +124,51 @@ export default function ClienteHome() {
                 } else if (data && Array.isArray(data.itens)) {
                     setProdutos(data.itens);
                 } else {
-                    console.warn("API de produtos retornou dados em formato inesperado:", data);
+                    console.warn("DEBUG: ClienteHome - API de produtos retornou dados em formato inesperado:", data);
                     setProdutos([]);
                 }
+                console.log('DEBUG: ClienteHome - Produtos processados e definidos no estado:', data);
 
             } catch (error) {
-                console.error("Erro ao buscar produtos:", error.message);
+                console.error("DEBUG: ClienteHome - Erro ao buscar produtos:", error.message);
                 setProdutos([]);
             }
         }
 
         fetchProdutos();
-    }, [site]); // Alterado de [lojaId] para [site]
+    }, [site]);
 
     const handleShareClick = async () => {
+        console.log('DEBUG: ClienteHome - Tentando compartilhar link.');
         if (navigator.share) {
             try {
                 await navigator.share({
                     title: "Compartilhe este link",
                     url: window.location.href,
                 });
+                console.log('DEBUG: ClienteHome - Compartilhamento nativo bem-sucedido.');
             } catch (error) {
-                console.error("Erro ao compartilhar:", error);
+                console.error("DEBUG: ClienteHome - Erro ao compartilhar nativamente:", error);
             }
         } else {
             const url = window.location.href;
             const text = encodeURIComponent("Confira esse conteúdo:");
             const shareUrl = `https://api.whatsapp.com/send?text=${text}%20${url}`;
+            console.log('DEBUG: ClienteHome - Abrindo janela de compartilhamento no WhatsApp:', shareUrl);
             window.open(shareUrl, "_blank");
         }
     };
 
     const getImagemProduto = (caminhoImagem) => {
-        if (!caminhoImagem) return null;
+        if (!caminhoImagem) {
+            console.warn('DEBUG: ClienteHome - Caminho de imagem nulo/vazio. Retornando fallback.');
+            return "/fallback.png";
+        }
         if (caminhoImagem.startsWith('http')) return caminhoImagem;
-        const baseUrl = 'https://cufzswdymzevdeonjgan.supabase.co/storage/v1/object/public';
-        return `${baseUrl}/imagens/clientes/${encodeURIComponent(caminhoImagem)}`;
+        const baseUrl = 'https://cufzswdymzevdeonjgan.supabase.co/storage/v1/object/public'; // Hardcoded base URL
+        const fullUrl = `${baseUrl}/imagens/clientes/${encodeURIComponent(caminhoImagem)}`;
+        console.log('DEBUG: ClienteHome - URL da imagem gerada:', fullUrl);
+        return fullUrl;
     };
 
     useEffect(() => {
@@ -149,6 +178,7 @@ export default function ClienteHome() {
     }, [showSearch]);
 
     const handleAumentar = (id) => {
+        console.log('DEBUG: ClienteHome - Aumentar quantidade para produto ID:', id);
         setQuantidades((prev) => ({
             ...prev,
             [id]: (prev[id] || 1) + 1,
@@ -156,6 +186,7 @@ export default function ClienteHome() {
     };
 
     const handleDiminuir = (id) => {
+        console.log('DEBUG: ClienteHome - Diminuir quantidade para produto ID:', id);
         setQuantidades((prev) => ({
             ...prev,
             [id]: Math.max(1, (prev[id] || 1) - 1),
@@ -163,11 +194,22 @@ export default function ClienteHome() {
     };
 
     const handleAdicionar = async (produto) => {
+        console.log('DEBUG: ClienteHome - Tentando adicionar produto ao carrinho:', produto.nome);
+        // Impedir adição ao carrinho se o produto estiver indisponível automaticamente (esgotado)
+        if (produto.indisponivel_automatico) {
+            console.warn('DEBUG: ClienteHome - Produto indisponível automaticamente. Não adicionando ao carrinho.');
+            setMensagem('Produto indisponível no momento.');
+            setCorMensagem('text-red-600');
+            setTimeout(() => setMensagem(''), 3000);
+            return; // Impede a continuação da função
+        }
+
         try {
-            const id_cliente = 30;
+            const id_cliente = 30; // ID do cliente hardcoded - ajustar para obter do auth do cliente
             const qtd = quantidades[produto.id] || 1;
 
             const url = `${process.env.NEXT_PUBLIC_EMPRESA_API}/loja/${site}/carrinho`;
+            console.log('DEBUG: ClienteHome - Enviando para API do carrinho:', url, 'Dados:', { produtoId: produto.id, quantidade: qtd, id_cliente, lojaId: lojaId });
 
             const response = await fetch(url, {
                 method: 'POST',
@@ -183,15 +225,22 @@ export default function ClienteHome() {
             });
 
             const data = await response.json();
+            console.log('DEBUG: ClienteHome - Resposta da API do carrinho:', response.status, data);
 
             if (!response.ok) {
-                throw new Error(data.erro || 'Erro desconhecido');
+                if (response.status === 400 && data.erro && data.erro.includes('estoque')) {
+                    console.error('DEBUG: ClienteHome - Erro de estoque ao adicionar ao carrinho:', data.erro);
+                    throw new Error(data.erro);
+                }
+                console.error('DEBUG: ClienteHome - Erro desconhecido ao adicionar ao carrinho:', data.erro || response.statusText);
+                throw new Error(data.erro || 'Erro desconhecido ao adicionar ao carrinho');
             }
 
             setMensagem('Produto adicionado ao carrinho!');
             setCorMensagem('text-green-600');
+            console.log('DEBUG: ClienteHome - Produto adicionado ao carrinho com sucesso.');
         } catch (err) {
-            console.error('Erro ao adicionar ao carrinho:', err);
+            console.error('DEBUG: ClienteHome - Erro ao adicionar ao carrinho (catch):', err);
             setMensagem(`Erro: ${err.message}`);
             setCorMensagem('text-red-600');
         }
@@ -357,7 +406,9 @@ export default function ClienteHome() {
                                 getImagemProduto={getImagemProduto}
                                 slug={site}
                                 cor={corPrimaria}
-
+                                // NOVO: Passar status de estoque para o ProdutoCard
+                                isIndisponivel={produto.indisponivel_automatico || !produto.ativo}
+                                statusEstoque={produto.status_estoque} // 'disponivel', 'estoque_baixo', 'esgotado'
                             />
                         ))}
                     </div>
