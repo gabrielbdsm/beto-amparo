@@ -5,6 +5,15 @@ import Image from 'next/image';
 import OwnerSidebar from '@/components/OwnerSidebar';
 
 import FloatingNotificationsTop from '@/components/notification'; 
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_KEY);
+
 
 export default function OwnerDono() {
     const router = useRouter();
@@ -18,6 +27,10 @@ export default function OwnerDono() {
         pedidosFinalizados: null,
         notificacoes: null,
     });
+    const [valorPonto, setValorPonto] = useState('');
+    const [ativo, setAtivo] = useState(false);
+    const [saving, setSaving] = useState(false);
+    const [open, setOpen] = useState(false);
 
     useEffect(() => {
         if (!router.isReady) return;
@@ -57,6 +70,28 @@ export default function OwnerDono() {
         fetchDonoArea();
         }, [router.isReady]);
 
+
+    async function salvarConfiguracao() {
+        if (!donoData?.loja?.id) return;
+
+        setSaving(true);
+        const { error } = await supabase
+        .from("loja")
+        .update({
+            valorPonto: valorPonto || null,
+            ativarFidelidade: ativo,
+        })
+        .eq("id", donoData.loja.id);
+
+        if (error) {
+        console.error(error);
+        alert("Erro ao salvar configuração.");
+        } else {
+        alert("Configuração salva com sucesso!");
+        setOpen(false);
+        }
+        setSaving(false);
+    }
 
     if (loading) {
         return (
@@ -126,6 +161,8 @@ export default function OwnerDono() {
                 <ActionCard icon="/icons/notification.svg" label="Notificações" path={`/empresa/${donoData.loja.slug_loja}/notificacoes`} />
                 <ActionCard icon="/icons/paint_gray.svg" label="Personalizar Loja" path={`/empresa/${donoData.loja.slug_loja}/personalizacao`} />
                 <ActionCard icon="/icons/store_gray.svg" label="Ver Loja" path={`${window.location.origin}/loja/${donoData.loja.slug_loja}`} />
+                < ActionCard icon="/icons/pontos.svg" label="Configurar Fidelidade" onClick={() => setOpen(true)} />
+
             </div>
             <div className="bg-white rounded shadow p-4 flex flex-col gap-4">
                 <div className="text-sm font-semibold text-gray-600 border-b pb-1">Promoções</div>
@@ -133,6 +170,43 @@ export default function OwnerDono() {
                 <ActionCard icon="/icons/check.svg" label="Promoções Ativas" noBg />
             </div>
             </div>
+        
+        <Dialog open={open} onOpenChange={setOpen}>
+            <DialogContent className="bg-[#3681b6] text-white">
+                <DialogHeader>
+                    <DialogTitle>Configurar Programa de Fidelidade</DialogTitle>
+                </DialogHeader>
+
+                <div className="space-y-4 mt-2">
+                    <div className="flex items-center justify-between">
+                        <span>Ativar Programa</span>
+                        <Switch className="bg-white data-[state=checked]:bg-white" checked={ativo} onCheckedChange={setAtivo} />
+                    </div>
+                    <div>
+                        <label className="flex items-center justify-between">Valor do Ponto</label>
+                        <label className="block text-sm font-medium text-gray-700">"A cada R$20,00 adquire 1 ponto"</label>
+                        <Input
+                            type="number"
+                            value={valorPonto}
+                            onChange={(e) => setValorPonto(e.target.value)}
+                            className="text-white bg-[#3681b6] border-white focus-visible:ring-white"
+
+                        />
+                    </div>
+                </div>
+
+                <DialogFooter>
+                    <Button variant="ghost" onClick={() => setOpen(false)}
+                        className="bg-white text-[#3681b6] hover:bg-gray-200"
+                        >Cancelar</Button>
+                    <Button onClick={salvarConfiguracao} disabled={saving} 
+                        className="bg-white text-[#3681b6] hover:bg-gray-200">
+                        {saving ? "Salvando..." : "Salvar"}
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+
         </OwnerSidebar>
     );
 
@@ -162,14 +236,20 @@ function InfoCard({ value, sub }) {
     );
 }
 
-function ActionCard({ icon, label, path, noBg = false }) {
+function ActionCard({ icon, label, path, onClick, noBg = false }) {
     const router = useRouter();
     const classes = `
         ${noBg ? 'bg-white' : 'bg-white'}
         p-4 rounded shadow flex items-center gap-4 hover:bg-gray-100 cursor-pointer text-gray-500
     `;
     return (
-        <div onClick={() => path && router.push(path)} className={classes}>
+        <div
+            onClick={() => {
+                if (onClick) return onClick();
+                if (path) router.push(path);
+            }}
+            className={classes}
+        >
             <Image src={icon} alt={label} width={24} height={24} />
             <span className="text-lg font-semibold">{label}</span>
         </div>

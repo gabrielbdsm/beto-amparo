@@ -15,6 +15,9 @@ export default function CarrinhoCliente({ empresaId }) {
   const [pontosParaUsar, setPontosParaUsar] = useState(0);
   const [descontoAplicado, setDescontoAplicado] = useState(0);
 
+  const [ativarFidelidade, setAtivarFidelidade] = useState(false);
+
+
   const router = useRouter();
   const { slug } = router.query;
   
@@ -32,6 +35,7 @@ export default function CarrinhoCliente({ empresaId }) {
         const data = await response.json();
         setCorPrimaria(data.cor_primaria || "#3B82F6"); // Atualiza com a cor da API ou usa o fallback
         setLojaId(data.id);
+        setAtivarFidelidade(data.ativarFidelidade || false);
       } catch (error) {
         console.error("Erro ao buscar loja:", error);
         setCorPrimaria("#3B82F6"); // Fallback em caso de erro
@@ -76,25 +80,15 @@ export default function CarrinhoCliente({ empresaId }) {
     fetchCarrinho();
   }, [slug]);
 
-    const aplicarDesconto = () => {
+  const aplicarDesconto = () => {
     const pontosDisponiveis = Math.min(pontosParaUsar, totalPontosCliente);
 
-    // ⚠️ Corrigir: Só permite desconto para múltiplos de 10 pontos
-    const pontosEmDezena = Math.floor(pontosDisponiveis / 10) * 10;
-
-    if (pontosEmDezena < 10) {
-      alert("É necessário no mínimo 10 pontos para obter desconto.");
-      return;
-    }
-
-    const percentualDesconto = pontosEmDezena; // Ex: 20 pontos = 20% de desconto
+    const percentualDesconto = pontosDisponiveis * 0.1; // 1 ponto = 0.1% de desconto
     const valorDesconto = (subtotal * percentualDesconto) / 100;
 
-    setPontosParaUsar(pontosEmDezena);
+    setPontosParaUsar(pontosDisponiveis);
     setDescontoAplicado(valorDesconto);
   };
-
-  
 
   const totalFinal = Math.max(0, subtotal - descontoAplicado);
   
@@ -229,37 +223,44 @@ export default function CarrinhoCliente({ empresaId }) {
         <h1 className="text-xl font-bold">Seu Carrinho</h1>
       </header>
 
-      <div className="flex-1 px-4 py-6">
-        <div className="max-w-2xl mx-auto">
-          <div className="my-4">
-            <label htmlFor="pontos" className="block text-sm text-gray-700">Usar pontos:</label>
-            <input
-              id="pontos"
-              type="number"
-              value={pontosParaUsar}
-              onChange={(e) => {
-                const novoValor = parseInt(e.target.value, 10);
-                if (!isNaN(novoValor) && novoValor >= 0 && novoValor <= totalPontosCliente) {
-                  setPontosParaUsar(novoValor);
-                }
-              }}
-              className="border p-2 rounded w-full"
-            />
-            <p className="text-sm text-gray-500">Você tem {totalPontosCliente} pontos disponíveis.</p>
-            <button
-              onClick={aplicarDesconto}
-              className="mt-2 px-4 py-2 rounded text-white"
-              style={{ backgroundColor: corPrimaria }}
-            >
-              Aplicar Desconto
-            </button>
-          </div>
+      <div className="flex-1 flex items-center justify-center">
+       <div className="max-w-2xl w-full">
 
-          {descontoAplicado > 0 && (
-            <div className="text-green-700 font-semibold mb-4">
-              Desconto aplicado: R$ {descontoAplicado.toFixed(2)}
-            </div>
-          )}
+      {ativarFidelidade && ( 
+  <div className="space-y-2 mb-4">
+    <label htmlFor="pontos" className="block text-sm text-gray-700">Usar pontos:</label>
+    
+    <input
+      id="pontos"
+      type="number"
+      value={pontosParaUsar}
+      onChange={(e) => {
+        const novoValor = parseInt(e.target.value, 10);
+        if (!isNaN(novoValor) && novoValor >= 0 && novoValor <= totalPontosCliente) {
+          setPontosParaUsar(novoValor);
+        }
+      }}
+      className="border p-2 rounded w-full"
+    />
+    
+    <p className="text-sm text-gray-500">Você tem {totalPontosCliente} pontos disponíveis.</p>
+    
+    <button
+      onClick={aplicarDesconto}
+      className="px-4 py-2 rounded text-white"
+      style={{ backgroundColor: corPrimaria }}
+    >
+      Aplicar Desconto
+    </button>
+
+    {descontoAplicado > 0 && (
+      <div className="text-green-700 font-semibold">
+        Desconto aplicado: R$ {descontoAplicado.toFixed(2)}
+      </div>
+    )}
+  </div>
+)}
+
 
           {itensCarrinho.length === 0 ? (
             <p className="text-center text-gray-700 mt-10">Seu carrinho está vazio.</p>
@@ -294,10 +295,12 @@ export default function CarrinhoCliente({ empresaId }) {
                 <span>R$ {subtotal.toFixed(2)}</span>
               </div>
 
-              <div className="flex justify-between text-black">
-                <span>Desconto aplicado:</span>
-                <span>R$ {descontoAplicado.toFixed(2)}</span>
-              </div>
+              {ativarFidelidade && (
+                <div className="flex justify-between text-black">
+                  <span>Desconto aplicado:</span>
+                  <span>R$ {descontoAplicado.toFixed(2)}</span>
+                </div>
+              )}
 
               <div className="flex justify-between text-black font-bold text-xl">
                 <span>Total final:</span>

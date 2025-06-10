@@ -19,6 +19,8 @@ export default function ClienteHome() {
     const [produtos, setProdutos] = useState([]);
     const [searchTerm, setSearchTerm] = useState("");
     const [bannerLoja, setBannerLoja] = useState(null);
+    const [ativarFidelidade, setAtivarFidelidade] = useState(false);
+
 
     const removeAccents = (str) => {
         return str
@@ -70,6 +72,7 @@ export default function ClienteHome() {
                 setCorPrimaria(data.cor_primaria || "#3B82F6");
                 setCorSecundaria(data.cor_secundaria || "#F3F4F6");
                 setBannerLoja(data.banner || null);
+                setAtivarFidelidade(data.ativarFidelidade || false);
             } catch (error) {
                 console.error("Erro na requisição ao buscar empresa:", error.message || error);
                 setNomeFantasia("Erro ao carregar");
@@ -280,7 +283,7 @@ export default function ClienteHome() {
                             </div>
                             <span className="text-[10px] mt-1">Compartilhar</span>
                         </button>
-                        <PontosFidelidade clienteId={30} />
+                        {ativarFidelidade && <PontosFidelidade clienteId={30} />}
                     </div>
                 )}
             </header>

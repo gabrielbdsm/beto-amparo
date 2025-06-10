@@ -2,6 +2,7 @@ import Cliente from '../../models/ClienteModel.js';
 import supabase from '../../config/SupaBase.js';
 import bcrypt from 'bcrypt';
 
+
 class ClienteController {
 
 
@@ -144,13 +145,25 @@ class ClienteController {
         return res.status(400).json({ error: 'O campo usouPontos deve ser um booleano (true ou false).' });
       }
 
+      // Busca o valorPonto configurado na tabela loja
+    const { data: loja, error: erroLoja } = await supabase
+      .from('loja')
+      .select('valorPonto')
+      .single();
+
+    if (erroLoja) throw erroLoja;
+    if (!loja || typeof loja.valorPonto !== 'number' || loja.valorPonto <= 0) {
+      return res.status(500).json({ error: 'Configuração inválida do valorPonto na loja.' });
+    }
+
+    const valorPonto = loja.valorPonto;
+
       // Se o cliente usou pontos, ele NÃO ganha novos pontos
       if (usouPontos) {
         return res.status(200).json({ message: 'Cliente utilizou pontos nesta compra, não será creditado novos pontos.' });
       }
 
-      // Cálculo correto: 1 ponto a cada R$10 gastos
-      const pontosGanhos = Math.floor(valorTotalCompra / 10);
+      const pontosGanhos = Math.floor(valorTotalCompra / valorPonto);
 
       // Busca os pontos atuais do cliente
       const { data: cliente, error: erroBusca } = await supabase
