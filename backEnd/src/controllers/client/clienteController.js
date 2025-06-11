@@ -134,8 +134,12 @@ class ClienteController {
 
   async ganharPontos(req, res) {
     try {
-      const id = req.params.id;
-      const { valorTotalCompra, usouPontos } = req.body;
+      const clienteId = req.params.id;
+      const { id_loja, valorTotalCompra, usouPontos } = req.body;
+
+      if (typeof id_loja !== 'number') {
+        return res.status(400).json({ error: 'O campo id_loja é obrigatório e deve ser um número.' });
+      }
 
       if (typeof valorTotalCompra !== 'number' || valorTotalCompra <= 0) {
         return res.status(400).json({ error: 'O campo valorTotalCompra deve ser um número positivo.' });
@@ -145,50 +149,56 @@ class ClienteController {
         return res.status(400).json({ error: 'O campo usouPontos deve ser um booleano (true ou false).' });
       }
 
-      // Busca o valorPonto configurado na tabela loja
-    const { data: loja, error: erroLoja } = await supabase
-      .from('loja')
-      .select('valorPonto')
-      .single();
+      // Busca o valorPonto configurado na tabela loja → usando id_loja recebido do carrinho/front
+      const { data: loja, error: erroLoja } = await supabase
+        .from('loja')
+        .select('valorPonto')
+        .eq('id', id_loja)
+        .single();
 
-    if (erroLoja) throw erroLoja;
-    if (!loja || typeof loja.valorPonto !== 'number' || loja.valorPonto <= 0) {
-      return res.status(500).json({ error: 'Configuração inválida do valorPonto na loja.' });
-    }
+      if (erroLoja) throw erroLoja;
+      if (!loja || typeof loja.valorPonto !== 'number' || loja.valorPonto <= 0) {
+        return res.status(500).json({ error: 'Configuração inválida do valorPonto na loja.' });
+      }
 
-    const valorPonto = loja.valorPonto;
+      const valorPonto = loja.valorPonto;
 
-      // Se o cliente usou pontos, ele NÃO ganha novos pontos
       if (usouPontos) {
         return res.status(200).json({ message: 'Cliente utilizou pontos nesta compra, não será creditado novos pontos.' });
       }
 
       const pontosGanhos = Math.floor(valorTotalCompra / valorPonto);
 
-      // Busca os pontos atuais do cliente
-      const { data: cliente, error: erroBusca } = await supabase
+      const { data: clientes, error: erroBusca } = await supabase
         .from('clientes')
-        .select('total_pontos')
-        .eq('id', id)
-        .single();
+        .select('id, total_pontos')
+        .eq('id', clienteId);
 
       if (erroBusca) throw erroBusca;
-      if (!cliente) return res.status(404).json({ error: 'Cliente não encontrado.' });
+      if (!clientes || clientes.length === 0) {
+        return res.status(404).json({ error: 'Cliente não encontrado.' });
+      }
+
+      if (clientes.length > 1) {
+        return res.status(500).json({ error: 'Erro: múltiplos clientes encontrados com o mesmo ID.' });
+      }
+
+      const cliente = clientes[0];
 
       const novosPontos = cliente.total_pontos + pontosGanhos;
 
-      const { data, error } = await supabase
+      const { data: dataAtualizada, error: erroAtualiza } = await supabase
         .from('clientes')
         .update({ total_pontos: novosPontos })
-        .eq('id', id)
+        .eq('id', clienteId)
         .select();
 
-      if (error) throw error;
+      if (erroAtualiza) throw erroAtualiza;
 
       return res.status(200).json({
         success: true,
         message: `Compra concluída. ${pontosGanhos} ponto(s) adicionados ao cliente.`,
-        cliente: data[0]
+        cliente: dataAtualizada[0]
       });
 
     } catch (error) {
