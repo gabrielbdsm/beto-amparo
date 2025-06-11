@@ -114,9 +114,9 @@ export const getDadosGraficoVendas = async (req, res) => {
 }
 export async function listarPedidosPorEmpresa(req, res) {
   const { slug } = req.params;
+  const { cliente_id } = req.query; 
 
   try {
-    // Buscar ID da loja pelo slug
     const { data: loja, error: lojaError } = await supabase
       .from('loja')
       .select('id')
@@ -130,11 +130,16 @@ export async function listarPedidosPorEmpresa(req, res) {
 
     const lojaId = loja.id;
 
-    // Agora buscar pedidos pelo id_loja
-    const { data: pedidos, error } = await supabase
+    let query = supabase
       .from('pedidos')
       .select('*')
       .eq('id_loja', lojaId);
+
+    if (cliente_id) {
+      query = query.eq('id_cliente', cliente_id); 
+    }
+
+    const { data: pedidos, error } = await query;
 
     if (error) {
       console.error('Erro ao buscar pedidos:', error);
@@ -148,11 +153,12 @@ export async function listarPedidosPorEmpresa(req, res) {
   }
 }
 
+
 export async function criarPedido(req, res) {
   try {
-    const { id_cliente, id_loja, data, total, status, observacoes } = req.body;
+    const { id_cliente, id_loja, data, total, status, observacoes, desconto } = req.body;
     
-    console.log('Dados recebidos:', { id_cliente, id_loja, data, total, observacoes });
+    console.log('Dados recebidos:', { id_cliente, id_loja, data, total, observacoes, desconto });
 
     // Validação explícita de cada campo obrigatório
     if (
@@ -177,7 +183,8 @@ export async function criarPedido(req, res) {
           data,
           total,
           status,
-          observacoes
+          observacoes,
+          desconto
         }
       ])
       .select()  // para retornar o registro inserido

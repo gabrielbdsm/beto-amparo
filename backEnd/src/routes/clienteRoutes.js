@@ -28,6 +28,10 @@ router.put('/clientes/:id', clienteController.atualizar);  // Ajuste aqui para '
 // Rota para deletar cliente (opcional)
 router.delete('/clientes/:id', clienteController.remover);  // Ajuste aqui para '/clientes/:id'
 
+router.put('/clientes/:id/pontos', clienteController.atualizarPontos); 
+
+router.post('/clientes/:id/ganhar-pontos', clienteController.ganharPontos);
+
 
 
 router.use((req, res, next) => {

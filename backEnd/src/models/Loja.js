@@ -115,7 +115,7 @@ export async function buscarLojaPorSlugCompleta(slug) {
     try {
         const { data, error } = await supabase
             .from('loja')
-            .select('id, nome_fantasia, slug_loja, id_empresa, foto_loja, cor_primaria, cor_secundaria, slogan, banner') // Certifique-se de que todas essas colunas existem
+            .select('id, nome_fantasia, slug_loja, id_empresa, foto_loja, cor_primaria, cor_secundaria, slogan, banner, ativarFidelidade, valorPonto') // Certifique-se de que todas essas colunas existem
             .eq('slug_loja', slug)
             .single(); // <-- O PROBLEMA ESTÁ NO COMPORTAMENTO DE .SINGLE()
 

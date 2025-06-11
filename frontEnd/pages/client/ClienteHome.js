@@ -5,6 +5,10 @@ import Image from "next/image";
 import NavBar from "@/components/NavBar";
 import ProdutoCard from "@/components/ProdutoCard";
 import { useRouter } from 'next/router';
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_KEY);
+
 
 export default function ClienteHome() {
     const router = useRouter();
@@ -16,6 +20,8 @@ export default function ClienteHome() {
     const [produtos, setProdutos] = useState([]);
     const [searchTerm, setSearchTerm] = useState("");
     const [bannerLoja, setBannerLoja] = useState(null);
+    const [ativarFidelidade, setAtivarFidelidade] = useState(false);
+
 
     const removeAccents = (str) => {
         return str
@@ -82,6 +88,7 @@ export default function ClienteHome() {
                 setCorPrimaria(data.cor_primaria || "#3B82F6");
                 setCorSecundaria(data.cor_secundaria || "#F3F4F6");
                 setBannerLoja(data.banner || null);
+                setAtivarFidelidade(data.ativarFidelidade || false);
             } catch (error) {
                 console.error("DEBUG: ClienteHome - Erro na requisição ao buscar empresa:", error.message || error);
                 setNomeFantasia("Erro ao carregar");
@@ -325,6 +332,7 @@ export default function ClienteHome() {
                             </div>
                             <span className="text-[10px] mt-1">Compartilhar</span>
                         </button>
+                        {ativarFidelidade && <PontosFidelidade clienteId={30} />}
                     </div>
                 )}
             </header>
@@ -414,6 +422,46 @@ export default function ClienteHome() {
                 )}
             </div>
             <NavBar site={site} corPrimaria={corPrimaria} />
+        </div>
+    );
+}
+
+function PontosFidelidade({ clienteId }) {
+    const [pontos, setPontos] = useState(0);
+    const [nomeCliente, setNomeCliente] = useState('');
+
+    useEffect(() => {
+        fetchCliente();
+    }, [clienteId]);
+
+    async function fetchCliente() {
+        const { data, error } = await supabase
+            .from('clientes')
+            .select('nome, total_pontos')
+            .eq('id', clienteId)
+            .single();
+
+        if (!error && data) {
+            setPontos(data.total_pontos || 0);
+            setNomeCliente(data.nome || 'Cliente');
+        }
+    }
+
+    async function resgatarPontos(pontosParaResgatar) {
+        if (pontos < pontosParaResgatar) return;
+
+        const { error } = await supabase
+            .from('clientes')
+            .update({ total_pontos: pontos - pontosParaResgatar })
+            .eq('id', clienteId);
+
+        if (!error) fetchCliente(); // Atualiza os pontos e nome após resgate
+    }
+
+    return (
+        <div className="p-4 border rounded-lg bg-white shadow mb-4">
+             <div  className="text-black">Olá, <strong>{nomeCliente}</strong></div>
+            <div className="text-black">Você tem <strong>{pontos}</strong> ponto{pontos === 1 ? '' : 's'}</div>
         </div>
     );
 }
