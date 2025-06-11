@@ -17,9 +17,35 @@ export default function ListaLojasEmpresa() {
 
         async function fetchLojas() {
             try {
-                const res = await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/empresa/${nomeEmpresa}/lojas`, {
-                    credentials: 'include',
-                });
+                // 1. Primeiro valida se o usuário tem acesso
+                const validation = await fetch(
+                    `${process.env.NEXT_PUBLIC_EMPRESA_API}/empresa/${nomeEmpresa}/validate`,
+                    { credentials: 'include' }
+                );
+
+                if (!validation.ok) {
+                    router.push(`/empresa/LoginEmpresa?returnTo=/${nomeEmpresa}/lojas`);
+                    return;
+                }
+
+                const { empresa_slug } = await validation.json();
+
+                // 2. Verifica se a empresa do token bate com a URL
+                if (empresa_slug !== nomeEmpresa) {
+                    setError('Você não tem permissão para acessar estas lojas');
+                    setLoading(false);
+                    return;
+                }
+
+                // 3. Busca as lojas (seu código existente)
+                const res = await fetch(
+                    `${process.env.NEXT_PUBLIC_EMPRESA_API}/empresa/${nomeEmpresa}/lojas`,
+                    { credentials: 'include' }
+                );
+
+                //const res = await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/empresa/${nomeEmpresa}/lojas`, {
+                  //  credentials: 'include',
+                //});
 
                 if (!res.ok) {
                     throw new Error('Erro ao buscar as lojas');
@@ -29,8 +55,9 @@ export default function ListaLojasEmpresa() {
                 setEmpresa(data.empresa);
                 setLojas(data.lojas || []);
             } catch (err) {
-                console.error(err);
-                setError('Falha ao carregar as lojas');
+                //console.error(err);
+                //setError('Falha ao carregar as lojas');
+                 router.push(`/empresa/LoginEmpresa?returnTo=/${nomeEmpresa}/lojas`);
             } finally {
                 setLoading(false);
             }
@@ -56,8 +83,8 @@ export default function ListaLojasEmpresa() {
     }
 
     return (
-  <div className="min-h-screen bg-gray-100">
-  <div className="max-w-5xl mx-auto py-10 px-4">
+        <div className="min-h-screen bg-gray-100">
+            <div className="max-w-5xl mx-auto py-10 px-4">
                 <h1 className="text-3xl font-bold text-gray-700 mb-8 text-center">
                     Lojas da {empresa?.nome}
                 </h1>
@@ -86,16 +113,16 @@ export default function ListaLojasEmpresa() {
                         </div>
                     ))}
                     <button
-    onClick={() => router.push(`/empresa/${nomeEmpresa}/nova-loja`)}
-    className="fixed bottom-6 right-6 bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-full shadow-lg transition"
->
-    + Adicionar loja
-</button>
+                        onClick={() => router.push(`/empresa/${nomeEmpresa}/nova-loja`)}
+                        className="fixed bottom-6 right-6 bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-full shadow-lg transition"
+                    >
+                        + Adicionar loja
+                    </button>
 
                 </div>
             </div>
-  </div>
-        
-            
+        </div>
+
+
     );
 }

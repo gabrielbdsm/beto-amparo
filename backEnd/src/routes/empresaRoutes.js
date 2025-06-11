@@ -3,18 +3,20 @@ import express from 'express';
 import * as AuthController from '../controllers/Empresa/AuthController.js'; // <-- CORRIGIDO AQUI!
 import * as EmpresaModel from '../models/EmpresaModel.js';
 import { routePrivate } from '../middleware/protectRoutes.js';
-import * as EmpresaController from '../controllers/Empresa/EmpresaController.js'; 
+import * as EmpresaController from '../controllers/Empresa/EmpresaController.js';
 
-import { atualizarPersonalizacao, criarPersonalizacao, getLojaBySlug, verificarSlug  } from '../controllers/Empresa/personalizacaoController.js';
-import * as HorariosController from '../controllers/Empresa/horariosCotroller.js'; 
+import { atualizarPersonalizacao, criarPersonalizacao, getLojaBySlug, verificarSlug } from '../controllers/Empresa/personalizacaoController.js';
+import * as HorariosController from '../controllers/Empresa/horariosCotroller.js';
 import { empresaPrivate } from '../middleware/protectRouterEmpresa.js'; // <-- CORRIGIDO AQUI!
+
+//import { empresaPrivate } from './protectRoutesEmpresa'; //tentando autenticar pag de loja
 
 const router = express.Router();
 
 import { enviarEmailRecuperacao } from '../controllers/recuperarSenhaController.js';
 import { definirNovaSenha } from '../controllers/redefinirSenhaController.js';
 
-router.post('/recuperar-senha',enviarEmailRecuperacao);
+router.post('/recuperar-senha', enviarEmailRecuperacao);
 router.post('/nova-senha', definirNovaSenha);
 
 router.put('/empresa/personalizacao/:slug', atualizarPersonalizacao);
@@ -28,13 +30,23 @@ router.post('/loginEmpresa', AuthController.loginEmpresa);
 router.post('/logout', AuthController.logout);
 
 router.get('/logout', AuthController.logout);
-router.get('/empresa/horarios',empresaPrivate, HorariosController.getDatasConfiguradasByEmpresa);
-router.post('/empresa/horarios',empresaPrivate, HorariosController.saveDatasConfiguradas);
-router.delete('/empresa/horarios/:data',empresaPrivate, HorariosController.deleteDataConfigurada);
+router.get('/empresa/horarios', empresaPrivate, HorariosController.getDatasConfiguradasByEmpresa);
+router.post('/empresa/horarios', empresaPrivate, HorariosController.saveDatasConfiguradas);
+router.delete('/empresa/horarios/:data', empresaPrivate, HorariosController.deleteDataConfigurada);
 
 router.get('/verifyAuthStatus', routePrivate, (req, res) => {
   // Se o middleware routePrivate passou, significa que o usuário está autenticado
   res.status(200).json({ mensagem: 'Autenticado.' });
+});
+
+//autenticacao de loja
+router.get('/:empresaSlug/validate', empresaPrivate, (req, res) => {
+  res.status(200).json({
+    authenticated: true,
+    empresa_slug: req.user.slug,
+    empresa_id: req.IdEmpresa,
+    nome_empresa: req.user.nome
+  });
 });
 router.put('/marcar-personalizacao-completa', routePrivate, EmpresaController.marcarPersonalizacaoCompleta);
 

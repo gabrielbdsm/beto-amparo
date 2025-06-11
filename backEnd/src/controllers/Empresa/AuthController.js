@@ -17,6 +17,7 @@ export const loginEmpresa = async (req, res) => {
     try { // <-- Este é o bloco try principal da função
 
         const { error: loginError, data: empresaData } = await empresas.LoginEmpresa(email, senha);
+    
 
         if (loginError || !empresaData) {
             return res.status(401).json({ error: loginError || 'Email ou senha inválidos' });
@@ -43,10 +44,11 @@ export const loginEmpresa = async (req, res) => {
 
         res.cookie("token_empresa", token, {
             httpOnly: false, // Alterei para false porque o frontend está lendo o cookie
-            secure:  true,
-            sameSite:  "none" ,
+            secure:  process.env.NODE_ENV === 'production', //tava true, precisei mudar pra direcionamento (desativar https p localhost) -> neci
+            sameSite:  'Lax', //tava none, precisei mudar tb -> neci
             maxAge: 24 * 60 * 60 * 1000,
             path: "/",
+            domain: process.env.COOKIE_DOMAIN || 'localhost'
         });
 
         // **NOVO LOG AQUI: VERIFIQUE O COOKIE ANTES DE ENVIAR A RESPOSTA**
@@ -64,6 +66,7 @@ export const loginEmpresa = async (req, res) => {
             primeiroLoginFeito: empresaData.primeiro_login_feito,
             slugLoja: slugDaLoja,
             nomeFantasia: nomeFantasiaLoja,
+            nomeEmpresa: empresaData.nome,
         });
 
     } catch (error) { // <-- Este é o catch correspondente ao try principal

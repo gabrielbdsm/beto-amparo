@@ -20,25 +20,28 @@ export default function LoginEmpresa() {
         // Esta lógica só será executada se 'empresaDataFromLogin' for preenchido
         // após um SUBMIT de login BEM-SUCEDIDO NESTA SESSÃO.
         if (empresaDataFromLogin) {
+            console.log('empresaDataFromLogin:', empresaDataFromLogin);
+            console.log('empresaDataFromLogin:', JSON.stringify(empresaDataFromLogin, null, 2));
+
             let redirectPath = '/dashboard-generico'; // Fallback padrão
 
             // Captura o 'returnTo' da URL.
-            const { returnTo } = router.query; 
+            const { returnTo } = router.query;
 
             const { primeiroLoginFeito, slugLoja } = empresaDataFromLogin;
 
             if (primeiroLoginFeito === false) {
                 // Se for o primeiro login, redireciona para personalização
-                redirectPath = '/empresa/${slugLoja}/personalizacao-loja';
+                redirectPath = `/empresa/${slugLoja}/personalizacao-loja`;
             } else if (returnTo) {
                 // Se existe um 'returnTo' na URL, usa ele
                 redirectPath = returnTo;
             } else if (slugLoja) {
                 // Se não tem 'returnTo' e já fez o primeiro login, vai para o dashboard da loja
-                redirectPath = `/empresa/${slugLoja}/dashboard`;
+                redirectPath = `/${nomeEmpresa}/lojas`;
             } else {
                 // Último fallback, se nada se aplicar
-                redirectPath = '/empresa/donoarea'; 
+                redirectPath = '/empresa/donoarea';
             }
 
             console.log('LoginEmpresa - useEffect: Redirecionando APÓS LOGIN para:', redirectPath);
@@ -64,6 +67,8 @@ export default function LoginEmpresa() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        console.log('🔥 handleSubmit foi chamado');
+        //e.preventDefault();
 
         if (isLoading) {
             console.log('LoginEmpresa: Tentativa de submit ignorada (isLoading é true).');
@@ -77,12 +82,27 @@ export default function LoginEmpresa() {
             const res = await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/loginEmpresa`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                credentials: 'include', // IMPORTANTE: Permite o envio e recebimento de cookies (para o Set-Cookie do backend)
+                credentials: 'include', // Isso é crucial
                 body: JSON.stringify(formData),
             });
 
+            // Adicione este log
+            console.log('Resposta do login:', {
+                status: res.status,
+                headers: Object.fromEntries(res.headers.entries())
+            });
+            /*const res = await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/loginEmpresa`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include', // IMPORTANTE: Permite o envio e recebimento de cookies (para o Set-Cookie do backend)
+                body: JSON.stringify(formData),
+            });*/
+
             const data = await res.json();
             console.log('LoginEmpresa - Resposta bruta do backend:', data);
+            console.log('🔍 nomeEmpresa:', data.nomeEmpresa);
+            console.log('🔍 slugLoja:', data.slugLoja);
+
 
             if (!res.ok) {
                 const mensagem = data?.error || data?.mensagem || 'Erro desconhecido ao tentar logar.';
@@ -92,14 +112,14 @@ export default function LoginEmpresa() {
             }
 
             alert('Login realizado com sucesso!');
-            
+
             // O cookie `token_empresa` será setado automaticamente pelo navegador
             // porque o backend enviou o cabeçalho Set-Cookie na resposta HTTP.
             // Não precisamos manipulá-lo no frontend com js-cookie aqui.
-            
+
             // Armazena os dados relevantes da empresa para o redirecionamento do useEffect
-            setEmpresaDataFromLogin(data); 
-            
+            setEmpresaDataFromLogin(data);
+
         } catch (err) {
             console.error('LoginEmpresa - Erro ao fazer login (catch):', err);
             setErrors({ geral: 'Erro ao fazer login. Tente novamente mais tarde.' });
