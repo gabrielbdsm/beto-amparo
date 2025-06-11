@@ -5,10 +5,17 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
-
   images: {
-    domains: ['cufzswdymzevdeonjgan.supabase.co'],
-  },
+      remotePatterns: [
+        {
+          protocol: 'https',
+          hostname: 'cufzswdymzevdeonjgan.supabase.co',
+          pathname: '/storage/v1/object/public/**',
+        },
+      ],
+    },
+
+
 
   async rewrites() {
     return [

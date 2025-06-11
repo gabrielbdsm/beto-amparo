@@ -17,7 +17,6 @@ export default function CarrinhoCliente({ empresaId }) {
 
   const [ativarFidelidade, setAtivarFidelidade] = useState(false);
 
-
   const router = useRouter();
   const { slug } = router.query;
   
@@ -28,6 +27,7 @@ export default function CarrinhoCliente({ empresaId }) {
 
     // Buscar a corPrimaria da loja
     async function fetchLoja() {
+      
       try {
         const url = `${process.env.NEXT_PUBLIC_EMPRESA_API}/loja/slug/${slug}`;
         const response = await fetch(url);
@@ -52,6 +52,7 @@ export default function CarrinhoCliente({ empresaId }) {
         if (!response.ok) throw new Error("Erro ao buscar carrinho");
         const data = await response.json();
         console.log("Carrinho carregado:", data);
+        console.log("Campo ativarFidelidade vindo como:", data.ativarFidelidade);
         setItensCarrinho(data);
         const total = data.reduce((acc, item) => acc + item.quantidade * item.produto.preco, 0);
         setSubtotal(total);
@@ -83,7 +84,7 @@ export default function CarrinhoCliente({ empresaId }) {
   const aplicarDesconto = () => {
     const pontosDisponiveis = Math.min(pontosParaUsar, totalPontosCliente);
 
-    const percentualDesconto = pontosDisponiveis * 0.1; // 1 ponto = 0.1% de desconto
+    const percentualDesconto = pontosDisponiveis 
     const valorDesconto = (subtotal * percentualDesconto) / 100;
 
     setPontosParaUsar(pontosDisponiveis);
@@ -166,14 +167,16 @@ export default function CarrinhoCliente({ empresaId }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ total_pontos: totalPontosCliente - pontosParaUsar }),
       });
+      console.log(urlAtualizaPontos);
     } else {
       // Cliente não usou pontos → GANHA novos pontos
       const urlGanharPontos = `${process.env.NEXT_PUBLIC_EMPRESA_API}/clientes/${id_cliente}/ganhar-pontos`;
       await fetch(urlGanharPontos, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ valorTotalCompra: subtotal, usouPontos: false }),
+        body: JSON.stringify({ valorTotalCompra: subtotal, usouPontos: false, id_loja: lojaId}),
       });
+      console.log(urlGanharPontos);
     }
 
     alert("Compra finalizada com sucesso!");
@@ -227,39 +230,39 @@ export default function CarrinhoCliente({ empresaId }) {
        <div className="max-w-2xl w-full">
 
       {ativarFidelidade && ( 
-  <div className="space-y-2 mb-4">
-    <label htmlFor="pontos" className="block text-sm text-gray-700">Usar pontos:</label>
-    
-    <input
-      id="pontos"
-      type="number"
-      value={pontosParaUsar}
-      onChange={(e) => {
-        const novoValor = parseInt(e.target.value, 10);
-        if (!isNaN(novoValor) && novoValor >= 0 && novoValor <= totalPontosCliente) {
-          setPontosParaUsar(novoValor);
-        }
-      }}
-      className="border p-2 rounded w-full"
-    />
-    
-    <p className="text-sm text-gray-500">Você tem {totalPontosCliente} pontos disponíveis.</p>
-    
-    <button
-      onClick={aplicarDesconto}
-      className="px-4 py-2 rounded text-white"
-      style={{ backgroundColor: corPrimaria }}
-    >
-      Aplicar Desconto
-    </button>
+        <div className="space-y-2 mb-4">
+          <label htmlFor="pontos" className="block text-sm text-gray-700">Usar pontos:</label>
+          
+          <input
+            id="pontos"
+            type="number"
+            value={pontosParaUsar}
+            onChange={(e) => {
+              const novoValor = parseInt(e.target.value, 10);
+              if (!isNaN(novoValor) && novoValor >= 0 && novoValor <= totalPontosCliente) {
+                setPontosParaUsar(novoValor);
+              }
+            }}
+            className="border p-2 rounded w-full"
+          />
+          
+          <p className="text-sm text-gray-500">Você tem {totalPontosCliente} pontos disponíveis.</p>
+          
+          <button
+            onClick={aplicarDesconto}
+            className="px-4 py-2 rounded text-white"
+            style={{ backgroundColor: corPrimaria }}
+          >
+            Aplicar Desconto
+          </button>
 
-    {descontoAplicado > 0 && (
-      <div className="text-green-700 font-semibold">
-        Desconto aplicado: R$ {descontoAplicado.toFixed(2)}
-      </div>
-    )}
-  </div>
-)}
+          {descontoAplicado > 0 && (
+            <div className="text-green-700 font-semibold">
+              Desconto aplicado: R$ {descontoAplicado.toFixed(2)}
+            </div>
+          )}
+        </div>
+      )}
 
 
           {itensCarrinho.length === 0 ? (
