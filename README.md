@@ -169,73 +169,34 @@ Todos os planos contam com **7 dias gratuitos** para experimentação, sem compr
 |     | Implementar Recomendações e Você pode gostar desse produto na Loja do Cliente |Desenvolver sistema de recomendação de produtos na página da loja do cliente (/loja/nome). Exibir seção com produtos similares ou populares com base em compras anteriores, categorias mais acessadas e produtos mais vendidos, usando dados da tabela orders no Supabase. Exibir sugestão como “Você pode gostar” com cards estilizados em Tailwind CSS (rounded-xl, shadow, hover:scale-105). Otimizar para dispositivos móveis. Cachear sugestões via PWA para acesso offline. | Pedidos, Supabase (Iteração 2) | Não |
 |     | Testes Manuais e Ajustes | Simular fluxos: dono completa missões, aplica temas, vê métricas; cliente acumula pontos. Testar PWA offline (dashboard, loja, Home do Cliente), responsividade, e erros. Corrigir bugs e ajustar UI. Garante qualidade. | Todas | Não |
 
-# Implementação de PWA por Página
+## Mobile (Next.js PWA - Área Administrativa / Dono)
 
-| Dev | Tarefa | Descrição | Dependência | Feito |
-|-----|--------|-----------|-------------|-------|
-| Dallyla | Implementar PWA para Adicionar Produto, Personalização, Meus Produtos, e Dashboard | Configurar PWA (`next-pwa`, `manifest.json`, service worker) para `/produtos/adicionar`, `/dono/personalizacao`, `/dono/meus-produtos`, e `/dashboard` (com estoque, gráficos). Cachear `products`, `business_settings`, e `orders` em `localStorage` para acesso offline. Otimizar para mobile (Tailwind CSS: `sm:flex`). Garante experiência app-like com instalação. | Adicionar Produto, Personalização, Meus Produtos, Dashboard (Iteração 4, 3, 2, 1) | Não |
-| Heloisa | Implementar PWA para Cadastro de Empresa, Login Empresa, Carrinho, Confirmação de Pedido, Recuperação de Senha | Configurar PWA para `/cadastro-empresa`, `/login`, `/carrinho`, `/pedido/[id]/resumo`, e `/recuperar-senha`. Cachear `business_settings`, `orders`, e formulários em `localStorage` para acesso offline. Otimizar para mobile (Tailwind CSS). Suporta login e pedidos offline, com sincronização ao reconectar. | Cadastro de Empresa, Login, Carrinho, Confirmação de Pedido, Recuperação de Senha (Iteração 4, 3, 2, 1) | Não |
-| Gabriel | Implementar PWA para Produto Individual, Notificações e Agendamentos | Configurar PWA para `/produto/[id]`, `/dono` (notificações), e `/agendamentos`. Cachear `products`, `reviews`, `notifications`, e `appointments` em `localStorage` para acesso offline. Otimizar para mobile (Tailwind CSS). Permite ver produtos e agendamentos offline. | Produto Individual, Notificações, Agendamentos (Iteração 4, 3, 2) | Não |
-| Ester | Implementar PWA para Home do Cliente e Área do Dono | Configurar PWA para `/` (Home do Cliente) e `/dono` (Área do Dono). Cachear `business_settings`, `products`, `orders`, e `notifications` em `localStorage` para acesso offline, incluindo cancelamentos. Otimizar para mobile (Tailwind CSS). Garante navegação offline na loja e área do dono. | Home do Cliente, Área do Dono, Suporte ao Cliente (Iteração 4, 3, 2) | Não |
-| Neci | Implementar PWA para Login e Cadastro de cliente, Logout, Finalizar Pedido e Múltiplas Lojas | Configurar PWA para `/produtos`, `/logout`, `/pedido`, e `/loja/[custom_url]` (recomendações). Cachear `products`, `orders`, e `business_settings` em `localStorage` para acesso offline. Otimizar para mobile (Tailwind CSS). Suporta listagem e pedidos offline. | Listar Produtos, Logout, Formulário de Pedido, Múltiplas Lojas (Iteração 4, 3, 2, 1) | Não |
-|     | Testes Manuais e Ajustes | Simular fluxos offline: acessar dashboard, Home, produtos, agendamentos, carrinho, personalização, e pedidos. Testar instalação como app, responsividade, e sincronização ao reconectar. Corrigir bugs e ajustar UI. Garante qualidade do PWA. | Todas | Não |
+| Área / Página no PWA                         | Tarefa                                                                                                                   | Pessoa Responsável (Nome) |
+|----------------------------------------------|--------------------------------------------------------------------------------------------------------------------------|---------------------------|
+| Cadastro de Empresa → Personalização → Produtos → Landing Page | Deixar todo o fluxo mobile funcionando e integrado utilizando **Next.js PWA**, desde o cadastro da empresa, passando pela personalização até produtos, e conectar com a landing page |                           |
+| Área do Dono + Dashboard + Editar Produto     | Deixar mobile a área do dono funcionando com **Next.js PWA**, incluindo dashboard, edição de produtos, e adicionar botão de voltar em telas necessárias |                           |
+| Horários e Agendamentos                      | Deixar mobile a funcionalidade de horários e agendamentos completa usando **Next.js PWA**, garantindo que usuários possam visualizar, criar, editar e cancelar agendamentos; além de revisar o front da loja que funciona só com agendamento para garantir responsividade e usabilidade |                           |
 
-## Detalhes das Tarefas
+✅ Cada uma dessas tarefas deve ser feita por uma pessoa diferente (Pessoa 1, 2 ou 3).
 
-### 1. Implementar PWA para Adicionar Produto, Personalização, Meus Produtos, e Dashboard (Dallyla)
-- **Descrição**: Transformar `/produtos/adicionar`, `/dono/personalizacao`, `/dono/meus-produtos`, e `/dashboard` em um app mobile com PWA, permitindo acesso offline.
-- **Implementação**:
-  - Configurar `next-pwa` em `next.config.js`:
-    ```javascript
-    const withPWA = require('next-pwa');
-    module.exports = withPWA({
-      pwa: { dest: 'public', register: true, skipWaiting: true },
-    });
-    ```
-  - Cachear `products`, `business_settings`, `orders` com service worker (`workbox.strategies.StaleWhileRevalidate`).
-  - Otimizar UI para mobile (Tailwind: `sm:flex`, `max-w-screen-sm`).
-- **Esforço**: Médio (1-2 semanas).
-- **Impacto**: Garante gestão offline para donos.
 
-### 2. Implementar PWA para Cadastro de Empresa, Login, Carrinho, Confirmação de Pedido, Recuperação de Senha (Heloísa)
-- **Descrição**: Transformar `/cadastro-empresa`, `/login`, `/carrinho`, `/pedido/[id]/resumo`, e `/recuperar-senha` em um app mobile com PWA.
-- **Implementação**:
-  - Cachear formulários e `business_settings` em `localStorage`.
-  - Sincronizar pedidos offline ao reconectar.
-  - Otimizar para mobile (Tailwind: `flex-col sm:flex-row`).
-- **Esforço**: Médio-alto (2 semanas).
-- **Impacto**: Melhora acessibilidade para novos usuários e clientes.
+## Web Cliente (App Web Público - Responsividade e Funcionalidades)
 
-### 3. Implementar PWA para Produto Individual, Notificações, e Agendamentos (Gabriel)
-- **Descrição**: Transformar `/produto/[id]`, `/dono` (notificações), e `/agendamentos` em um app mobile com PWA.
-- **Implementação**:
-  - Cachear `products`, `reviews`, `notifications`, `appointments`.
-  - Otimizar para mobile (Tailwind: `w-full sm:w-1/2`).
-- **Esforço**: Médio (1-2 semanas).
-- **Impacto**: Permite acesso offline a produtos e agendamentos.
+| Pessoa   | Áreas / Tarefas Responsáveis                                                                                                                     | Pessoa Responsável (Nome) |
+|----------|-------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------|
+| Pessoa 4 | - Desenvolver Suporte ao Cliente (FAQ, dúvidas frequentes) <br> - Verificar e ajustar a responsividade do **App Web Cliente** (site público, parte pública do app web) para garantir que funciona bem em vários dispositivos |                           |
+| Pessoa 5 | - Melhorar página de Produto Individual + funcionalidade de comentários e avaliações <br> - Verificar e ajustar a responsividade do **App Web Cliente** (site público, parte pública do app web) para garantir que funciona bem em vários dispositivos |                           |
 
-### 4. Implementar PWA para Home do Cliente e Área do Dono (Ester)
-- **Descrição**: Transformar `/` e `/dono` em um app mobile com PWA.
-- **Implementação**:
-  - Cachear `business_settings`, `products`, `orders`, `notifications`.
-  - Otimizar para mobile (Tailwind: `grid grid-cols-1 sm:grid-cols-2`).
-- **Esforço**: Médio (1-2 semanas).
-- **Impacto**: Garante navegação offline na loja e área do dono.
+✅ **Observação:**  
+✔️ Pessoa 4 precisa estar em: FAQ **e** Responsividade  
+✔️ Pessoa 5 precisa estar em: Página de Produto Individual **e** Responsividade
 
-### 5. Implementar PWA para Listar Produtos, Logout, Formulário de Pedido, e Múltiplas Lojas (Neci)
-- **Descrição**: Transformar `/produtos`, `/logout`, `/pedido`, e `/loja/[custom_url]` em um app mobile com PWA.
-- **Implementação**:
-  - Cachear `products`, `orders`, `business_settings`.
-  - Otimizar para mobile (Tailwind: `flex flex-col sm:flex-row`).
-- **Esforço**: Médio (1-2 semanas).
-- **Impacto**: Suporta compras e gestão de lojas offline.
+## Deploy do Projeto
 
-### 6. Testes Manuais e Ajustes
-- **Descrição**: Validar PWA offline, responsividade, instalação como app, e sincronização.
-- **Implementação**: Testar fluxos offline; corrigir bugs.
-- **Esforço**: Médio (1 semana).
-- **Impacto**: Garante qualidade do PWA.
-
+| Tarefa                                  | Descrição                                                                                  | Pessoa Responsável (Nome) |
+|----------------------------------------|--------------------------------------------------------------------------------------------|---------------------------|
+| Deploy da aplicação Mobile (PWA)       | Fazer o deploy da aplicação Next.js PWA no ambiente de produção                            |                           |
+| Deploy da aplicação Web Cliente         | Fazer o deploy da aplicação web pública (front da loja, suporte ao cliente, etc.)          |                           |
 
 ## Home 
 ![Home sem login](fotos/Home%20Sem%20Login.png)
