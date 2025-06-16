@@ -112,30 +112,70 @@ export async function buscarIdLoja(idEmpresa) {
 }
 
 export async function buscarLojaPorSlugCompleta(slug) {
+    console.log('DEBUG: LojaModel: Buscando loja com slug:', slug);
     try {
-        console.log('LojaModel: Buscando loja com slug:', slug);
-        // Garanta que você está selecionando todos os campos que precisa no retorno para o frontend
-        console.log('LojaModel: Colunas selecionadas para busca:', 'id, nome_fantasia, slug_loja, id_empresa, foto_loja, cor_primaria, cor_secundaria, slogan');
-
         const { data, error } = await supabase
             .from('loja')
-            .select('*') // <-- VERIFIQUE SE TODOS ESSES CAMPOS EXISTEM NA SUA TABELA DO SUPABASE
+            .select('id, nome_fantasia, slug_loja, id_empresa, foto_loja, cor_primaria, cor_secundaria, slogan, banner, ativarFidelidade, valorPonto') // Certifique-se de que todas essas colunas existem
             .eq('slug_loja', slug)
+            .single(); // <-- O PROBLEMA ESTÁ NO COMPORTAMENTO DE .SINGLE()
+
+        if (error) {
+            // Se o erro é porque não encontrou (PGRST116), retorne data: null, error: custom
+            if (error.code === 'PGRST116' && error.message.includes('0 rows')) {
+                console.warn('DEBUG: LojaModel: Nenhuma loja encontrada para o slug:', slug);
+                return { data: null, error: { message: 'Loja não encontrada para o slug fornecido.', code: 'NOT_FOUND' } };
+            }
+            // Outro tipo de erro do Supabase
+            console.error('DEBUG: LojaModel: Erro do Supabase na busca por slug completo:', error.message, 'Código:', error.code, 'Detalhes:', error.details);
+            return { data: null, error };
+        }
+        if (!data) { // Caso o Supabase não retorne erro, mas data seja nula (embora .single() previna isso)
+            console.warn('DEBUG: LojaModel: Dados da loja nulos para o slug:', slug);
+            return { data: null, error: { message: 'Loja não encontrada (dados nulos).', code: 'NOT_FOUND' } };
+        }
+        console.log('DEBUG: LojaModel: DADOS RECEBIDOS DO SUPABASE para slug completo:', data);
+        return { data, error: null };
+    } catch (err) {
+        console.error('DEBUG: LojaModel: ERRO INESPERADO na busca por slug completo:', err.message, err.stack);
+        return { data: null, error: { message: `Erro inesperado: ${err.message}`, code: 'UNEXPECTED_ERROR' } };
+    }
+}
+export async function buscarLojasPorEmpresaId(empresaId) {
+    console.log('DEBUG: LojaModel: Buscando lojas para empresa ID:', empresaId);
+    try {
+        const { data, error } = await supabase
+            .from('loja')
+            .select('id, slug_loja, nome_fantasia, id_empresa') // Selecione os campos que você precisa da loja
+            .eq('id_empresa', empresaId); // Filtra as lojas pelo ID da empresa
+
+        if (error) {
+            console.error('DEBUG: LojaModel: Erro ao buscar lojas por empresa ID no Supabase:', error.message);
+            return { data: null, error };
+        }
+        console.log('DEBUG: LojaModel: Lojas encontradas para empresa ID:', empresaId, ':', data.length);
+        return { data, error: null };
+    } catch (err) {
+        console.error('DEBUG: LojaModel: Erro inesperado em buscarLojasPorEmpresaId:', err);
+        return { data: null, error: { message: `Erro inesperado: ${err.message}` } };
+    }
+}
+export const getLojaByIdEmpresa = async (id_empresa) => {
+    try {
+        const { data, error } = await supabase
+            .from('loja')
+            .select('slug_loja')
+            .eq('id_empresa', id_empresa)
             .single();
 
         if (error) {
-            console.error('LojaModel: ERRO DO SUPABASE na busca por slug completo:', error.message, 'Código:', error.code, 'Detalhes:', error.details);
-            if (error.code === 'PGRST116') { // Nenhum resultado encontrado
-                return { data: null, error: null }; // Não encontrado, mas não é um erro fatal, é uma condição de "sem dados"
-            }
-            return { data: null, error: error.message }; // Outro erro do Supabase
+            console.error('LojaModel: Erro ao buscar loja por ID da empresa:', error.message);
+            return { data: null, error: error.message };
         }
 
-        console.log('LojaModel: DADOS RECEBIDOS DO SUPABASE para slug completo:', data); // <--- ESTE LOG É MUITO IMPORTANTE!
-
-        return { data, error: null }; // Retorna o objeto da loja ou null se não encontrou
+        return { data, error: null };
     } catch (err) {
-        console.error('LojaModel: ERRO INESPERADO em buscarLojaPorSlugCompleta:', err.message);
+        console.error('LojaModel: Erro inesperado :', err.message);
         return { data: null, error: err.message };
     }
 }

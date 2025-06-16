@@ -200,6 +200,7 @@ const AppointmentBooking = () => {
   if (isBooked && bookingData) {
     return (
       <div className="min-h-screen bg-gray-50">
+        
         <div className="container mx-auto px-4 py-12">
           <div className="max-w-2xl mx-auto bg-green-50 border border-green-200 rounded-lg shadow">
             <div className="p-8 text-center">
@@ -258,39 +259,95 @@ const AppointmentBooking = () => {
 
 
   return (
-    <div className="min-h-screen mb-12 bg-gray-50">
-      <div className="container mx-auto px-4 py-8">
+    <div className="min-h-screen bg-gray-50">
+      {/* Nav fixo no topo */}
+      <nav className="fixed top-0 left-0 right-0 h-14  text-white flex items-center px-6 shadow-md z-50"
+       style={{ backgroundColor: corPrimaria }}
+      >
+
+
+  {/* Botão discreto para Meus Agendamentos */}
+  <a
+    href={`/loja/${slug}/visualizarAgendamento`}
+    className="flex items-center space-x-1  hover:bg-blue-800 px-3 py-1 rounded-md text-sm transition-colors"
+  >
+    {/* Ícone de calendário simples */}
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      className="h-5 w-5"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={2}
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+      />
+    </svg>
+    <span className="text-">Meus Agendamentos</span>
+  </a>
+</nav>
+
+{/* Espaço para não ficar atrás da navbar fixa */}
+<div style={{ height: 56 }}></div>
+
+
+      {/* Conteúdo principal com padding para o nav fixo */}
+      <div className="container mx-auto px-4 pt-16 pb-12">
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">Agendar Serviço</h1>
+          
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
             Selecione a data, horário e preencha seus dados para agendar seu serviço
           </p>
         </div>
-        <div className="max-w-4xl mx-auto mb-8"> {/* Indicador de Progresso */}
+
+        {/* Indicador de Progresso */}
+        <div className="max-w-4xl mx-auto mb-8">
           <div className="flex items-center justify-center space-x-4">
-            <div  className={`flex items-center space-x-2 ${currentStep >= 1 ?  'text-blue-600': 'text-gray-400'}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${currentStep >= 1 ? 'bg-blue-600 text-white' : 'bg-gray-300 text-gray-600'}`}>1</div>
+            {/* Passo 1 */}
+            <div className={`flex items-center space-x-2 ${currentStep >= 1 ? 'text-blue-600' : 'text-gray-400'}`}>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${currentStep >= 1 ? 'bg-blue-600 text-white' : 'bg-gray-300 text-gray-600'}`}>
+                1
+              </div>
               <span className="hidden sm:inline">Data</span>
             </div>
-            <div className={`w-8 h-1 ${currentStep >= 2 ? "text-while-200" : 'bg-gray-300'}`}></div>
+
+            {/* Barra entre passos */}
+            <div className={`flex-1 h-1 rounded ${currentStep >= 2 ? 'bg-blue-200' : 'bg-gray-300'}`}></div>
+
+            {/* Passo 2 */}
+
             <div className={`flex items-center space-x-2 ${currentStep >= 2 ? 'text-blue-600' : 'text-gray-400'}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${currentStep >= 2 ? 'bg-blue-600 text-white' : 'bg-gray-300 text-gray-600'}`}>2</div>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${currentStep >= 2 ? 'bg-blue-600 text-white' : 'bg-gray-300 text-gray-600'}`}>
+                2
+              </div>
               <span className="hidden sm:inline">Horário</span>
             </div>
-            <div className={`w-8 h-1 ${currentStep >= 3 ?  "text-while-200" : 'bg-gray-300'}`}></div>
+
+            {/* Barra entre passos */}
+            <div className={`flex-1 h-1 rounded ${currentStep >= 3 ? 'bg-blue-200' : 'bg-gray-300'}`}></div>
+
+            {/* Passo 3 */}
+
             <div className={`flex items-center space-x-2 ${currentStep >= 3 ? 'text-blue-600' : 'text-gray-400'}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${currentStep >= 3 ? 'bg-blue-600 text-white' : 'bg-gray-300 text-gray-600'}`}>3</div>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${currentStep >= 3 ? 'bg-blue-600 text-white' : 'bg-gray-300 text-gray-600'}`}>
+                3
+              </div>
               <span className="hidden sm:inline">Dados</span>
             </div>
           </div>
         </div>
+
+        {/* Conteúdo da página */}
         <div className="max-w-6xl mx-auto grid lg:grid-cols-3 gap-8">
           <div className="lg:col-span-1">
-      
             <AppointmentCalendar 
-            selectedDate={selectedDate}
-            onDateSelect={setSelectedDate}
-            availableDates = {calendarAvailableDates}
+              selectedDate={selectedDate}
+              onDateSelect={setSelectedDate}
+              availableDates={calendarAvailableDates}
             />
           </div>
           <div className="lg:col-span-1" ref={timeSlotsRef}>
@@ -308,19 +365,16 @@ const AppointmentBooking = () => {
               selectedProfessional={selectedProfessional}
               selectedService={selectedService}
               onSubmit={handleFormSubmit}
-              
-            
-              onTimeSelect={handleTimeSelect} 
+              onTimeSelect={handleTimeSelect}
             />
             {notification && (
-        <Notification
-          message={notification.message}
-          type={notification.type}
-          onClose={() => setNotification(null)}
-        />
-      )}
-     < NavBar site={slug}    corPrimaria={corPrimaria}  />
-
+              <Notification
+                message={notification.message}
+                type={notification.type}
+                onClose={() => setNotification(null)}
+              />
+            )}
+            <NavBar site={slug} corPrimaria={corPrimaria} />
           </div>
         </div>
       </div>

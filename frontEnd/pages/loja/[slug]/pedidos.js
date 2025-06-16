@@ -13,6 +13,7 @@ export default function Pedidos() {
   const [nome_fantasia, setNomeFantasia] = useState("");
   const [pedidoSelecionado, setPedidoSelecionado] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const id_cliente = 30; // depois tornar dinâmico
 
   const getContrastColor = (hexColor) => {
     const r = parseInt(hexColor.slice(1, 3), 16);
@@ -24,7 +25,7 @@ export default function Pedidos() {
 
   const fetchPedidos = async () => {
     try {
-      const res = await fetch(`http://localhost:4000/loja/${slug}/pedidos`);
+      const res = await fetch(`http://localhost:4000/loja/${slug}/pedidos?cliente_id=${id_cliente}`);
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const data = await res.json();
       setPedidos(data);
@@ -109,8 +110,8 @@ export default function Pedidos() {
         {pedidos.length === 0 ? (
           <p className="text-black text-center text-lg mt-10">Você ainda não fez pedidos.</p>
         ) : (
-          <div className="flex flex-col items-center gap-4 w-full max-w-md">
-            {pedidos.map((pedido) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-4xl">
+              {pedidos.map((pedido) => (
               <div
                 key={pedido.id}
                 className="bg-white border border-gray-300 rounded-md p-4 w-full text-black shadow"

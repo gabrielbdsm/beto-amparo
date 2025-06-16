@@ -3,15 +3,12 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useState, useEffect } from 'react';
-import { Clock } from "lucide-react"
 
 // Helper component para os itens de navegação
-// Adiciona uma prop 'onClick' para lidar com ações como logout
 function NavItem({ icon, label, path, currentSlug, onClick }) {
   const router = useRouter();
   const fullPath = currentSlug ? `/empresa/${currentSlug}${path}` : path;
 
-  // Renderiza um botão se houver onClick, senão um Link
   if (onClick) {
     return (
       <button
@@ -39,27 +36,47 @@ export default function OwnerSidebar({ children, slug }) {
   console.log("OwnerSidebar -> slug recebido:", slug);
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [slugEmpresa, setSlugEmpresa] = useState('');
 
-  // Função de logout integrada diretamente na sidebar
+  useEffect(() => {
+    const getSlug = async () => {
+      try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/empresa/loja/slug`, {
+          method: 'GET',
+          credentials: 'include',
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          return setSlugEmpresa(data || '');
+        } else {
+          console.error('OwnerSidebar: Falha ao obter slug da empresa');
+        }
+      } catch (error) {
+        console.error('OwnerSidebar: Erro ao buscar slug da empresa:', error);
+      }
+    };
+    getSlug();
+  }, []);
+
+  if (!slug) {
+    slug = slugEmpresa;
+  }
+
   const handleLogout = async () => {
     try {
-      console.log('OwnerSidebar: Tentando fazer logout...');
       const response = await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/logout`, {
-        method: 'POST', // Use POST para logout
-        credentials: 'include', // Essencial para enviar o cookie
+        method: 'POST',
+        credentials: 'include',
       });
 
       if (response.ok) {
-        console.log('OwnerSidebar: Logout bem-sucedido. Redirecionando para a página inicial.');
-        // Redireciona para a página de login ou home após o logout
-        router.push('/empresa/LoginEmpresa'); // Redirecione para a página de login da empresa
+        router.push('/empresa/LoginEmpresa');
       } else {
         const errorData = await response.json();
-        console.error('OwnerSidebar: Falha no logout:', errorData.mensagem || 'Erro desconhecido');
         alert(`Erro ao fazer logout: ${errorData.mensagem || 'Tente novamente.'}`);
       }
     } catch (error) {
-      console.error('OwnerSidebar: Erro de rede ao fazer logout:', error);
       alert('Erro de conexão. Verifique sua rede e tente novamente.');
     }
   };
@@ -68,7 +85,6 @@ export default function OwnerSidebar({ children, slug }) {
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row">
-
       {/* Header Mobile */}
       <div className="bg-[#3681B6] text-white flex items-center justify-between p-4 md:hidden">
         <div className="flex items-center gap-2">
@@ -82,7 +98,7 @@ export default function OwnerSidebar({ children, slug }) {
         </button>
       </div>
 
-      {/* Sidebar Principal */}
+      {/* Sidebar */}
       <aside className={`
         fixed md:static z-40 bg-[#3681B6] text-white w-64 min-h-screen p-4 flex flex-col justify-between
         transition-transform duration-300
@@ -97,7 +113,6 @@ export default function OwnerSidebar({ children, slug }) {
             </div>
           </div>
           <div className="flex flex-col gap-4">
-            {/* Link para a área do dono/dashboard principal */}
             <Link
               href={ownerAreaPath}
               className="flex flex-col items-center gap-2 p-2 cursor-pointer text-center"
@@ -106,25 +121,23 @@ export default function OwnerSidebar({ children, slug }) {
               <span className="font-semibold text-lg">Área do dono</span>
             </Link>
 
-            {/* Itens de navegação */}
             <NavItem icon="/icons/dashboard_white.svg" label="Dashboard" path="/dashboard" currentSlug={slug} />
             <NavItem icon="/icons/add_white.svg" label="Meus Produtos" path="/produtos" currentSlug={slug} />
             <NavItem icon="/icons/paint_white.svg" label="Personalizar Loja" path="/personalizacao" currentSlug={slug} />
-            <NavItem icon="/icons/clock_white.svg"  label="Horarios" path="/empresa/horarioEmpresa"  />
+            <NavItem icon="/icons/clock_white.svg" label="Horarios" path="/empresa/horarioEmpresa" />
+            <NavItem icon="/icons/notes.png" label="Meus agendamentos" path="/empresa/meusAgendamentos" />
             <NavItem icon="/icons/help_white.svg" label="Suporte" path="/suporte" currentSlug={slug} />
           </div>
         </div>
-        
-        {/* Botão SAIR no final da sidebar */}
+
         <button
-          onClick={handleLogout} // Chama a função de logout
+          onClick={handleLogout}
           className="bg-orange-400 hover:bg-orange-500 p-2 rounded text-white mt-4 w-full"
         >
           SAIR
         </button>
       </aside>
 
-      {/* Conteúdo Principal */}
       <main className="flex-1 bg-gray-100 p-6 md:p-8">
         {children}
       </main>
