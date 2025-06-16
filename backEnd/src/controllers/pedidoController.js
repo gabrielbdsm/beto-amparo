@@ -3,6 +3,7 @@ import * as PedidoModel from '../models/PedidoModel.js';
 import supabase from '../config/SupaBase.js';
 import jwt from 'jsonwebtoken'; // Para decodificar o token
 import * as lojaModel from '../models/Loja.js';
+import { trackMissionProgress } from '../../services/missionTrackerService.js';
 
 async function getEmpresaIdFromToken(req) {
   const token = req.cookies?.token_empresa;
@@ -188,53 +189,67 @@ export async function listarPedidosPorEmpresa(req, res) {
 
 
 export async function criarPedido(req, res) {
-  try {
-    const { id_cliente, id_loja, data, total, status, observacoes, desconto } = req.body;
-    
-    console.log('Dados recebidos:', { id_cliente, id_loja, data, total, observacoes, desconto });
-
-    // Validação explícita de cada campo obrigatório
-    if (
-      id_cliente == null || // null ou undefined
-      id_loja == null ||
-      !data ||              // string vazia também falha aqui
-      total == null
-    ) {
-      return res.status(400).json({ erro: 'Campos obrigatórios ausentes' });
-    }
-
-    if (!id_cliente || !id_loja || !data || !total || status === undefined) {
-      return res.status(400).json({ erro: 'Campos obrigatórios ausentes' });
-    }
-
-    const { data: novoPedido, error } = await supabase
-      .from('pedidos')
-      .insert([
-        {
-          id_cliente,
-          id_loja,
-          data,
-          total,
-          status,
-          observacoes,
-          desconto
-        }
-      ])
-      .select()  // para retornar o registro inserido
-      .single();
-
-    if (error) {
-      console.error('Erro ao criar pedido:', error);
-      return res.status(500).json({ erro: 'Erro interno ao criar pedido' });
-    }
-
-    res.status(201).json(novoPedido);
-
-  } catch (error) {
-    console.error('Erro ao criar pedido:', error);
-    res.status(500).json({ erro: 'Erro interno ao criar pedido' });
+    try {
+      const { id_cliente, id_loja, data, total, status, observacoes, desconto } = req.body;
+  
+      console.log('Dados recebidos:', { id_cliente, id_loja, data, total, observacoes, desconto });
+  
+      if (!id_cliente || !id_loja || !data || !total || status === undefined) {
+        return res.status(400).json({ erro: 'Campos obrigatórios ausentes' });
+      }
+  
+      // --- PONTO DE ATUALIZAÇÃO 1: Verificar o status "Fechado para Pedidos" ---
+      // Corrija a chamada da função para usar 'lojaModel.buscarLojaPorId'
+      const { data: loja, error: lojaError } = await lojaModel.buscarLojaPorId(id_loja); // <--- CORREÇÃO AQUI
+      
+      if (lojaError) {
+        console.error('Erro ao buscar status da loja:', lojaError);
+        return res.status(500).json({ erro: 'Erro interno ao verificar status da loja.' });
+      }
+      if (!loja) {
+        return res.status(404).json({ erro: 'Loja não encontrada para o ID fornecido.' });
+      }
+  
+      if (loja.is_closed_for_orders) {
+        return res.status(403).json({ erro: 'Esta loja está fechada para pedidos no momento.' });
+      }
+      // --- FIM PONTO DE ATUALIZAÇÃO 1 ---
+  
+      const { data: novoPedido, error } = await supabase
+        .from('pedidos')
+        .insert([
+          {
+            id_cliente,
+            id_loja,
+            data,
+            total,
+            status,
+            observacoes,
+            desconto
+          }
+        ])
+        .select()
+        .single();
+  
+      if (error) {
+        console.error('Erro ao criar pedido:', error);
+        return res.status(500).json({ erro: 'Erro interno ao criar pedido' });
+      }
+  
+      const ownerId = loja.id_empresa;
+      if (ownerId) {
+          await trackMissionProgress(ownerId, 'sale', 1);
+      } else {
+          console.warn('CriarPedido: Não foi possível rastrear missão de venda: ID da empresa (dono) não encontrado para a loja.');
+      }
+  
+      res.status(201).json(novoPedido);
+  
+    } catch (error) {
+      console.error('Erro ao criar pedido:', error);
+      res.status(500).json({ erro: 'Erro interno ao criar pedido' });
+    }
   }
-}
 
 export async function adicionarItemPedido(req, res) {
   try {

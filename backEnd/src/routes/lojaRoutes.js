@@ -25,5 +25,6 @@ router.post('/personalizacao', criarPersonalizacao);
 router.get('/check-slug', verificarSlug);
 router.get('/slug/:slug', getLojaBySlug);
 router.get('/produtos/loja/:slug', listarProdutosPorLoja); // Mantenha esta como sua rota original
-router.get('/empresa/loja/slug', empresaPrivate ,  lojaController.getSlugByEmpresaController);
+router.get('/empresa/loja/:slugLoja', empresaPrivate ,  lojaController.getLojaBySlugAndEmpresaController);
+router.put('/loja/:slugLoja/toggle-status', empresaPrivate, lojaController.toggleLojaStatusController);
 export default router;
