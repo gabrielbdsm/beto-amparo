@@ -185,7 +185,7 @@ Todos os planos contam com **7 dias gratuitos** para experimentação, sem compr
 | Pessoa   | Áreas / Tarefas Responsáveis                                                                                                                     | Pessoa Responsável (Nome) |
 |----------|-------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------|
 | Pessoa 4 | - Desenvolver Suporte ao Cliente (FAQ, dúvidas frequentes) <br> - Verificar e ajustar a responsividade do **App Web Cliente** (site público, parte pública do app web) para garantir que funciona bem em vários dispositivos |      **Ester**                     |
-| **Neci** | - Melhorar página de Produto Individual + funcionalidade de comentários e avaliações <br> - Verificar e ajustar a responsividade do **App Web Cliente** (site público, parte pública do app web) para garantir que funciona bem em vários dispositivos |                           |
+| Pessoa 5 | - Melhorar página de Produto Individual + funcionalidade de comentários e avaliações <br> - Verificar e ajustar a responsividade do **App Web Cliente** (site público, parte pública do app web) para garantir que funciona bem em vários dispositivos |      **Neci**                     |
 
 ✅ **Observação:**  
 ✔️ Pessoa 4 precisa estar em: FAQ **e** Responsividade  
