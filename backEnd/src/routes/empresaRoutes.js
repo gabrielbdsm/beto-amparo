@@ -6,15 +6,16 @@ import { routePrivate } from '../middleware/protectRoutes.js';
 import * as EmpresaController from '../controllers/Empresa/EmpresaController.js';
 
 //conflito e essa é a versão atual
+/*
 import { atualizarPersonalizacao, criarPersonalizacao, getLojaBySlug, verificarSlug } from '../controllers/Empresa/personalizacaoController.js';
 import * as HorariosController from '../controllers/Empresa/horariosCotroller.js';
-
+*/
 //essa é a outra, e n vou me arriscar tirar daq
-/*
+
 import { atualizarPersonalizacao, criarPersonalizacao, getLojaBySlug, verificarSlug  } from '../controllers/Empresa/personalizacaoController.js';
 import * as HorariosController from '../controllers/Empresa/horariosCotroller.js'; 
 import * as agendamentoEmpresaController from '../controllers/Empresa/AgendamentoEmpresaController.js'; // <-- CORRIGIDO AQUI!
-*/
+
 import { empresaPrivate } from '../middleware/protectRouterEmpresa.js'; // <-- CORRIGIDO AQUI!
 
 //import { empresaPrivate } from './protectRoutesEmpresa'; //tentando autenticar pag de loja
