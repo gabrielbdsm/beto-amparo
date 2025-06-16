@@ -15,14 +15,14 @@ const initialState = {
 };
 
 const fields = [
-  { label: 'Nome', name: 'nome' },
+  { label: 'Nome da Empresa', name: 'nome' },
   { label: 'CNPJ', name: 'cnpj' },
   { label: 'Responsável', name: 'responsavel' },
   { label: 'Telefone', name: 'telefone' },
   { label: 'Endereço', name: 'endereco' },
   { label: 'Cidade', name: 'cidade' },
   { label: 'UF', name: 'uf', type: 'select', options: estados },
-  { label: 'Site', name: 'site' },
+  { label: 'Site (opcional)', name: 'site' },
   { label: 'Categoria', name: 'categoria', type: 'select', options: categorias },
   { label: 'Email', name: 'email', type: 'email' },
   { label: 'Senha', name: 'senha', type: 'password' },
@@ -61,6 +61,9 @@ export default function CadastrarEmpresa() {
   };
 
   const validateField = () => {
+    if (currentField.name === 'site') {
+      return true;
+    }
     const fieldValue = formData[currentField.name];
     return fieldValue && fieldValue.trim().length > 0;
   };
@@ -77,40 +80,91 @@ export default function CadastrarEmpresa() {
   };
 
   const handleSubmit = async (e) => {
-    
     e.preventDefault();
 
-  if (formData.senha !== formData.confirmarSenha) {
-    return setErrorsField({ [currentField.name]:'As senhas não coincidem.'});
-  }
+    if (formData.senha !== formData.confirmarSenha) {
+      return setErrorsField({ [currentField.name]: 'As senhas não coincidem.' });
+    }
 
     setErrors({});
     setLoading(true);
 
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/addEmpresa`, {
+      // 1. CHAMA A API DE CADASTRO DA EMPRESA
+      const resCadastro = await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/addEmpresa`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
       });
 
-      const data = await res.json();
-      if (!res.ok) {
-        console.error(data);
-        setErrors(data.errors || { geral: data.mensagem || 'Erro desconhecido.' });
+      const dataCadastro = await resCadastro.json();
+      console.log('RESPOSTA API CADASTRO EMPRESA:', dataCadastro);
+      console.log('Status da resposta Cadastro:', resCadastro.status);
+
+      if (!resCadastro.ok) {
+        console.error("Erro no cadastro da empresa:", dataCadastro);
+        setErrors(dataCadastro.errors || { geral: dataCadastro.mensagem || 'Erro desconhecido ao cadastrar.' });
+        setLoading(false);
         return;
       }
 
-      alert('Empresa cadastrada com sucesso!');
-      window.location.href = '/loginEmpresa'; 
-      
-      setFormData(initialState);
-      setStep(0);
+      const empresaId = dataCadastro.id || dataCadastro.empresaId; // Confirme o nome da propriedade que sua API retorna
+      if (!empresaId) {
+        console.warn('ID da empresa não retornado pela API de cadastro ou é inválido:', dataCadastro);
+        setErrors({ geral: 'Empresa cadastrada, mas ID não retornado. Tente fazer login.' });
+        window.location.href = '/loginEmpresa'; // Redireciona para login se o ID não for obtido
+        setLoading(false);
+        return;
+      }
+
+      // 2. TENTA FAZER LOGIN PROGRAMATICAMENTE APÓS O CADASTRO BEM-SUCEDIDO
+      const resLogin = await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/loginEmpresa`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include', // IMPORTANTE: Permite o envio e recebimento de cookies (para o Set-Cookie do backend)
+        body: JSON.stringify({
+          email: formData.email,
+          senha: formData.senha,
+        }),
+      });
+
+      const dataLogin = await resLogin.json();
+      console.log('RESPOSTA API LOGIN APÓS CADASTRO:', dataLogin);
+      console.log('Status da resposta Login:', resLogin.status);
+
+      if (!resLogin.ok) {
+        console.error("Erro no login automático após cadastro:", dataLogin);
+        //alert('Empresa cadastrada, mas falha no login automático. Por favor, faça login.');
+        window.location.href = '/loginEmpresa';
+        return;
+      }
+
+      // 3. SE O LOGIN FOR BEM-SUCEDIDO, REDIRECIONA COM BASE NO `primeiroLoginFeito`
+      const { primeiroLoginFeito, slugLoja } = dataLogin;
+
+      // Armazena o ID da empresa no localStorage para a personalização da loja
+      localStorage.setItem('id_empresa_cadastrada', empresaId);
+      console.log('ID da empresa salvo no localStorage APÓS LOGIN:', localStorage.getItem('id_empresa_cadastrada'));
+
+      let redirectPath;
+      if (primeiroLoginFeito === false) {
+        redirectPath = `/empresa/personalizacao-loja`;
+      } else if (slugLoja) {
+        redirectPath = `/empresa/${slugLoja}/dashboard`;
+      } else {
+        redirectPath = '/empresa/donoarea';
+      }
+
+      alert('Empresa cadastrada e login automático realizado com sucesso!');
+      window.location.href = redirectPath;
+
     } catch (err) {
-      console.error(err);
-      setErrors({ geral: 'Erro ao conectar com o servidor.' });
+      console.error('Erro geral no fluxo de cadastro/login automático:', err);
+      setErrors({ geral: 'Erro ao conectar com o servidor ou processo de cadastro/login falhou.' });
     } finally {
       setLoading(false);
+      setFormData(initialState);
+      setStep(0);
     }
   };
 
@@ -173,7 +227,7 @@ export default function CadastrarEmpresa() {
                 value={formData[currentField.name]}
                 onChange={handleChange}
                 className="w-full p-3 border border-gray-300 rounded-xl"
-                required
+                required={currentField.name !== 'site'}
               />
             )}
 
@@ -219,21 +273,17 @@ export default function CadastrarEmpresa() {
               >
                 Avançar <ChevronRight className="inline ml-1" size={18} />
               </button>
-              
-
-             
-              
             )}
-            
+
           </div>
           <div className="text-center mt-4">
-                <p className="text-sm text-gray-600">
-                  Já possui uma conta?{' '}
-                  <a href="/loginEmpresa" className="text-[#3681B6] hover:underline font-medium">
-                    Faça login
-                  </a>
-                </p>
-              </div>
+            <p className="text-sm text-gray-600">
+              Já possui uma conta?{' '}
+              <a href="/loginEmpresa" className="text-[#3681B6] hover:underline font-medium">
+                Faça login
+              </a>
+            </p>
+          </div>
         </form>
       </div>
     </div>

@@ -135,7 +135,84 @@ input, select {
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
 }
+/* src/styles/globals.css ou seu arquivo CSS principal */
 
+/* Estilo geral para o container do tooltip customizado */
+.custom-joyride-tooltip {
+  background-color: #3681B6 !important; /* Fundo azul principal */
+  color: white !important; /* Texto branco */
+  border-radius: 8px !important;
+  padding: 15px !important;
+  font-size: 1rem !important;
+  line-height: 1.5 !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Título dentro do tooltip */
+.custom-joyride-title {
+  font-weight: bold !important;
+  font-size: 1.1rem !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.3) !important; /* Linha divisória */
+  padding-bottom: 10px !important;
+  margin-bottom: 10px !important;
+  color: inherit !important; /* Herda a cor do texto do container */
+}
+
+/* Conteúdo/descrição do tooltip */
+.custom-joyride-content {
+  margin-bottom: 15px !important;
+  color: inherit !important; /* Herda a cor do texto do container */
+}
+
+/* Rodapé do tooltip (progresso e botões) */
+.custom-joyride-footer {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  flex-wrap: wrap !important; /* Para responsividade, se os botões quebrarem linha */
+  gap: 10px; /* Espaçamento entre os itens do rodapé */
+}
+
+/* Texto de progresso (Passo X de Y) */
+.custom-joyride-progress {
+  color: white !important; /* Texto branco para o progresso */
+  font-size: 0.9em !important;
+  font-weight: bold !important;
+}
+
+/* Estilo para todos os botões customizados */
+.custom-joyride-button {
+  background-color: white !important; /* Fundo branco */
+  color: #3681B6 !important; /* Texto azul */
+  border: none !important;
+  border-radius: 4px !important;
+  padding: 8px 16px !important;
+  cursor: pointer !important;
+  font-weight: bold !important;
+  transition: background-color 0.2s ease, color 0.2s ease !important;
+}
+
+/* Efeito hover para os botões */
+.custom-joyride-button:hover {
+  background-color: #f0f0f0 !important; /* Levemente cinza no hover */
+}
+
+/* Estilo específico para o botão "Pular" (se precisar de estilo diferente) */
+.custom-joyride-button-skip {
+  background-color: transparent !important; /* Fundo transparente */
+  color: white !important; /* Texto branco */
+  border: 1px solid white !important; /* Borda branca */
+}
+
+.custom-joyride-button-skip:hover {
+  background-color: rgba(255, 255, 255, 0.1) !important; /* Levemente transparente no hover */
+}
+
+/* Posicionamento dos botões (opcional, se precisar alinhar) */
+.custom-joyride-buttons {
+    display: flex;
+    gap: 10px; /* Espaçamento entre os botões */
+}
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -145,3 +222,80 @@ input, select {
   }
 }
 
+/* Estilo para a sombra sutil ao passar o mouse */
+.hover-shadow-blue {
+  transition: box-shadow 0.2s ease-in-out;
+  background-color: transparent; 
+}
+
+.hover-shadow-blue:hover {
+  box-shadow: 0 0 8px rgba(54, 129, 182, 0.8);
+}
+
+.sidebar-dashboard-item.font-bold { 
+    border-left: 4px solid white;
+    padding-left: 12px;
+}
+/* Adicione este CSS ao seu arquivo globals.css ou similar */
+
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 60px;
+  height: 34px;
+}
+
+/* Hide default HTML checkbox */
+.switch input { 
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+/* The slider */
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  -webkit-transition: .4s;
+  transition: .4s;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 26px;
+  width: 26px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  -webkit-transition: .4s;
+  transition: .4s;
+}
+
+input:checked + .slider {
+  background-color: #2196F3; /* Cor quando o switch está 'ligado' (Loja Aberta) */
+}
+
+input:focus + .slider {
+  box-shadow: 0 0 1px #2196F3;
+}
+
+input:checked + .slider:before {
+  -webkit-transform: translateX(26px);
+  -ms-transform: translateX(26px);
+  transform: translateX(26px);
+}
+
+/* Rounded sliders */
+.slider.round {
+  border-radius: 34px;
+}
+
+.slider.round:before {
+  border-radius: 50%;
+}

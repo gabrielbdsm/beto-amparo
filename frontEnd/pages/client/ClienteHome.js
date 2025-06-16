@@ -16,12 +16,12 @@ export default function ClienteHome() {
 
     const [lojaId, setLojaId] = useState(null);
     const [nomeFantasia, setNomeFantasia] = useState("Carregando...");
+    const [isLojaClosed, setIsLojaClosed] = useState(false); // Estado para o status da loja
 
     const [produtos, setProdutos] = useState([]);
     const [searchTerm, setSearchTerm] = useState("");
     const [bannerLoja, setBannerLoja] = useState(null);
     const [ativarFidelidade, setAtivarFidelidade] = useState(false);
-
 
     const removeAccents = (str) => {
         return str
@@ -36,11 +36,6 @@ export default function ClienteHome() {
             removeAccents(searchTerm.toLowerCase())
         );
         
-        // Exclui produtos que foram marcados como indisponíveis automaticamente
-        // (por estarem esgotados no estoque)
-        // E também exclui produtos inativos (ativo: false) se a API não os filtra.
-        // A API 'listarProdutosPorLoja' já filtra por 'ativo=true' por padrão,
-        // então aqui só precisamos checar 'indisponivel_automatico'
         const isActuallyAvailableToClient = !produto.indisponivel_automatico;
 
         console.log(`DEBUG: ClienteHome - Filtrando produto ${produto.nome}: matchesSearch=${matchesSearch}, isActuallyAvailableToClient=${isActuallyAvailableToClient}`);
@@ -88,6 +83,7 @@ export default function ClienteHome() {
                 setCorPrimaria(data.cor_primaria || "#3B82F6");
                 setCorSecundaria(data.cor_secundaria || "#F3F4F6");
                 setBannerLoja(data.banner || null);
+                setIsLojaClosed(data.is_closed_for_orders || false); // NOVO: Define o status de fechado/aberto
                 setAtivarFidelidade(data.ativarFidelidade || false);
             } catch (error) {
                 console.error("DEBUG: ClienteHome - Erro na requisição ao buscar empresa:", error.message || error);
@@ -105,8 +101,6 @@ export default function ClienteHome() {
 
         async function fetchProdutos() {
             try {
-                // A API 'listarProdutosPorLoja' no backend já adiciona 'status_estoque' e 'indisponivel_automatico'
-                // e filtra por 'ativo=true' por padrão.
                 const url = `${process.env.NEXT_PUBLIC_EMPRESA_API}/produtos/loja/${site}`;
                 console.log('DEBUG: ClienteHome - Buscando produtos da loja:', url);
                 const response = await fetch(url);
@@ -198,6 +192,15 @@ export default function ClienteHome() {
 
     const handleAdicionar = async (produto) => {
         console.log('DEBUG: ClienteHome - Tentando adicionar produto ao carrinho:', produto.nome);
+        
+        // NOVO: Impedir adição ao carrinho e mostrar aviso suave se a loja estiver fechada
+        if (isLojaClosed) {
+            setMensagem('Desculpe, a loja está fechada para pedidos no momento.');
+            setCorMensagem('text-red-600');
+            setTimeout(() => setMensagem(''), 5000); // Mensagem por 5 segundos
+            return; // Impede a continuação da função
+        }
+
         // Impedir adição ao carrinho se o produto estiver indisponível automaticamente (esgotado)
         if (produto.indisponivel_automatico) {
             console.warn('DEBUG: ClienteHome - Produto indisponível automaticamente. Não adicionando ao carrinho.');
@@ -233,6 +236,11 @@ export default function ClienteHome() {
             if (!response.ok) {
                 if (response.status === 400 && data.erro && data.erro.includes('estoque')) {
                     console.error('DEBUG: ClienteHome - Erro de estoque ao adicionar ao carrinho:', data.erro);
+                    throw new Error(data.erro);
+                }
+                // Adicional: Lidar com erro 403 (loja fechada) caso o backend também retorne
+                if (response.status === 403 && data.erro && data.erro.includes('fechada para pedidos')) {
+                    console.error('DEBUG: ClienteHome - Loja fechada para pedidos (backend):', data.erro);
                     throw new Error(data.erro);
                 }
                 console.error('DEBUG: ClienteHome - Erro desconhecido ao adicionar ao carrinho:', data.erro || response.statusText);
@@ -376,6 +384,7 @@ export default function ClienteHome() {
                             src="/bg-pattern.svg"
                             alt=""
                             fill
+                            unoptimized
                             style={{ objectFit: 'cover' }}
                         />
                     </div>
@@ -383,12 +392,22 @@ export default function ClienteHome() {
 
             )}
 
-            <div className="bg-blue-50 border border-blue-200 rounded-md mx-4 my-4 mt-3 px-3 py-2 flex items-center gap-2 text-sm text-blue-800">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                Atendimento: <strong>Segunda a Sexta, das 08h às 18h</strong>
-            </div>
+            {/* AQUI: Mudei a seção de Atendimento para exibir "Loja fechada no momento" */}
+            {isLojaClosed ? (
+                <div className="bg-red-50 border border-red-200 rounded-md mx-4 my-4 mt-3 px-3 py-2 flex items-center gap-2 text-sm text-red-800">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L12 12m-6.364-6.364l12.728 12.728" />
+                    </svg>
+                    <span className="font-bold">Loja fechada no momento.</span>
+                </div>
+            ) : (
+                <div className="bg-blue-50 border border-blue-200 rounded-md mx-4 my-4 mt-3 px-3 py-2 flex items-center gap-2 text-sm text-blue-800">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Atendimento: <strong>Segunda a Sexta, das 08h às 18h</strong>
+                </div>
+            )}
 
             <div className="flex-1 px-4 overflow-y-auto pb-24">
                 {mensagem && (
@@ -396,6 +415,9 @@ export default function ClienteHome() {
                         {mensagem}
                     </div>
                 )}
+                {/* O aviso de loja fechada na ClienteHome foi movido para a seção de atendimento acima. */}
+                {/* Removido o bloco {isLojaClosed && (...) } que estava aqui */}
+
                 {produtosFiltrados.length > 0 ? (
                     <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-5 gap-x-6 gap-y-4">
                         {produtosFiltrados.map((produto) => (
@@ -409,9 +431,11 @@ export default function ClienteHome() {
                                 getImagemProduto={getImagemProduto}
                                 slug={site}
                                 cor={corPrimaria}
-                                // NOVO: Passar status de estoque para o ProdutoCard
-                                isIndisponivel={produto.indisponivel_automatico || !produto.ativo}
-                                statusEstoque={produto.status_estoque} // 'disponivel', 'estoque_baixo', 'esgotado'
+                                // NOVO: Passar status de fechado da loja e indisponibilidade para o ProdutoCard
+                                // isIndisponivel será TRUE se o produto estiver indisponível OU se a loja estiver fechada
+                                isIndisponivel={produto.indisponivel_automatico || isLojaClosed} 
+                                isLojaClosed={isLojaClosed} // Passa o status da loja para o card, para estilo específico
+                                statusEstoque={produto.status_estoque}
                             />
                         ))}
                     </div>
@@ -460,7 +484,7 @@ function PontosFidelidade({ clienteId }) {
 
     return (
         <div className="p-4 border rounded-lg bg-white shadow mb-4">
-             <div  className="text-black">Olá, <strong>{nomeCliente}</strong></div>
+             <div className="text-black">Olá, <strong>{nomeCliente}</strong></div>
             <div className="text-black">Você tem <strong>{pontos}</strong> ponto{pontos === 1 ? '' : 's'}</div>
         </div>
     );
