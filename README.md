@@ -174,7 +174,7 @@ Todos os planos contam com **7 dias gratuitos** para experimentação, sem compr
 | Área / Página no PWA                         | Tarefa                                                                                                                   | Pessoa Responsável (Nome) |
 |----------------------------------------------|--------------------------------------------------------------------------------------------------------------------------|---------------------------|
 | Cadastro de Empresa → Personalização → Produtos → Landing Page | Deixar todo o fluxo mobile funcionando e integrado utilizando **Next.js PWA**, desde o cadastro da empresa, passando pela personalização até produtos, e conectar com a landing page |  **Dallyla**                        | 
-| Área do Dono + Dashboard + Editar Produto     | Deixar mobile a área do dono funcionando com **Next.js PWA**, incluindo dashboard, edição de produtos, e adicionar botão de voltar em telas necessárias |                           |
+| Área do Dono + Dashboard + Editar Produto     | Deixar mobile a área do dono funcionando com **Next.js PWA**, incluindo dashboard, edição de produtos, e adicionar botão de voltar em telas necessárias |                **Heloisa**           |
 | Horários e Agendamentos                      | Deixar mobile a funcionalidade de horários e agendamentos completa usando **Next.js PWA**, garantindo que usuários possam visualizar, criar, editar e cancelar agendamentos; além de revisar o front da loja que funciona só com agendamento para garantir responsividade e usabilidade |                           |
 
 ✅ Cada uma dessas tarefas deve ser feita por uma pessoa diferente (Pessoa 1, 2 ou 3).
