@@ -81,6 +81,29 @@ export default function CarrinhoCliente({ empresaId }) {
     fetchCarrinho();
   }, [slug]);
 
+  const atualizarQuantidade = async (itemId, novaQuantidade) => {
+    if (novaQuantidade < 1) return;
+
+    try {
+      const url = `${process.env.NEXT_PUBLIC_EMPRESA_API}/loja/${slug}/carrinho/${itemId}`;
+      await fetch(url, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ quantidade: novaQuantidade }),
+      });
+
+      const novosItens = itensCarrinho.map((item) =>
+        item.id === itemId ? { ...item, quantidade: novaQuantidade } : item
+      );
+      setItensCarrinho(novosItens);
+      const novoSubtotal = novosItens.reduce((acc, item) => acc + item.quantidade * item.produto.preco, 0);
+      setSubtotal(novoSubtotal);
+
+    } catch (error) {
+      console.error("Erro ao atualizar quantidade:", error);
+    }
+  };
+
   const aplicarDesconto = () => {
     const pontosDisponiveis = Math.min(pontosParaUsar, totalPontosCliente);
 
@@ -270,28 +293,45 @@ export default function CarrinhoCliente({ empresaId }) {
           ) : (
             <div className="space-y-4">
               {itensCarrinho.map((item, index) => (
-                <div key={index} className="flex items-center border rounded p-4 shadow-sm">
-                  <Image
-                    src={getImagemProduto(item.produto.image)}
-                    alt={item.produto.nome}
-                    width={80}
-                    height={80}
-                    className="rounded object-cover"
-                    unoptimized
-                  />
-                  <div className="ml-4 flex-1">
-                    <p className="text-lg font-medium text-black">{item.produto.nome}</p>
-                    <p className="text-sm text-gray-800">Valor unitário: R$ {item.produto.preco.toFixed(2)}</p>
-                    <p className="text-sm text-gray-800">Qtd: {item.quantidade}</p>
-                  </div>
-                  <button
-                    onClick={() => handleRemoverItem(item.id)}
-                    className="ml-4 text-red-500 hover:text-red-700"
-                  >
-                    <FaTrashAlt size={20} />
-                  </button>
-                </div>
-              ))}
+  <div key={index} className="flex items-center border rounded p-4 shadow-sm">
+    <Image
+      src={getImagemProduto(item.produto.image)}
+      alt={item.produto.nome}
+      width={80}
+      height={80}
+      className="rounded object-cover"
+      unoptimized
+    />
+    <div className="ml-4 flex-1">
+      <p className="text-lg font-medium text-black">{item.produto.nome}</p>
+      <p className="text-sm text-gray-800">Valor unitário: R$ {item.produto.preco.toFixed(2)}</p>
+      
+      <div className="flex items-center mt-2 space-x-2">
+        <button
+          onClick={() => atualizarQuantidade(item.id, item.quantidade - 1)}
+          className="px-2 py-1 bg-gray-300 rounded text-black"
+          disabled={item.quantidade <= 1}
+        >
+          -
+        </button>
+        <span className="text-base">{item.quantidade}</span>
+        <button
+          onClick={() => atualizarQuantidade(item.id, item.quantidade + 1)}
+          className="px-2 py-1 bg-gray-300 rounded text-black"
+        >
+          +
+        </button>
+      </div>
+    </div>
+    <button
+      onClick={() => handleRemoverItem(item.id)}
+      className="ml-4 text-red-500 hover:text-red-700"
+    >
+      <FaTrashAlt size={20} />
+    </button>
+  </div>
+))}
+
 
               <div className="flex justify-between font-bold border-t pt-4 text-black text-lg">
                 <span>Subtotal:</span>
