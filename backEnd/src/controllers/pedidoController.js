@@ -16,6 +16,38 @@ async function getEmpresaIdFromToken(req) {
   }
 }
 
+
+export const getItensDoPedido = async (req, res) => {
+  const { idPedido } = req.params;
+
+  // Busca os itens do pedido
+  const { data: itens, error: itensError } = await supabase
+    .from('pedido_itens')
+    .select('*')
+    .eq('pedido_id', idPedido);
+
+  if (itensError) {
+    console.error(itensError);
+    return res.status(500).json({ erro: 'Erro ao buscar itens do pedido.' });
+  }
+
+  // Para cada item, busca o nome do produto correspondente
+  const itensComNome = await Promise.all(itens.map(async (item) => {
+    const { data: produto, error: produtoError } = await supabase
+      .from('produto')
+      .select('nome')
+      .eq('id', item.produto_id)
+      .single();
+
+    return {
+      ...item,
+      nome_produto: produto ? produto.nome : 'Produto não encontrado'
+    };
+  }));
+
+  res.json(itensComNome);
+};
+
 // --- FUNÇÃO: getHistoricoPedidos ---
 export const getHistoricoPedidos = async (req, res) => {
   console.log('DEBUG: PedidoController.js: Chamando getHistoricoPedidos!');
