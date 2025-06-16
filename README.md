@@ -196,7 +196,7 @@ Todos os planos contam com **7 dias gratuitos** para experimentação, sem compr
 | Tarefa                                  | Descrição                                                                                  | Pessoa Responsável (Nome) |
 |----------------------------------------|--------------------------------------------------------------------------------------------|---------------------------|
 | Deploy da aplicação Mobile (PWA)       | Fazer o deploy da aplicação Next.js PWA no ambiente de produção                            |                           |
-| Deploy da aplicação Web Cliente         | Fazer o deploy da aplicação web pública (front da loja, suporte ao cliente, etc.)          |                           |
+| Deploy da aplicação Web Cliente         | Fazer o deploy da aplicação web pública (front da loja, suporte ao cliente, etc.)          |        **Ester**         |
 
 ## Home 
 ![Home sem login](fotos/Home%20Sem%20Login.png)
