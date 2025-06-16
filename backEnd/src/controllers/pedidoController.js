@@ -3,6 +3,7 @@ import * as PedidoModel from '../models/PedidoModel.js';
 import supabase from '../config/SupaBase.js';
 import jwt from 'jsonwebtoken'; // Para decodificar o token
 import * as lojaModel from '../models/Loja.js';
+
 async function getEmpresaIdFromToken(req) {
   const token = req.cookies?.token_empresa;
   if (!token) return { error: { message: 'Token não fornecido no cookie' } };
@@ -13,6 +14,38 @@ async function getEmpresaIdFromToken(req) {
       return { error: { message: 'Token inválido ou expirado' } };
   }
 }
+
+
+export const getItensDoPedido = async (req, res) => {
+  const { idPedido } = req.params;
+
+  // Busca os itens do pedido
+  const { data: itens, error: itensError } = await supabase
+    .from('pedido_itens')
+    .select('*')
+    .eq('pedido_id', idPedido);
+
+  if (itensError) {
+    console.error(itensError);
+    return res.status(500).json({ erro: 'Erro ao buscar itens do pedido.' });
+  }
+
+  // Para cada item, busca o nome do produto correspondente
+  const itensComNome = await Promise.all(itens.map(async (item) => {
+    const { data: produto, error: produtoError } = await supabase
+      .from('produto')
+      .select('nome')
+      .eq('id', item.produto_id)
+      .single();
+
+    return {
+      ...item,
+      nome_produto: produto ? produto.nome : 'Produto não encontrado'
+    };
+  }));
+
+  res.json(itensComNome);
+};
 
 // --- FUNÇÃO: getHistoricoPedidos ---
 export const getHistoricoPedidos = async (req, res) => {
