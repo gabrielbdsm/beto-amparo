@@ -32,6 +32,14 @@ const nextConfig = {
         destination: '/client/visualizarAgendamentoCliente',
       },
       {
+        source: '/loja/:slug/carrinho',
+        destination: '/client/carrinho',
+      },
+      {
+        source: '/loja/:slug/pedidos',
+        destination: '/client/pedidos',
+      },
+      {
         source: '/:slug/carrinho',
         destination: '/client/carrinho',
       },

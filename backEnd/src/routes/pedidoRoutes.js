@@ -1,5 +1,5 @@
 import express from 'express';
-import { listarPedidosPorEmpresa, criarPedido, adicionarItemPedido, getHistoricoPedidos, getDadosGraficoVendas, getItensDoPedido} from '../controllers/pedidoController.js';
+import { listarPedidosPorEmpresa, criarPedido, adicionarItemPedido, getHistoricoPedidos, getDadosGraficoVendas, getItensDoPedido, listarPedidosPorCliente} from '../controllers/pedidoController.js';
 
 
 const router = express.Router();
@@ -10,5 +10,6 @@ router.post('/loja/:slug/pedidos/item', adicionarItemPedido);
 router.get('/pedidos/:idPedido/itens', getItensDoPedido);
 router.get('/pedidos/historico/loja/:slugLoja', getHistoricoPedidos);
 router.get('/pedidos/grafico/loja/:slugLoja', getDadosGraficoVendas);
+router.get('/loja/:slug/pedidos/cliente/:clienteId', listarPedidosPorCliente);
 
 export default router;

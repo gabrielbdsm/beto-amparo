@@ -16,6 +16,38 @@ async function getEmpresaIdFromToken(req) {
   }
 }
 
+export const listarPedidosPorCliente = async (req, res) => {
+    const { slug, clienteId } = req.params;
+
+    try {
+        const { data: loja, error: lojaError } = await supabase
+            .from('loja')
+            .select('id')
+            .eq('slug_loja', slug) // Use o slug recebido
+            .single();
+
+        if (lojaError || !loja) {
+            return res.status(404).json({ erro: 'Loja não encontrada' });
+        }
+
+        const { data: pedidos, error } = await supabase
+            .from('pedidos')
+            .select('*')
+            .eq('id_loja', loja.id)
+            .eq('id_cliente', clienteId);
+
+        if (error) {
+            console.error("Erro ao buscar pedidos do cliente:", error);
+            return res.status(500).json({ erro: 'Erro ao buscar pedidos' });
+        }
+
+        res.status(200).json(pedidos);
+    } catch (error) {
+        console.error("Erro interno no servidor:", error);
+        res.status(500).json({ erro: 'Erro interno no servidor' });
+    }
+};
+
 
 export const getItensDoPedido = async (req, res) => {
   const { idPedido } = req.params;
