@@ -160,12 +160,9 @@ export default function CarrinhoCliente({ empresaId }) {
 
     const aplicarDesconto = useCallback(() => {
         const pontosDisponiveis = Math.min(pontosParaUsar, totalPontosCliente);
-        // Exemplo: 1 ponto = R$0.01 de desconto (1 real a cada 100 pontos). Ajuste conforme sua regra.
-        // Ou 100 pontos = 1% do subtotal.
-        const valorDesconto = (pontosDisponiveis * 0.01); // Exemplo: cada ponto vale 1 centavo
-        // Ou, se for percentual: const percentualDesconto = pontosDisponiveis / X; const valorDesconto = subtotal * percentualDesconto;
 
-        // Limita o desconto ao subtotal
+        const valorDesconto = (subtotal * (pontosDisponiveis / 100));
+
         setDescontoAplicado(Math.min(valorDesconto, subtotal));
     }, [pontosParaUsar, totalPontosCliente, subtotal]);
 
