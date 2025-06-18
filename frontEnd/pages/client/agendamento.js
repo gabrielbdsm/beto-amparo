@@ -89,7 +89,8 @@ const AppointmentBooking = () => {
       setScheduleConfigurations(data);
       
       if (response.status === 401) {
-        window.location.href = '/login'; 
+        router.push(`/login?redirect=${encodeURIComponent(router.asPath)}`);
+        return;
       }
 
       console.log("DEBUG: Dados de horários recebidos:", data);
