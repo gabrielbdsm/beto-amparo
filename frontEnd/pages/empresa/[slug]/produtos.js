@@ -16,6 +16,49 @@ import 'swiper/css/pagination';
 import OwnerSidebar from '@/components/OwnerSidebar';
 import AdminProductCard from '@/components/AdminProductCard';
 import ConfirmationModal from '@/components/ConfirmationModal';
+import ProductTour from '@/components/ProductTour';
+
+// Defina os passos do tour AQUI
+const produtosTourSteps = [
+  {
+    target: '.add-product-button',
+    content: 'Clique aqui para adicionar um novo produto à sua loja.',
+    placement: 'bottom',
+    disableBeacon: true,
+    className: 'add-product-tour-step',
+  },
+  {
+    target: '.mySwiper',
+    content: 'Aqui você verá os produtos cadastrados. Use as setas para navegar.',
+    placement: 'top',
+    disableBeacon: true,
+    className: 'product-list-tour-step',
+  },
+  {
+    target: '.admin-product-card',
+    content:
+      'Este é um cartão de produto. Você pode editar ou inativar o produto.',
+    placement: 'right',
+    disableBeacon: true,
+    className: 'product-card-tour-step',
+  },
+  {
+    target: '.inativos-link',
+    content: 'Gerencie seus produtos inativos, que não aparecem mais para os clientes, clicando aqui.',
+    placement: 'left',
+    disableBeacon: true,
+    className: 'inactive-products-tour-step',
+  },
+  {
+    target: '.owner-area-sidebar-item', // Seletor para o item "Área do Dono" na sidebar
+    content: 'Parabéns por configurar seus produtos! Agora, para continuar explorando o painel principal, clique em "Área do Dono" na barra lateral à esquerda.',
+    placement: 'right', // Assumindo que a sidebar está à esquerda
+    disableBeacon: true,
+    spotlightClicks: true, // Permite clicar no item da sidebar destacado
+    showSkipButton: false, // Força o usuário a seguir este passo
+  },
+];
+
 
 export default function ProdutosDaLoja() {
   const router = useRouter();
@@ -27,8 +70,16 @@ export default function ProdutosDaLoja() {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [productToHandle, setProductToHandle] = useState(null);
-  const [actionType, setActionType] = useState('');
+  const [actionType, setActionType] = useState(''); // 'inativar'
   const [isConfirmingAction, setIsConfirmingAction] = useState(false);
+
+  // Função para lidar com o término do tour de produtos e sinalizar o próximo tour
+  const handleProdutosTourFinish = () => {
+    // Sinaliza no localStorage que o tour da Área do Dono deve começar
+    localStorage.setItem('startDonoAreaTour', 'true'); // <-- Nome da flag alterado para 'startDonoAreaTour'
+    // Não redirecionamos daqui, o usuário clica na sidebar
+    // localStorage.setItem('hasSeenProdutosTour', 'true'); // Isso já é feito no ProductTour.js
+  };
 
   // Função de Editar Produto
   const handleEditProduct = (productId) => {
@@ -56,36 +107,46 @@ export default function ProdutosDaLoja() {
     setError(null);
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/produtos/inativar/${productToHandle.id}`, {
-        method: 'PUT',
-        credentials: 'include',
-      });
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_EMPRESA_API}/produtos/inativar/${productToHandle.id}`,
+        {
+          method: 'PUT',
+          credentials: 'include',
+        }
+      );
 
       if (response.status === 401) {
         const errorData = await response.json();
-        const targetUrl = errorData.redirectTo || `/empresa/LoginEmpresa?returnTo=${encodeURIComponent(router.asPath)}`;
+        const targetUrl =
+          errorData.redirectTo ||
+          `/empresa/LoginEmpresa?returnTo=${encodeURIComponent(router.asPath)}`;
         router.push(targetUrl);
         return;
       }
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.mensagem || `Erro HTTP ${response.status} ao inativar produto.`);
+        throw new Error(
+          errorData.mensagem ||
+            `Erro HTTP ${response.status} ao inativar produto.`
+        );
       }
 
-      // Remove o produto da lista localmente
-      setProdutos(prevProdutos => prevProdutos.filter(p => p.id !== productToHandle.id));
+      setProdutos((prevProdutos) =>
+        prevProdutos.filter((p) => p.id !== productToHandle.id)
+      );
       alert('Produto inativado com sucesso!');
       handleCloseConfirmModal();
-
     } catch (err) {
       console.error('Erro ao inativar produto:', err);
-      setError(err.message || 'Não foi possível inativar o produto. Verifique o console do backend.');
+      setError(
+        err.message ||
+          'Não foi possível inativar o produto. Verifique o console do backend.'
+      );
       setIsConfirmingAction(false);
     }
   };
 
-  // Efeito para buscar produtos (ativos)
   useEffect(() => {
     if (!router.isReady || !slug) {
       return;
@@ -96,44 +157,51 @@ export default function ProdutosDaLoja() {
         setLoading(true);
         setError(null);
 
-        // A URL de busca de produtos: Certifique-se de que seu backend retorna o nome da categoria
-        // Se seu backend retorna um objeto aninhado 'categorias' com a propriedade 'nome',
-        // esta URL e a lógica abaixo funcionarão bem.
-        // Ex: { id: 1, nome: "Produto X", categorias: { id: 101, nome: "Eletrônicos" }, ... }
-        const response = await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/produtos/loja/${slug}?ativo=true`, {
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include',
-        });
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_EMPRESA_API}/produtos/loja/${slug}?ativo=true`,
+          {
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+          }
+        );
 
         if (response.status === 401) {
           const errorData = await response.json();
-          const targetUrl = errorData.redirectTo || `/empresa/LoginEmpresa?returnTo=${encodeURIComponent(router.asPath)}`;
+          const targetUrl =
+            errorData.redirectTo ||
+            `/empresa/LoginEmpresa?returnTo=${encodeURIComponent(router.asPath)}`;
           router.push(targetUrl);
           return;
         }
 
         if (!response.ok) {
           const errorData = await response.json();
-          throw new Error(errorData.mensagem || `Erro HTTP ${response.status} ao carregar produtos do backend.`);
+          throw new Error(
+            errorData.mensagem ||
+              `Erro HTTP ${response.status} ao carregar produtos do backend.`
+          );
         }
 
         const data = await response.json();
         const activeProducts = data
-            .filter(p => p.hasOwnProperty('ativo') ? p.ativo === true : true)
-            .map(p => ({
-                ...p,
-                // Acessa o nome da categoria. Assume que a categoria vem como um objeto aninhado { id: ..., nome: ... }
-                // Esta linha é crucial. Se o seu backend retorna a categoria de forma diferente, ajuste-a.
-                categoria_nome: p.categorias?.nome || 'Outros' 
-            }));
+          .filter((p) => (p.hasOwnProperty('ativo') ? p.ativo === true : true))
+          .map((p) => ({
+            ...p,
+            categoria_nome: p.categorias?.nome || 'Outros',
+          }));
         setProdutos(activeProducts);
-        console.log("Frontend: Produtos ativos recebidos com sucesso:", activeProducts);
-
+        console.log(
+          'Frontend: Produtos ativos recebidos com sucesso:',
+          activeProducts
+        );
       } catch (err) {
-        console.error("Frontend: Erro ao buscar produtos:", err);
-        setError(err.message || 'Não foi possível carregar os produtos do backend. Verifique o console do backend.');
+        console.error('Frontend: Erro ao buscar produtos:', err);
+        setError(
+          err.message ||
+            'Não foi possível carregar os produtos do backend. Verifique o console do backend.'
+        );
       } finally {
         setLoading(false);
       }
@@ -142,24 +210,27 @@ export default function ProdutosDaLoja() {
     fetchProdutos();
   }, [slug, router.isReady, router]);
 
-  // Função para obter a URL da imagem do produto
   const getImagemProduto = (imagePathOrFullUrl) => {
-    if (imagePathOrFullUrl && (imagePathOrFullUrl.startsWith('http://') || imagePathOrFullUrl.startsWith('https://'))) {
+    if (
+      imagePathOrFullUrl &&
+      (imagePathOrFullUrl.startsWith('http://') ||
+        imagePathOrFullUrl.startsWith('https://'))
+    ) {
       return imagePathOrFullUrl;
     }
-    const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL ? process.env.NEXT_PUBLIC_BACKEND_URL.replace(/\/+$/, '') : '';
+    const baseUrl = process.env.NEXT_PUBLIC_BACKEND_URL
+      ? process.env.NEXT_PUBLIC_BACKEND_URL.replace(/\/+$/, '')
+      : '';
     if (imagePathOrFullUrl) {
       return `${baseUrl}/uploads/produtos/${imagePathOrFullUrl}`;
     }
     return '/placeholder.png';
   };
 
-  // Lógica para Agrupar Produtos por Categoria (inalterada na lógica, mas agora usa 'categoria_nome')
   const produtosPorCategoria = useMemo(() => {
     const grouped = {};
-    produtos.forEach(produto => {
-      // Usa a propriedade 'categoria_nome' que garantimos no useEffect
-      const categoria = produto.categoria_nome || 'Outros'; 
+    produtos.forEach((produto) => {
+      const categoria = produto.categoria_nome || 'Outros';
       if (!grouped[categoria]) {
         grouped[categoria] = [];
       }
@@ -170,18 +241,20 @@ export default function ProdutosDaLoja() {
 
   const pageContent = (
     <div className="p-8 max-w-4xl mx-auto bg-white rounded-lg shadow-md min-h-[600px]">
-      <h1 className="text-3xl font-bold text-[#3681B6] mb-6">Meus Produtos (Dashboard)</h1>
+      <h1 className="text-3xl font-bold text-[#3681B6] mb-6">
+        Meus Produtos (Dashboard)
+      </h1>
 
       <div className="mb-6 flex justify-between items-center">
         {slug && (
-          <Link href={`/empresa/${slug}/AdicionarProduto`} className="bg-green-600 text-white py-2 px-5 rounded-lg shadow-md hover:bg-green-700 transition duration-200 text-lg">
+          <Link href={`/empresa/${slug}/AdicionarProduto`} className="bg-green-600 text-white py-2 px-5 rounded-lg shadow-md hover:bg-green-700 transition duration-200 text-lg add-product-button">
             Adicionar Novo Produto
           </Link>
         )}
         {!slug && (
           <span className="text-gray-500">Aguardando detalhes da empresa para ativar os botões...</span>
         )}
-        <Link href={`/empresa/${slug}/produtos/inativos`} className="ml-4 text-[#3681B6] hover:underline">
+        <Link href={`/empresa/${slug}/produtos/inativos`} className="ml-4 text-[#3681B6] hover:underline inativos-link">
           Ver Produtos Inativos
         </Link>
       </div>
@@ -194,14 +267,12 @@ export default function ProdutosDaLoja() {
           <p className="mt-2 text-sm text-gray-500">Verifique os logs do terminal do seu backend para mais detalhes.</p>
         </div>
       ) : Object.keys(produtosPorCategoria).length > 0 ? (
-        // Renderiza produtos agrupados por categoria com Swiper
-        <div>
+        <div className="product-list-area">
           {Object.entries(produtosPorCategoria).map(([categoria, produtosDaCategoria]) => (
             <div key={categoria} className="mb-8">
               <h2 className="text-2xl font-bold text-gray-800 mb-4 border-b-2 border-gray-300 pb-2">
                 {categoria}
               </h2>
-              {/* O Swiper para cada categoria */}
               <Swiper
                 modules={[Navigation, Pagination]}
                 spaceBetween={20}
@@ -218,18 +289,17 @@ export default function ProdutosDaLoja() {
                     spaceBetween: 30,
                   },
                 }}
-                className="mySwiper" // Adicione uma classe para estilização opcional
+                className="mySwiper"
               >
                 {produtosDaCategoria.map((produto) => (
                   <SwiperSlide key={produto.id}>
-                    {/* REMOVIDA A DIV w-full flex justify-center */}
-                    {/* Deixa o AdminProductCard gerenciar sua própria largura dentro do slide */}
                     <AdminProductCard
                       produto={produto}
                       getImagemProduto={getImagemProduto}
                       onEdit={handleEditProduct}
-                      onDelete={() => handleOpenConfirmModal(produto, 'inativar')}
+                      onStatusChange={() => handleOpenConfirmModal(produto, 'inativar')}
                       buttonLabel="Inativar"
+                      className="admin-product-card"
                     />
                   </SwiperSlide>
                 ))}
@@ -251,16 +321,29 @@ export default function ProdutosDaLoja() {
       {pageContent}
       <ConfirmationModal
         isOpen={isModalOpen}
-        title={actionType === 'inativar' ? 'Confirmar Inativação' : 'Ação Desconhecida'}
+        title={
+          actionType === 'inativar'
+            ? 'Confirmar Inativação'
+            : 'Ação Desconhecida'
+        }
         message={
           actionType === 'inativar'
-            ? `Tem certeza que deseja inativar o produto "${productToHandle?.nome || ''}"? Ele não aparecerá mais na loja para os clientes.`
-            : `Confirma esta ação para o produto "${productToHandle?.nome || ''}"?`
+            ? `Tem certeza que deseja inativar o produto "${
+                productToHandle?.nome || ''
+              }"? Ele não aparecerá mais na loja para os clientes.`
+            : `Confirma esta ação para o produto "${
+                productToHandle?.nome || ''
+              }"?`
         }
         onConfirm={handleConfirmAction}
         onCancel={handleCloseConfirmModal}
         isConfirming={isConfirmingAction}
         actionLabel={actionType === 'inativar' ? 'Inativar' : 'Confirmar'}
+      />
+      <ProductTour
+        steps={produtosTourSteps}
+        tourKey="Produtos"
+        onTourFinish={handleProdutosTourFinish} // Adicione o handler de término do tour
       />
     </OwnerSidebar>
   );

@@ -1,17 +1,26 @@
 'use client';
 import Link from 'next/link';
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/router';
 import Image from 'next/image';
 
 export default function LoginPage() {
   const router = useRouter();
+    const [redirectUrl, setRedirectUrl] = useState('/');
+
   const [formData, setFormData] = useState({
     email: '',
     senha: ''
   });
   const [erros, setErros] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (router.isReady) {
+      const { redirect } = router.query;
+      setRedirectUrl(typeof redirect === 'string' ? redirect : '/');
+    }
+  }, [router.isReady, router.query]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -45,18 +54,8 @@ export default function LoginPage() {
         return;
       }
 
-      // Armazena o token JWT no localStorage (alternativa ao cookie)
-      localStorage.setItem('token_cliente', data.token);
-      localStorage.setItem('cliente', JSON.stringify(data.cliente));
-      localStorage.setItem('user', JSON.stringify(data.cliente));
-
-      // Redirecionamento dinâmico
-      const urlParams = new URLSearchParams(window.location.search);
-      const redirect = urlParams.get('redirect') || '/home';
-      window.location.href = redirect;
-
-      /*alert('Login realizado com sucesso!');
-      window.location.href = 'home';*/
+      alert('Login realizado com sucesso!');
+      router.push(redirectUrl).then(() => window.location.reload());
     } catch (err) {
       console.error(err);
       setErrors({ geral: 'Erro ao fazer login. Tente novamente mais tarde.' });

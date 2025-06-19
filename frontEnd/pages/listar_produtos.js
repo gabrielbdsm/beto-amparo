@@ -1,43 +1,6 @@
-document.addEventListener('DOMContentLoaded', async () => {
-    try {
-        // 1. Busca os produtos do seu endpoint (que já existe no controller)
-        const response = await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/produtos`,{
-            mode: 'cors'
-        });
-        
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        
-        const produtos = await response.json();
-        const container = document.getElementById('produtos-container');
-        
-        // 2. Verifica se há produtos
-        if (!produtos || produtos.length === 0) {
-            container.innerHTML = '<p>Nenhum produto cadastrado ainda.</p>';
-            return;
-        }
-        
-        // 3. Renderiza cada produto
-        container.innerHTML = produtos.map(produto => `
-            <div class="produto-card">
-                ${produto.image ? 
-                    `<img src="/uploads/${produto.image}" alt="${produto.nome}" class="produto-imagem">` : 
-                    `<div style="height:180px; display:flex; align-items:center; justify-content:center; color:#777;">Sem imagem</div>`
-                }
-                <h3 class="produto-nome">${produto.nome}</h3>
-                <span class="produto-categoria">${formatarCategoria(produto.categoria)}</span>
-                <p class="produto-preco">${formatarPreco(produto.preco)}</p>
-                ${produto.descricao ? `<p>${produto.descricao}</p>` : ''}
-            </div>
-        `).join('');
-        
-    } catch (error) {
-        console.error('Erro ao carregar produtos:', error);
-        document.getElementById('produtos-container').innerHTML = 
-            '<p>Ocorreu um erro ao carregar os produtos. Recarregue a página.</p>';
-    }
-});
+import { useEffect, useState } from 'react';
 
-// Função para formatar a categoria
+// Função para formatar a categoria (pode ficar fora do componente ou dentro, mas fora é mais limpo se não depender do estado do componente)
 function formatarCategoria(categoria) {
     const categorias = {
         'alimento': 'Alimento',
@@ -47,10 +10,75 @@ function formatarCategoria(categoria) {
     return categorias[categoria] || categoria;
 }
 
-// Função para formatar o preço
+// Função para formatar o preço (pode ficar fora do componente)
 function formatarPreco(preco) {
-    return preco.toLocaleString('pt-BR', {
+    // Certifique-se de que 'preco' é um número antes de chamar toLocaleString
+    const numericPreco = parseFloat(preco);
+    if (isNaN(numericPreco)) {
+        return 'Preço Inválido'; // Ou algum outro tratamento de erro
+    }
+    return numericPreco.toLocaleString('pt-BR', {
         style: 'currency',
         currency: 'BRL'
     });
+}
+
+export default function ListarProdutos() {
+    const [produtos, setProdutos] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+        const fetchProdutos = async () => {
+            try {
+                // Acessa process.env.NEXT_PUBLIC_EMPRESA_API no client-side
+                const response = await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/produtos`, {
+                    mode: 'cors'
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                setProdutos(data);
+            } catch (err) {
+                console.error('Erro ao carregar produtos:', err);
+                setError('Ocorreu um erro ao carregar os produtos. Recarregue a página.');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchProdutos();
+    }, []); // O array vazio [] garante que o useEffect rode apenas uma vez, após a primeira renderização do componente no cliente.
+
+    if (loading) {
+        return <p>Carregando produtos...</p>;
+    }
+
+    if (error) {
+        return <p>{error}</p>;
+    }
+
+    if (!produtos || produtos.length === 0) {
+        return <p>Nenhum produto cadastrado ainda.</p>;
+    }
+
+    return (
+        <div id="produtos-container">
+            {produtos.map(produto => (
+                <div key={produto.id} className="produto-card">
+                    {produto.image ? 
+                        <img src={`/uploads/${produto.image}`} alt={produto.nome} className="produto-imagem" /> : 
+                        <div style={{height:'180px', display:'flex', alignItems:'center', justifyContent:'center', color:'#777'}}>Sem imagem</div>
+                    }
+                    <h3 className="produto-nome">{produto.nome}</h3>
+                    <span className="produto-categoria">{formatarCategoria(produto.categoria)}</span>
+                    <p className="produto-preco">{formatarPreco(produto.preco)}</p>
+                    {produto.descricao ? <p>{produto.descricao}</p> : ''}
+                </div>
+            ))}
+        </div>
+    );
 }

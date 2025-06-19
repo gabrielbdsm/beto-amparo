@@ -99,3 +99,113 @@ export async function atualizarStatusPedido(pedidoId, newStatus) {
     throw err;
   }
 }
+export async function listarPedidosDaLoja(idLoja) {
+  console.log('DEBUG: PedidoModel: Listando pedidos para loja ID:', idLoja);
+  // REMOVA TODOS OS COMENTÁRIOS E LINHAS EM BRANCO DA STRING 'select'
+  let query = supabase
+      .from('pedidos')
+      .select(`
+          id,
+          data,
+          total,
+          id_cliente,
+          id_loja,
+          status,
+          observacoes,
+          metodo_pagamento,
+          metodo_entrega,
+          endereco_entrega,
+          subtotal,
+          taxa_entrega,
+          desconto,
+          cupom_id,
+          data_finalizacao,
+          data_entrega,
+          pedido_itens (
+              id,
+              quantidade,
+              preco_unitario,
+              produto (id, nome, image)
+          )
+          -- Se você tem uma tabela de clientes e quer o nome/email, adicione aqui:
+          -- clientes (id, nome, email)
+      `)
+      .eq('id_loja', idLoja)
+      .order('data', { ascending: false });
+
+  const { data, error } = await query;
+
+  if (error) {
+      console.error('DEBUG: PedidoModel: Erro ao listar pedidos da loja:', error.message);
+      return { data: null, error };
+  }
+  console.log('DEBUG: PedidoModel: Pedidos listados com sucesso:', data.length, 'pedidos.');
+  return { data, error: null };
+}
+
+export async function getDadosVendasAgregados(idLoja, periodo = 'semana') {
+  const { data: pedidos, error } = await supabase
+      .from('pedidos')
+      .select('data, total') // Agora 'data' é TIMESTAMP e 'total' é NUMERIC
+      .eq('id_loja', idLoja)
+      .not('status', 'eq', 'cancelado'); // Assume que 'status' é preenchido e que 'cancelado' não deve ser contado
+
+  if (error) return { data: null, error };
+
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+
+  const dadosGrafico = {};
+  // Lógica para 'semana' (últimos 7 dias)
+  if (periodo === 'semana') {
+      for (let i = 0; i < 7; i++) {
+          const dataLoop = new Date(hoje);
+          dataLoop.setDate(hoje.getDate() - i);
+          const diaSemana = dataLoop.toLocaleDateString('pt-BR', { weekday: 'short' });
+          const dataKey = dataLoop.toISOString().split('T')[0]; // Formato YYYY-MM-DD
+          dadosGrafico[dataKey] = { label: diaSemana, total: 0 };
+      }
+  } else if (periodo === 'mes') {
+      // Últimos 30 dias (ou por mês do ano)
+      // Isso pode ser mais complexo. Você pode pegar a data de hoje e voltar 30 dias.
+      // Exemplo simplificado para 30 dias:
+      for (let i = 0; i < 30; i++) {
+          const dataLoop = new Date(hoje);
+          dataLoop.setDate(hoje.getDate() - i);
+          const dataFormatada = dataLoop.toLocaleDateString('pt-BR'); // Ex: 07/06
+          const dataKey = dataLoop.toISOString().split('T')[0];
+          dadosGrafico[dataKey] = { label: dataFormatada, total: 0 };
+      }
+  }
+  // Você pode expandir para 'ano' ou outros períodos
+
+  pedidos.forEach(pedido => {
+    const pedidoData = new Date(pedido.data); // 'data' já é um objeto Date se o tipo for timestamp
+    pedidoData.setHours(0, 0, 0, 0);
+    const dataKey = pedidoData.toISOString().split('T')[0];
+
+    if (dadosGrafico[dataKey]) {
+        dadosGrafico[dataKey].total += parseFloat(pedido.total); // <--- GARANTA ISSO!
+    }
+});
+
+  // Ordena os labels e totais para que o gráfico fique em ordem cronológica
+  const sortedKeys = Object.keys(dadosGrafico).sort();
+  const labels = sortedKeys.map(key => dadosGrafico[key].label);
+  const totals = sortedKeys.map(key => dadosGrafico[key].total);
+
+
+  return { data: { labels, totals }, error: null };
+}
+export async function buscarPedidoPorId(pedidoId) {
+  if (!pedidoId) throw new Error("ID do pedido é obrigatório");
+  
+  const { data, error } = await supabase
+    .from('pedidos')
+    .select('*')
+    .eq('id', pedidoId)
+    .single();
+
+  if (error) throw error;
+  return data;
+}
