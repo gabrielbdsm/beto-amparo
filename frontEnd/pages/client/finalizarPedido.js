@@ -151,24 +151,17 @@ export default function FinalizarPedido() {
                 credentials: 'include'
             });
             if (enderecoResponse.ok) {
-    const enderecoData = await enderecoResponse.json();
-    console.log('Endereços recebidos:', enderecoData);
-
-    if (enderecoData && enderecoData.length > 0) {
-        setEnderecos(enderecoData);
-        setEnderecoEntrega(enderecoData[0]);
-    } else {
-        setEnderecos([]);
-        setEnderecoEntrega({ /* vazio */ });
-        setMostrarFormulario(true);
-    }
-}
-
-
             const enderecoData = await enderecoResponse.json();
+            console.log('Endereços recebidos:', enderecoData);
+
             if (enderecoData && enderecoData.length > 0) {
-                setEnderecos(enderecoData);
-                setEnderecoEntrega(enderecoData[0]);
+                    setEnderecos(enderecoData);
+                    setEnderecoEntrega(enderecoData[0]);
+                } else {
+                    setEnderecos([]);
+                    setEnderecoEntrega({ /* vazio */ });
+                    setMostrarFormulario(true);
+                }
             }
         } catch (error) {
             console.error("Erro ao salvar endereço:", error);
@@ -455,7 +448,7 @@ export default function FinalizarPedido() {
                         className="flex justify-between items-center p-4 cursor-pointer"
                         onClick={() => toggleSection('endereco')}
                     >
-                        <h2 className="text-lg font-bold">2. Endereço de Entrega</h2>
+                        <h2 className="text-lg font-bold">2. Endereço</h2>
                         {activeSection === 'endereco' ? <FiChevronUp size={20} /> : <FiChevronDown size={20} />}
                     </div>
 
@@ -523,48 +516,13 @@ export default function FinalizarPedido() {
                     )}
                 </div>
 
-                {/* 3. Método de Entrega */}
-                <div className="bg-white rounded-lg shadow-sm mb-6 overflow-hidden">
-                    <div
-                        className="flex justify-between items-center p-4 cursor-pointer"
-                        onClick={() => toggleSection('entrega')}
-                    >
-                        <h2 className="text-lg font-bold">3. Método de Entrega</h2>
-                        {activeSection === 'entrega' ? <FiChevronUp size={20} /> : <FiChevronDown size={20} />}
-                    </div>
-
-                    {activeSection === 'entrega' && (
-                        <div className="p-4 border-t">
-                            <div className="space-y-3">
-                                <label className="flex items-start p-3 border rounded-lg cursor-pointer">
-                                    <input
-                                        type="radio"
-                                        name="metodoEntrega"
-                                        value="retirada"
-                                        checked={metodoEntrega === "retirada"}
-                                        onChange={() => { setMetodoEntrega("retirada"); setFrete(0); }}
-                                        className="mt-1 mr-3"
-                                    />
-                                    <div className="flex-1">
-                                        <div className="flex justify-between">
-                                            <span className="font-medium">Retirada na Loja</span>
-                                            <span className="font-bold">Grátis</span>
-                                        </div>
-                                        <p className="text-sm text-gray-600">Disponível em 1 dia útil</p>
-                                    </div>
-                                </label>
-                            </div>
-                        </div>
-                    )}
-                </div>
-
                 {/* 4. Forma de Pagamento */}
                 <div className="bg-white rounded-lg shadow-sm mb-6 overflow-hidden">
                     <div
                         className="flex justify-between items-center p-4 cursor-pointer"
                         onClick={() => toggleSection('pagamento')}
                     >
-                        <h2 className="text-lg font-bold">4. Forma de Pagamento</h2>
+                        <h2 className="text-lg font-bold">3. Forma de Pagamento</h2>
                         {activeSection === 'pagamento' ? <FiChevronUp size={20} /> : <FiChevronDown size={20} />}
                     </div>
 
@@ -641,7 +599,7 @@ export default function FinalizarPedido() {
                             <span>R$ {subtotal.toFixed(2)}</span>
                         </div>
                         <div className="flex justify-between">
-                            <span>Frete:</span>
+                            <span>Desconto:</span>
                             <span>R$ {frete.toFixed(2)}</span>
                         </div>
                         <div className="flex justify-between text-xl font-bold pt-2 border-t">
