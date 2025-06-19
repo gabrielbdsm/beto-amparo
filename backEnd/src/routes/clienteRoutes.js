@@ -13,12 +13,6 @@ router.use((req, res, next) => {
   next();
 });
 
-<<<<<<< HEAD
-router.get('/clientes', clienteController.listar);
-router.get('/clientes/:id', clienteController.obterPorId);
-router.put('/clientes/:id', clienteController.atualizar); 
-router.delete('/clientes/:id', clienteController.remover);
-=======
 
 // Rota para listar clientes (opcional)
 router.get('/clientes', clienteController.listar);  // Ajuste aqui para '/clientes'
@@ -35,9 +29,6 @@ router.delete('/clientes/:id', clienteController.remover);  // Ajuste aqui para 
 router.put('/clientes/:id/pontos', clienteController.atualizarPontos); 
 
 router.post('/clientes/:id/ganhar-pontos', clienteController.ganharPontos);
-
->>>>>>> develop
-
 
 router.get('/me', clientePrivate, async (req, res) => {
   try {

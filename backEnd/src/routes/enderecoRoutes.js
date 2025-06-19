@@ -3,11 +3,10 @@ import {
     buscarEnderecoCliente,
     salvarEnderecoCliente
 } from '../controllers/client/enderecoController.js';
-import { authCliente } from '../middleware/authClienteMiddleware.js';
 
 const router = express.Router();
 
-router.get('/clientes/:clienteId/endereco', authCliente, buscarEnderecoCliente);
-router.post('/clientes/:clienteId/endereco', authCliente, salvarEnderecoCliente);
+router.get('/clientes/:clienteId/endereco',  buscarEnderecoCliente);
+router.post('/clientes/:clienteId/endereco', salvarEnderecoCliente);
 
 export default router;

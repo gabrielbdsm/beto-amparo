@@ -34,6 +34,12 @@ export default function Pedidos() {
         return `${dia}/${mes}/${ano}`;
     };
 
+    const irParaFinalizar = (idCliente) => {
+    router.push({
+        pathname: `/loja/ben-burguer/finalizarPedido`,
+        query: { clienteId: idCliente }
+    });
+    };
     // Define fetchPedidos using useCallback so it can be safely passed around
     const fetchPedidos = useCallback(async () => {
         if (!slug || !cliente) return; // Ensure slug and client are available before fetching
@@ -198,6 +204,17 @@ export default function Pedidos() {
                                             }}
                                         >
                                             Cancelar pedido
+                                        </button>
+                                        <button
+                                            onClick={() => router.push(`/client/finalizarPedido?slug=${slug}&pedidoId=${pedido.id}&clienteId=${cliente.id}`)}
+                                            className="px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 border"
+                                            style={{
+                                                backgroundColor: corPrimaria,
+                                                color: getContrastColor(corPrimaria),
+                                                borderColor: corPrimaria
+                                            }}
+                                        >
+                                            Finalizar pedido
                                         </button>
                                     </div>
                                 )}

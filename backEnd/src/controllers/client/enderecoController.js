@@ -9,8 +9,7 @@ export const buscarEnderecoCliente = async (req, res) => {
         const { data, error } = await supabase
             .from('enderecos_entrega')
             .select('*')
-            .eq('cliente_id', clienteId)
-            .single();
+            .eq('cliente_id', clienteId);
 
 
 
