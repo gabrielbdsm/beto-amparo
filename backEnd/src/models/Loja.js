@@ -62,7 +62,7 @@ export async function buscarLojaPorId(id) {
     try {
         const { data, error } = await supabase
             .from('loja')
-            .select('id,id_empresa, slug_loja, nome_fantasia') 
+            .select('id,id_empresa, slug_loja, nome_fantasia, is_closed_for_orders') 
             .eq('id', id)
             .single();
 
@@ -116,26 +116,33 @@ export async function buscarLojaPorSlugCompleta(slug) {
     try {
         const { data, error } = await supabase
             .from('loja')
-            .select('id, nome_fantasia, slug_loja, id_empresa, foto_loja, cor_primaria, cor_secundaria, slogan, banner, ativarFidelidade, valorPonto') // Certifique-se de que todas essas colunas existem
+            .select('id, nome_fantasia, slug_loja, id_empresa, foto_loja, cor_primaria, cor_secundaria, slogan, banner, ativarFidelidade, valorPonto, is_closed_for_orders')
             .eq('slug_loja', slug)
-            .single(); // <-- O PROBLEMA ESTÁ NO COMPORTAMENTO DE .SINGLE()
+            .single();
 
         if (error) {
-            // Se o erro é porque não encontrou (PGRST116), retorne data: null, error: custom
-            if (error.code === 'PGRST116' && error.message.includes('0 rows')) {
+            if (error.code === 'PGRST116') {
                 console.warn('DEBUG: LojaModel: Nenhuma loja encontrada para o slug:', slug);
-                return { data: null, error: { message: 'Loja não encontrada para o slug fornecido.', code: 'NOT_FOUND' } };
+                return { data: null, error: null };
             }
-            // Outro tipo de erro do Supabase
             console.error('DEBUG: LojaModel: Erro do Supabase na busca por slug completo:', error.message, 'Código:', error.code, 'Detalhes:', error.details);
-            return { data: null, error };
+            return { data: null, error: { message: error.message, code: error.code } };
         }
-        if (!data) { // Caso o Supabase não retorne erro, mas data seja nula (embora .single() previna isso)
-            console.warn('DEBUG: LojaModel: Dados da loja nulos para o slug:', slug);
-            return { data: null, error: { message: 'Loja não encontrada (dados nulos).', code: 'NOT_FOUND' } };
+
+        if (!data) {
+            return { data: null, error: null };
         }
-        console.log('DEBUG: LojaModel: DADOS RECEBIDOS DO SUPABASE para slug completo:', data);
-        return { data, error: null };
+
+        // --- VOCÊ PRECISA ADICIONAR ESTE BLOCO AQUI ---
+        // Cria um novo objeto com os dados existentes e adiciona o campo 'aberta'
+        const formattedData = {
+            ...data,
+            aberta: !data.is_closed_for_orders // 'aberta' é o inverso de 'is_closed_for_orders'
+        };
+        // -------------------------------------------------
+
+        console.log('DEBUG: LojaModel: DADOS RECEBIDOS DO SUPABASE para slug completo:', formattedData);
+        return { data: formattedData, error: null }; // Retorne o 'formattedData' com o novo campo
     } catch (err) {
         console.error('DEBUG: LojaModel: ERRO INESPERADO na busca por slug completo:', err.message, err.stack);
         return { data: null, error: { message: `Erro inesperado: ${err.message}`, code: 'UNEXPECTED_ERROR' } };
@@ -176,6 +183,28 @@ export const getLojaByIdEmpresa = async (id_empresa) => {
         return { data, error: null };
     } catch (err) {
         console.error('LojaModel: Erro inesperado :', err.message);
+        return { data: null, error: err.message };
+    }
+}
+export async function toggleLojaStatus(slug, isClosed) {
+    try {
+        const { data, error } = await supabase
+            .from('loja')
+            .update({ is_closed_for_orders: isClosed })
+            .eq('slug_loja', slug)
+            .select('is_closed_for_orders, slug_loja') // Retorna o novo status e slug
+            .single(); // Espera um único registro
+
+        if (error) {
+            console.error('LojaModel: Erro no Supabase ao alternar status da loja:', error.message);
+            return { data: null, error: error.message };
+        }
+        if (!data) {
+            return { data: null, error: 'Loja não encontrada para o slug fornecido.' };
+        }
+        return { data, error: null };
+    } catch (err) {
+        console.error('LojaModel: Erro inesperado em toggleLojaStatus:', err.message);
         return { data: null, error: err.message };
     }
 }

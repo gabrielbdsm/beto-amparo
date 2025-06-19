@@ -14,8 +14,7 @@ export const loginEmpresa = async (req, res) => {
         return res.status(400).json({ error: "Email e senha são obrigatórios" });
     }
 
-    try { // <-- Este é o bloco try principal da função
-
+    try {
         const { error: loginError, data: empresaData } = await empresas.LoginEmpresa(email, senha);
     
 
@@ -25,13 +24,18 @@ export const loginEmpresa = async (req, res) => {
 
         let slugDaLoja = null;
         let nomeFantasiaLoja = null;
-        const { data: lojaInfo, error: lojaError } = await lojaModel.buscarIdLoja(empresaData.id);
+
+        const { data: lojasInfo, error: lojaError } = await lojaModel.buscarLojasPorEmpresaId(empresaData.id);
 
         if (lojaError) {
-            console.warn(`Aviso: Não foi possível encontrar a loja para a empresa ID ${empresaData.id}. Erro: ${lojaError}`);
-        } else if (lojaInfo) {
-            slugDaLoja = lojaInfo.slug_loja;
-            nomeFantasiaLoja = lojaInfo.nome_fantasia;
+            console.error(`Erro ao buscar loja(s) para a empresa ID ${empresaData.id}. Erro:`, lojaError); // Log melhorado
+            // Continuar o fluxo, mas sem slug da loja.
+        } else if (lojasInfo && lojasInfo.length > 0) {
+            // Se encontrou UMA OU MAIS lojas, pegue o slug da primeira encontrada.
+            slugDaLoja = lojasInfo[0].slug_loja;
+            nomeFantasiaLoja = lojasInfo[0].nome_fantasia;
+        } else {
+            console.warn(`Aviso: Nenhuma loja encontrada para a empresa ID ${empresaData.id}.`);
         }
 
         const token = jwt.sign({
@@ -43,15 +47,14 @@ export const loginEmpresa = async (req, res) => {
         });
 
         res.cookie("token_empresa", token, {
-            httpOnly: false, // Alterei para false porque o frontend está lendo o cookie
-            secure:  process.env.NODE_ENV === 'production', //tava true, precisei mudar pra direcionamento (desativar https p localhost) -> neci
-            sameSite:  'Lax', //tava none, precisei mudar tb -> neci
+            httpOnly: false, // Pode ser 'true' se o frontend não precisar ler
+            secure: process.env.NODE_ENV === 'production' ? true : false,
+            sameSite: process.env.NODE_ENV === 'production' ? "none" : "Lax",
             maxAge: 24 * 60 * 60 * 1000,
             path: "/",
             domain: process.env.COOKIE_DOMAIN || 'localhost'
         });
 
-        // **NOVO LOG AQUI: VERIFIQUE O COOKIE ANTES DE ENVIAR A RESPOSTA**
         console.log("Backend AuthController: Cookie 'token_empresa' setado com:", {
             tokenValue: token,
             secure: process.env.NODE_ENV === 'production' ? true : false,
@@ -59,7 +62,7 @@ export const loginEmpresa = async (req, res) => {
             path: "/",
             maxAge: 24 * 60 * 60 * 1000,
         });
-        console.log("Backend AuthController: Headers da resposta SET-COOKIE:", res.getHeaders()['set-cookie']); // Verifique o cabeçalho Set-Cookie
+        console.log("Backend AuthController: Headers da resposta SET-COOKIE:", res.getHeaders()['set-cookie']);
 
         res.status(200).json({
             mensagem: "Login realizado com sucesso",
@@ -69,11 +72,11 @@ export const loginEmpresa = async (req, res) => {
             nomeEmpresa: empresaData.nome,
         });
 
-    } catch (error) { // <-- Este é o catch correspondente ao try principal
+    } catch (error) {
         console.error("Erro inesperado no loginEmpresa:", error);
         res.status(500).json({ error: "Erro ao fazer login: " + error.message });
     }
-}; // <-- CHAVE DE FECHAMENTO CORRETA DA FUNÇÃO loginEmpresa
+};
 
 export const criarEmpresa = async (req, res) => {
     try {
@@ -89,7 +92,8 @@ export const criarEmpresa = async (req, res) => {
 
         const senhaHash = await bcrypt.hash(senha, 10);
 
-        const { error } = await inserirEmpresa({
+        // --- ALTERAÇÃO AQUI: Capture a resposta da inserção ---
+        const { data: novaEmpresa, error: insertError } = await inserirEmpresa({ // Mude 'error' para 'insertError' para evitar conflito
             nome,
             cnpj,
             responsavel,
@@ -103,16 +107,32 @@ export const criarEmpresa = async (req, res) => {
             senha: senhaHash
         });
 
-        if (error) {
-            return res.status(500).json({ mensagem: error });
+        if (insertError) { // Use 'insertError'
+            console.error("Erro ao inserir empresa no banco de dados:", insertError); // Adicione mais detalhes ao log
+            return res.status(500).json({ mensagem: insertError }); // `insertError` aqui provavelmente é um objeto de erro do Supabase
         }
 
-        return res.status(201).json({ mensagem: 'Empresa cadastrada com sucesso!' });
+        // Assumindo que `inserirEmpresa` com `.select()` retorna um array, e o objeto criado está em [0]
+        const idNovaEmpresa = novaEmpresa && novaEmpresa.length > 0 ? novaEmpresa[0].id : null;
+
+        if (!idNovaEmpresa) {
+            console.error("ID da nova empresa não encontrado após a inserção.");
+            return res.status(500).json({ mensagem: 'Empresa cadastrada, mas o ID não foi retornado.' });
+        }
+
+        // --- ALTERAÇÃO AQUI: Inclua o ID da empresa na resposta ---
+        return res.status(201).json({
+            id: idNovaEmpresa, // <--- RETORNANDO O ID!
+            mensagem: 'Empresa cadastrada com sucesso!'
+        });
+        // --- FIM DA ALTERAÇÃO ---
+
     } catch (error) {
-        console.error("Erro inesperado em criarEmpresa:", error);
+        console.error("Erro inesperado em criarEmpresa (catch):", error); // Adicione mais detalhes ao log
         return res.status(500).json({ mensagem: error.message || 'Erro ao criar empresa.' });
     }
 };
+   
 
 
 export const logout = (req, res) => {
