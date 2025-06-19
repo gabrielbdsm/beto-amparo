@@ -17,47 +17,43 @@ export default function ListaLojasEmpresa() {
 
         async function fetchLojas() {
             try {
-                // 1. Primeiro valida se o usuário tem acesso
+                console.log('🔴 [DEBUG] Validando acesso para:', nomeEmpresa);
+
+                // 1. Validação simplificada
                 const validation = await fetch(
-                    `${process.env.NEXT_PUBLIC_EMPRESA_API}/empresa/${nomeEmpresa}/validate`,
-                    { credentials: 'include' }
+                    `${process.env.NEXT_PUBLIC_EMPRESA_API}/empresa/validate`,
+                    {
+                        credentials: 'include',
+                        headers: { 'Content-Type': 'application/json' }
+                    }
                 );
+
+                // 2. Tratamento explícito de erros
+                if (validation.status === 401 || validation.status === 403) {
+                    console.log('🔴 Redirecionando para login');
+                    window.location.href = `/empresa/LoginEmpresa?returnTo=/${nomeEmpresa}/lojas`;
+                    return;
+                }
 
                 if (!validation.ok) {
-                    router.push(`/empresa/LoginEmpresa?returnTo=/${nomeEmpresa}/lojas`);
-                    return;
+                    throw new Error('Falha na validação');
                 }
 
-                const { empresa_slug } = await validation.json();
-
-                // 2. Verifica se a empresa do token bate com a URL
-                if (empresa_slug !== nomeEmpresa) {
-                    setError('Você não tem permissão para acessar estas lojas');
-                    setLoading(false);
-                    return;
-                }
-
-                // 3. Busca as lojas (seu código existente)
+                // 3. Busca as lojas
                 const res = await fetch(
-                    `${process.env.NEXT_PUBLIC_EMPRESA_API}/empresa/${nomeEmpresa}/lojas`,
+                    `${process.env.NEXT_PUBLIC_EMPRESA_API}/${nomeEmpresa}/lojas`,
                     { credentials: 'include' }
                 );
 
-                //const res = await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/empresa/${nomeEmpresa}/lojas`, {
-                  //  credentials: 'include',
-                //});
-
-                if (!res.ok) {
-                    throw new Error('Erro ao buscar as lojas');
-                }
+                if (!res.ok) throw new Error('Erro ao buscar lojas');
 
                 const data = await res.json();
-                setEmpresa(data.empresa);
                 setLojas(data.lojas || []);
+                setEmpresa(data.empresa);
+
             } catch (err) {
-                //console.error(err);
-                //setError('Falha ao carregar as lojas');
-                 router.push(`/empresa/LoginEmpresa?returnTo=/${nomeEmpresa}/lojas`);
+                console.error('🔴 Erro:', err);
+                window.location.href = `/empresa/LoginEmpresa?returnTo=/${nomeEmpresa}/lojas`;
             } finally {
                 setLoading(false);
             }

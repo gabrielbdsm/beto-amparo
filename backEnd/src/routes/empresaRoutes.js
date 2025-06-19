@@ -1,24 +1,15 @@
 // backend/routes/empresaRoutes.js
 import express from 'express';
-import * as AuthController from '../controllers/Empresa/AuthController.js'; // <-- CORRIGIDO AQUI!
+import * as AuthController from '../controllers/Empresa/AuthController.js';
 import * as EmpresaModel from '../models/EmpresaModel.js';
 import { routePrivate } from '../middleware/protectRoutes.js';
 import * as EmpresaController from '../controllers/Empresa/EmpresaController.js';
 
-//conflito e essa é a versão atual
-/*
-import { atualizarPersonalizacao, criarPersonalizacao, getLojaBySlug, verificarSlug } from '../controllers/Empresa/personalizacaoController.js';
-import * as HorariosController from '../controllers/Empresa/horariosCotroller.js';
-*/
-//essa é a outra, e n vou me arriscar tirar daq
-
 import { atualizarPersonalizacao, criarPersonalizacao, getLojaBySlug, verificarSlug  } from '../controllers/Empresa/personalizacaoController.js';
 import * as HorariosController from '../controllers/Empresa/horariosCotroller.js'; 
-import * as agendamentoEmpresaController from '../controllers/Empresa/AgendamentoEmpresaController.js'; // <-- CORRIGIDO AQUI!
+import * as agendamentoEmpresaController from '../controllers/Empresa/AgendamentoEmpresaController.js';
 
-import { empresaPrivate } from '../middleware/protectRouterEmpresa.js'; // <-- CORRIGIDO AQUI!
-
-//import { empresaPrivate } from './protectRoutesEmpresa'; //tentando autenticar pag de loja
+import { empresaPrivate } from '../middleware/protectRouterEmpresa.js';
 
 const router = express.Router();
 
@@ -56,13 +47,23 @@ router.get('/verifyAuthStatus', routePrivate, (req, res) => {
 
 //autenticacao de loja
 router.get('/:empresaSlug/validate', empresaPrivate, (req, res) => {
+  console.log('VALIDAÇÃO DE EMPRESA');
+  console.log('Slug da URL (req.params.empresaSlug):', req.params.empresaSlug);
+  console.log('Empresa autenticada pelo token:', {
+    id: req.IdEmpresa,
+    nome: req.user.nome,
+    site: req.user.site,
+    slug: req.user.slug
+  });
+
   res.status(200).json({
     authenticated: true,
-    empresa_slug: req.user.slug,
+    empresa_slug: req.user.site || req.user.nome, // ou .slug se você estiver usando slug agora
     empresa_id: req.IdEmpresa,
     nome_empresa: req.user.nome
   });
 });
+
 router.put('/marcar-personalizacao-completa', routePrivate, EmpresaController.marcarPersonalizacaoCompleta);
 
 router.get('/empresa/dashboard/nome/:slug', async (req, res) => {
