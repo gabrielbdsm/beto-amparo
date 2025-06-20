@@ -3,7 +3,7 @@ import { listarPedidosPorEmpresa, criarPedido, getPedidoPorId, adicionarItemPedi
 
 const router = express.Router();
 
-router.put('/loja/:slug/pedidos/finalizar', finalizarPedido);
+router.put('/loja/:slug/pedidos/:idPedido/finalizar', finalizarPedido);
 router.get('/loja/:slug/pedidos', listarPedidosPorEmpresa);
 router.get('/loja/:slug/pedidos/:pedidoId', getPedidoPorId);
 

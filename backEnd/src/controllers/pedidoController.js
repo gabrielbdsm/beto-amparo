@@ -283,10 +283,8 @@ export async function criarPedido(req, res) {
         return res.status(400).json({ erro: 'Campos obrigatórios ausentes' });
       }
   
-      // --- PONTO DE ATUALIZAÇÃO 1: Verificar o status "Fechado para Pedidos" ---
-      // Corrija a chamada da função para usar 'lojaModel.buscarLojaPorId'
-      const { data: loja, error: lojaError } = await lojaModel.buscarLojaPorId(id_loja); // <--- CORREÇÃO AQUI
-      
+      const { data: loja, error: lojaError } = await lojaModel.buscarLojaPorId(id_loja);
+ 
       if (lojaError) {
         console.error('Erro ao buscar status da loja:', lojaError);
         return res.status(500).json({ erro: 'Erro interno ao verificar status da loja.' });
@@ -410,7 +408,7 @@ export async function obterPedidoPorId(req, res) {
 
 export async function finalizarPedido(req, res) {
   const { slug } = req.params;
-  const { metodoPagamento, enderecoEntrega, cupom, clienteId, itens } = req.body;
+  const { metodoPagamento, enderecoEntrega, clienteId, itens } = req.body;
   console.log("BODY recebido em finalizarPedido:", req.body);
   console.log("slug:", slug);
 
@@ -430,7 +428,7 @@ export async function finalizarPedido(req, res) {
   }
 
   const pedidoId = itens?.[0]?.pedido_id;
-  // No início da função, valide se pedidoId existe
+
   if (!pedidoId) {
     return res.status(400).json({
       erro: 'ID do pedido não fornecido',
@@ -458,8 +456,6 @@ export async function finalizarPedido(req, res) {
       });
     }
 
-    const pedidoId = itens?.[0]?.pedido_id;
-
     if (!pedidoId) {
       return res.status(400).json({
         erro: 'pedido_id não encontrado nos itens',
@@ -474,8 +470,7 @@ export async function finalizarPedido(req, res) {
       .eq('id', pedidoId)
       .eq('id_cliente', clienteId)
       .eq('id_loja', loja.id)
-      //.eq('status', 'aberto')
-      .eq('status_finalizarPedido', 'aberto')
+      .eq('status', 0)
       .single();
 
     if (pedidoError || !pedido) {
@@ -490,8 +485,7 @@ export async function finalizarPedido(req, res) {
       });
     }
 
-    // Adicione esta verificação ANTES de processar:
-    if (pedido.status === 'finalizado') {
+    if (pedido.status === 4) {
       return res.status(400).json({
         erro: 'Pedido já finalizado',
         detalhes: {
@@ -505,14 +499,13 @@ export async function finalizarPedido(req, res) {
     // Buscar os itens do pedido
     const { data: pedido_itens, error: itensError } = await supabase
       .from('pedido_itens')
-      .select(`*, produto:produto_id ( nome, preco, quantidade )`)  // traz info do produto relacionado
+      .select(`*, produto:produto_id ( nome, preco, quantidade )`)  
       .eq('pedido_id', pedidoId);
 
     if (itensError) {
       return res.status(500).json({ erro: 'Erro ao buscar itens do pedido' });
     }
 
-    // Agora, insira os itens dentro do objeto pedido para usar depois
     pedido.pedido_itens = pedido_itens || [];
 
     if (pedidoError) {
@@ -530,13 +523,11 @@ export async function finalizarPedido(req, res) {
           pedidoId,
           clienteId,
           lojaId: loja.id,
-          statusEsperado: 'aberto'
+          statusEsperado: 0
         }
       });
     }
 
-
-    // 3. Validação de quantidade e cálculo de totais
     let itensInvalidos = [];
     let subtotal = 0;
 
@@ -559,82 +550,41 @@ export async function finalizarPedido(req, res) {
         sugestao: '/carrinho'
       });
     }
+    const desconto = 0;
+    const totalFinal = subtotal - desconto;
 
-    // 4. Aplicação de cupom
-    let desconto = 0;
-    if (cupom) {
-      const { data: cupomValido, error: cupomError } = await supabase
-        .from('cupons')
-        .select('valor_desconto, tipo, valido_ate')
-        .eq('codigo', cupom)
-        .eq('id_loja', loja.id)
-        .eq('ativo', true)
-        .single();
-
-      if (!cupomError && cupomValido) {
-        // Verifica se o cupom está dentro da validade
-        const hoje = new Date();
-        const validoAte = new Date(cupomValido.valido_ate);
-
-        if (hoje <= validoAte) {
-          desconto = cupomValido.tipo === 'porcentagem'
-            ? subtotal * (cupomValido.valor_desconto / 100)
-            : cupomValido.valor_desconto;
-        }
-      }
-    }
-
-    // 5. Cálculo do total final
-    const totalFinal = subtotal - desconto + (pedido.taxa_entrega || 0);
-
-    // 6. Transação para atualizar pedido e quantidade
-    const { data, error: transacaoError } = await supabase.rpc('finalizar_pedido', {
-      v_pedido_id: pedido.id,
-      v_metodo_pagamento: metodoPagamento,
-      v_endereco_entrega: enderecoEntrega,
-      v_cliente_id: clienteId,
-      v_total_pago: totalFinal,
-      v_desconto_aplicado: desconto
-    });
-
-
-
-    // Verifique se o status foi realmente atualizado
-    const { data: pedidoVerificado, error: verifError } = await supabase
+    const { data: pedidoAtualizado, error: updateError } = await supabase
       .from('pedidos')
-      .select('status')
+      .update({
+        status: 4,
+        metodo_pagamento: metodoPagamento,
+        endereco_entrega: enderecoEntrega,
+        desconto: desconto,
+        total: totalFinal,
+        data_finalizacao: new Date()
+      })
       .eq('id', pedido.id)
+      .eq('id_cliente', clienteId)
+      .select()
       .single();
 
-    if (verifError || pedidoVerificado.status !== 'finalizado') {
-      console.error("Resposta do Supabase RPC:", data);
-      console.error("Erro retornado pelo Supabase:", transacaoError);
-      throw new Error('Falha ao atualizar status do pedido');
+    if (updateError) {
+      console.error('Erro ao atualizar pedido:', updateError);
+      return res.status(500).json({ erro: 'Erro ao atualizar pedido' });
     }
 
-    const pedidoFinalizado = Array.isArray(data) ? data[0] : data;
-
-    if (transacaoError) {
-      console.error("Erro ao finalizar pedido via RPC:", transacaoError);
-      throw new Error(`Falha na transação: ${transacaoError.message}`);
-    }
-
-
-    // 7. Retornar resposta com dados completos
     res.status(200).json({
       sucesso: true,
       pedido: {
-        ...pedidoFinalizado,
-        itens: pedido.pedido_itens // <-- Aqui está a adição necessária
+        ...pedidoAtualizado,
+        itens: pedido.pedido_itens 
       },
       resumo: {
         subtotal,
         desconto,
-        taxa_entrega: pedido.taxa_entrega || 0,
         total: totalFinal
       },
-      mensagem: 'Pedido finalizado com sucesso',
-      proximos_passos: '/acompanhar-pedido'
+      mensagem: 'Pedido finalizado com sucesso'
     });
 
   } catch (error) {

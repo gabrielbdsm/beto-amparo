@@ -181,19 +181,20 @@ export default function Pedidos() {
                                 <p><strong>Status:</strong> {traduzirStatus(pedido.status)}</p>
                                 <p><strong>Observações:</strong> {pedido.observacoes || 'Nenhuma'}</p>
 
-                                {(['0', '1', '2'].includes(String(pedido.status))) && (
+                                <div className="flex justify-center gap-2"> 
+                                   <button 
+                                        onClick={() => abrirModalDetalhes(pedido)}
+                                        className="px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 border"
+                                        style={{
+                                            backgroundColor: corPrimaria,
+                                            color: getContrastColor(corPrimaria),
+                                            borderColor: corPrimaria
+                                        }}
+                                    >
+                                                Detalhes do pedido
+                                    </button> 
+                                    {(['0'].includes(String(pedido.status))) && (
                                     <div className="mt-4 flex justify-center gap-2">
-                                        <button
-                                            onClick={() => abrirModalDetalhes(pedido)}
-                                            className="px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 border"
-                                            style={{
-                                                backgroundColor: corPrimaria,
-                                                color: getContrastColor(corPrimaria),
-                                                borderColor: corPrimaria
-                                            }}
-                                        >
-                                            Detalhes do pedido
-                                        </button>
                                         <button
                                             onClick={() => abrirModalCancelamento(pedido)}
                                             className="px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 border"
@@ -218,6 +219,9 @@ export default function Pedidos() {
                                         </button>
                                     </div>
                                 )}
+                                </div>
+                                
+                               
                             </div>
                         ))}
                     </div>

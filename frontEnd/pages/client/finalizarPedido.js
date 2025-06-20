@@ -30,10 +30,9 @@ export default function FinalizarPedido() {
     const [corPrimaria, setCorPrimaria] = useState("#3B82F6");
     const [loading, setLoading] = useState(true);
     const [activeSection, setActiveSection] = useState(null);
-    const [metodoEntrega, setMetodoEntrega] = useState("retirada");
     const [metodoPagamento, setMetodoPagamento] = useState("pix");
     const [aceiteTermos, setAceiteTermos] = useState(false);
-    const [frete, setFrete] = useState(0);
+    const [desconto, setDesconto] = useState(0);
     const [pedidoFinalizado, setPedidoFinalizado] = useState(false);
     const [pedidoInfo, setPedidoInfo] = useState(null);
     const [dadosCliente, setDadosCliente] = useState({
@@ -64,8 +63,6 @@ export default function FinalizarPedido() {
         destinatario: ''
     });
     const [enderecoEditado, setEnderecoEditado] = useState(false);
-    const [cartoes, setCartoes] = useState([]);
-    const [cliente, setCliente] = useState(null);
 
     const router = useRouter();
     const { slug, pedidoId, clienteId  } = router.query;
@@ -130,44 +127,59 @@ export default function FinalizarPedido() {
     };
 
     const handleSalvarEndereco = async () => {
-        if (!validarEndereco()) {
-            alert("Preencha todos os campos obrigatórios do endereço!");
+    if (!validarEndereco()) {
+        alert("Preencha todos os campos obrigatórios do endereço!");
+        return;
+    }
+
+    try {
+        if (!clienteId) {
+            alert("Erro: ID do cliente não encontrado.");
+            router.push(`/login?redirect=${encodeURIComponent(router.asPath)}`);
             return;
         }
 
-        try {
-            if (!clienteId) {
-                alert("Erro: ID do cliente não encontrado. Por favor, faça login novamente.");
-                router.push(`/login?redirect=${encodeURIComponent(router.asPath)}`);
-                return;
-            }
-
+        if (enderecoEditado) {
+            await atualizarEnderecoCliente(enderecoEditado);
+        } else {
             await salvarEnderecoCliente(clienteId);
-            setMostrarFormulario(false);
-            setEnderecoEditado(true);
-            alert("Endereço salvo com sucesso!");
-
-            const enderecoResponse = await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/clientes/${clienteId}/endereco`, {
-                credentials: 'include'
-            });
-            if (enderecoResponse.ok) {
-            const enderecoData = await enderecoResponse.json();
-            console.log('Endereços recebidos:', enderecoData);
-
-            if (enderecoData && enderecoData.length > 0) {
-                    setEnderecos(enderecoData);
-                    setEnderecoEntrega(enderecoData[0]);
-                } else {
-                    setEnderecos([]);
-                    setEnderecoEntrega({ /* vazio */ });
-                    setMostrarFormulario(true);
-                }
-            }
-        } catch (error) {
-            console.error("Erro ao salvar endereço:", error);
-            alert("Erro ao salvar endereço: " + error.message);
         }
+
+        setMostrarFormulario(false);
+        setEnderecoEditado(false);
+        setNovoEndereco({
+            destinatario: '',
+            cep: '',
+            rua: '',
+            numero: '',
+            bairro: '',
+            cidade: '',
+            estado: '',
+            complemento: ''
+        });
+
+        alert("Endereço salvo com sucesso!");
+
+        const enderecoResponse = await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/clientes/${clienteId}/endereco`, {
+            credentials: 'include'
+        });
+        if (enderecoResponse.ok) {
+            const enderecoData = await enderecoResponse.json();
+            if (enderecoData && enderecoData.length > 0) {
+                setEnderecos(enderecoData);
+                setEnderecoEntrega(enderecoData[0]);
+            } else {
+                setEnderecos([]);
+                setEnderecoEntrega({});
+                setMostrarFormulario(true);
+            }
+        }
+    } catch (error) {
+        console.error("Erro ao salvar endereço:", error);
+        alert("Erro ao salvar endereço: " + error.message);
+    }
     };
+
 
     useEffect(() => {
         const fetchData = async () => {
@@ -186,6 +198,9 @@ export default function FinalizarPedido() {
                 const pedidoData = await pedidoResponse.json();
                 if (pedidoData && pedidoData.itens) {
                     setItensCarrinho(pedidoData.itens);
+                }                            
+                if (pedidoData.desconto) {
+                    setDesconto(pedidoData.desconto);
                 }
 
 
@@ -196,7 +211,6 @@ export default function FinalizarPedido() {
 
                 if (meResponse.ok) {
                     const meData = await meResponse.json();
-                    setCliente(meData.cliente);
                     setDadosCliente({
                         nome: meData.cliente.nome,
                         email: meData.cliente.email,
@@ -234,32 +248,106 @@ export default function FinalizarPedido() {
         fetchData();
     }, [slug, pedidoId, router, enderecoEditado]); // Adicionado router e enderecoEditado
 
-
-    const subtotal = itensCarrinho.reduce((acc, item) => acc + (item.produto.preco * item.quantidade), 0);
-    const total = subtotal;
-
-    const handleRemoverItem = async (id) => {
+    const atualizarEnderecoCliente = async (enderecoId) => {
         try {
-            await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/carrinho/${id}`, {
-                method: 'DELETE'
+            const response = await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/clientes/${clienteId}/endereco/${enderecoId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'include',
+                body: JSON.stringify({
+                    ...novoEndereco,
+                    destinatario: novoEndereco.destinatario || dadosCliente.nome || "Cliente"
+                })
             });
-            setItensCarrinho(itensCarrinho.filter(item => item.id !== id));
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || "Erro ao atualizar endereço");
+            }
+
+            return await response.json();
         } catch (error) {
-            console.error("Erro ao remover item:", error);
-            alert("Erro ao remover item do carrinho.");
+            console.error("Erro ao atualizar endereço:", error);
+            throw error;
         }
     };
+
+    const handleEditarEndereco = (endereco) => {
+        setNovoEndereco({
+            destinatario: endereco.destinatario || '',
+            cep: endereco.cep || '',
+            rua: endereco.rua || '',
+            numero: endereco.numero || '',
+            bairro: endereco.bairro || '',
+            cidade: endereco.cidade || '',
+            estado: endereco.estado || '',
+            complemento: endereco.complemento || ''
+        });
+        setEnderecoEditado(endereco.id); // Aqui guarda o id do endereço que será atualizado
+        setMostrarFormulario(true);
+    };
+
+    const deletarEnderecoCliente = async (enderecoId) => {
+        try {
+            const confirm = window.confirm("Tem certeza que deseja deletar este endereço?");
+            if (!confirm) return;
+
+            const response = await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/clientes/${clienteId}/endereco/${enderecoId}`, {
+                method: 'DELETE',
+                credentials: 'include'
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || "Erro ao deletar endereço");
+            }
+
+            alert("Endereço deletado com sucesso!");
+
+            // Atualiza a lista de endereços após deletar
+            const enderecoResponse = await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/clientes/${clienteId}/endereco`, {
+                credentials: 'include'
+            });
+            if (enderecoResponse.ok) {
+                const enderecoData = await enderecoResponse.json();
+                setEnderecos(enderecoData);
+                if (enderecoData.length > 0) {
+                    setEnderecoEntrega(enderecoData[0]);
+                } else {
+                    setEnderecoEntrega({});
+                    setMostrarFormulario(true);
+                }
+            }
+
+        } catch (error) {
+            console.error("Erro ao deletar endereço:", error);
+            alert("Erro ao deletar endereço: " + error.message);
+        }
+    };
+
+    const calcularSubtotal = () => {
+        return itensCarrinho.reduce((acc, item) => acc + (item.produto.preco * item.quantidade), 0);
+    };
+
+    const calcularTotal = () => {
+        const subtotal = calcularSubtotal();
+        let total = subtotal - desconto;
+        if (metodoPagamento === 'cartao_credito') {
+            total = total * 1.05; // acréscimo de 5%
+        }
+        return total;
+    };
+
+    const subtotal = calcularSubtotal();
+    const total = calcularTotal();
+    const acrescimoCartao = metodoPagamento === 'cartao_credito' ? (subtotal - desconto) * 0.05 : 0;
 
     const handleFinalizarPedido = async () => {
         if (!aceiteTermos) {
             alert("Você precisa aceitar os termos e condições!");
             return;
-        }
-        if (metodoEntrega !== "retirada") {
-            if (!enderecoEntrega.rua || !enderecoEntrega.numero || !enderecoEntrega.bairro || !enderecoEntrega.cep || !enderecoEntrega.cidade || !enderecoEntrega.estado) {
-                alert("Por favor, selecione ou adicione um endereço de entrega completo.");
-                return;
-            }
         }
 
         setLoading(true);
@@ -267,8 +355,7 @@ export default function FinalizarPedido() {
         try {
             const payload = {
                 metodoPagamento,
-                metodoEntrega,
-                enderecoEntrega: metodoEntrega === "retirada" ? null : {
+                enderecoEntrega: {
                     destinatario: enderecoEntrega.destinatario || dadosCliente.nome || "Cliente",
                     cep: enderecoEntrega.cep,
                     rua: enderecoEntrega.rua,
@@ -278,9 +365,8 @@ export default function FinalizarPedido() {
                     cidade: enderecoEntrega.cidade,
                     estado: enderecoEntrega.estado,
                 },
-                clienteId: clienteId, // Usa o ID do cliente logado
+                clienteId: clienteId, 
                 itens: itensCarrinho,
-                frete: frete,
                 total: total
             };
 
@@ -296,8 +382,15 @@ export default function FinalizarPedido() {
                     body: JSON.stringify(payload)
                 }
             );
+            const data = await response.json();
 
-            // ... (restante da lógica de resposta e tratamento de erro de handleFinalizarPedido permanece o mesmo) ...
+            if (response.ok) {
+                alert("Pedido finalizado com sucesso!");
+                router.push(`/loja/${slug}/pedidos`);
+            } else {
+                console.error("Erro na resposta:", data);
+                alert(data.erro || "Erro ao finalizar pedido.");
+            }
         } catch (error) {
             console.error("Erro ao finalizar pedido:", error);
             alert(error.message.includes('Estoque insuficiente')
@@ -310,14 +403,6 @@ export default function FinalizarPedido() {
             }
         } finally {
             setLoading(false);
-        }
-    };
-
-    const handleVerComprovante = () => {
-        if (pedidoInfo && pedidoInfo.id) {
-            router.push(`/comprovante/${pedidoInfo.id}`);
-        } else {
-            alert("Nenhuma informação de pedido para mostrar o comprovante.");
         }
     };
 
@@ -349,12 +434,6 @@ export default function FinalizarPedido() {
                     <p className="font-bold text-xl mb-6">Total: R$ {pedidoInfo.total.toFixed(2)}</p>
 
                     <div className="flex flex-col space-y-4">
-                        <button
-                            onClick={handleVerComprovante}
-                            className="bg-blue-600 text-white py-3 px-6 rounded-lg text-lg font-semibold hover:bg-blue-700 transition-colors"
-                        >
-                            Ver Comprovante
-                        </button>
                         <button
                             onClick={handleVoltar}
                             className="bg-gray-200 text-gray-800 py-3 px-6 rounded-lg text-lg font-semibold hover:bg-gray-300 transition-colors"
@@ -417,18 +496,6 @@ export default function FinalizarPedido() {
                                                     ))}
                                                 </div>
                                             )}
-
-                                            <div className="flex mt-2 space-x-4">
-                                                <button className="flex items-center text-sm text-blue-600">
-                                                    <FiEdit className="mr-1" /> Editar
-                                                </button>
-                                                <button
-                                                    className="flex items-center text-sm text-red-600"
-                                                    onClick={() => handleRemoverItem(item.id)}
-                                                >
-                                                    <FiTrash2 className="mr-1" /> Remover
-                                                </button>
-                                            </div>
                                         </div>
                                     </div>
                                 ))
@@ -461,9 +528,25 @@ export default function FinalizarPedido() {
                                     enderecos.map(endereco => (
                                         <div key={endereco.id} className={`border rounded-lg p-4 ${endereco.id === enderecoEntrega.id ? "border-blue-500 bg-blue-50" : ""}`}>
                                             <div className="flex justify-between items-center">
-                                                <h3 className="font-medium">{endereco.destinatario || dadosCliente.nome} {endereco.id === enderecoEntrega.id && "(Selecionado)"}</h3>
-                                                {/* Botão de editar pode precisar de mais lógica para carregar o endereço no formulário */}
-                                                <button className="text-blue-600 text-sm">Editar</button>
+                                                <h3 className="font-medium">
+                                                    {endereco.destinatario || dadosCliente.nome} 
+                                                    {endereco.id === enderecoEntrega.id && " (Selecionado)"}
+                                                </h3>
+                                                
+                                                <div className="flex items-center gap-4">
+                                                    <button 
+                                                        onClick={() => handleEditarEndereco(endereco)}
+                                                        className="text-blue-600 text-sm"
+                                                    >
+                                                        Editar
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => deletarEnderecoCliente(endereco.id)}
+                                                        className="text-blue-600 text-sm"
+                                                    >
+                                                        Excluir
+                                                    </button>
+                                                </div>
                                             </div>
 
                                             <p className="mt-2">{endereco.rua}, {endereco.numero} {endereco.complemento && `- ${endereco.complemento}`}</p>
@@ -485,7 +568,20 @@ export default function FinalizarPedido() {
                                 {!mostrarFormulario && (
                                     <button
                                         className="w-full py-2 border-2 border-dashed rounded-lg text-gray-500 hover:border-blue-500 hover:text-blue-500"
-                                        onClick={() => setMostrarFormulario(true)}
+                                        onClick={() => {
+                                            setMostrarFormulario(true);
+                                            setEnderecoEditado(false); // 🔥 Resetar modo edição
+                                            setNovoEndereco({
+                                                destinatario: '',
+                                                cep: '',
+                                                rua: '',
+                                                numero: '',
+                                                bairro: '',
+                                                cidade: '',
+                                                estado: '',
+                                                complemento: ''
+                                            });
+                                        }}
                                     >
                                         + Adicionar novo endereço
                                     </button>
@@ -516,7 +612,7 @@ export default function FinalizarPedido() {
                     )}
                 </div>
 
-                {/* 4. Forma de Pagamento */}
+                {/* 3. Forma de Pagamento */}
                 <div className="bg-white rounded-lg shadow-sm mb-6 overflow-hidden">
                     <div
                         className="flex justify-between items-center p-4 cursor-pointer"
@@ -563,7 +659,7 @@ export default function FinalizarPedido() {
                                         name="metodoPagamento"
                                         value="cartao_credito"
                                         checked={metodoPagamento === "cartao_credito"}
-                                        onChange={() => setMetodoPagamento("cartao_creddito")}
+                                        onChange={() => setMetodoPagamento("cartao_credito")}
                                         className="mt-1 mr-3"
                                     />
                                     <div className="flex-1">
@@ -590,7 +686,6 @@ export default function FinalizarPedido() {
                     )}
                 </div>
 
-                {/* Resumo Final e Botão de Finalizar */}
                 <div className="bg-white rounded-lg shadow-sm p-4">
                     <h2 className="text-lg font-bold mb-4">Resumo da Compra</h2>
                     <div className="space-y-2">
@@ -598,10 +693,19 @@ export default function FinalizarPedido() {
                             <span>Subtotal:</span>
                             <span>R$ {subtotal.toFixed(2)}</span>
                         </div>
+
                         <div className="flex justify-between">
                             <span>Desconto:</span>
-                            <span>R$ {frete.toFixed(2)}</span>
+                            <span>- R$ {desconto.toFixed(2)}</span>
                         </div>
+
+                        {metodoPagamento === 'cartao_credito' && (
+                            <div className="flex justify-between text-red-600">
+                                <span>Acréscimo (5% Cartão Crédito):</span>
+                                <span>+ R$ {acrescimoCartao.toFixed(2)}</span>
+                            </div>
+                        )}
+
                         <div className="flex justify-between text-xl font-bold pt-2 border-t">
                             <span>Total:</span>
                             <span>R$ {total.toFixed(2)}</span>

@@ -15,7 +15,8 @@ export default function CarrinhoCliente({ empresaId }) {
     const [pontosParaUsar, setPontosParaUsar] = useState(0);
     const [descontoAplicado, setDescontoAplicado] = useState(0);
     const [ativarFidelidade, setAtivarFidelidade] = useState(false);
-    const [isLoading, setIsLoading] = useState(true); // Novo estado para carregamento
+    const [observacoes, setobservacoes] = useState("");
+    const [isLoading, setIsLoading] = useState(true); 
 
     const router = useRouter();
     const { slug } = router.query;
@@ -174,11 +175,11 @@ export default function CarrinhoCliente({ empresaId }) {
 
     const handleFinalizarCompra = useCallback(async () => {
         if (!lojaAberta) {
-            alert("A loja está fechada e não é possível finalizar a compra no momento.");
+            alert("A loja está fechada e não é possível realizar o pedidodno momento.");
             return;
         }
         if (itensCarrinho.length === 0) {
-            alert("Seu carrinho está vazio. Adicione itens antes de finalizar a compra.");
+            alert("Seu carrinho está vazio. Adicione itens antes de realizar o pedido.");
             return;
         }
         if (lojaId === null) {
@@ -186,7 +187,7 @@ export default function CarrinhoCliente({ empresaId }) {
             return;
         }
         if (!cliente?.id) { // Verifica se o cliente está logado e tem ID
-            alert("Você precisa estar logado para finalizar a compra.");
+            alert("Você precisa estar logado para realizar o pedido.");
             router.push(`/login?redirect=${encodeURIComponent(router.asPath)}`);
             return;
         }
@@ -206,10 +207,20 @@ export default function CarrinhoCliente({ empresaId }) {
                     data: dataPedido,
                     total: totalFinal,
                     desconto: descontoAplicado,
+                    observacoes: observacoes, 
                     status,
-                    observacoes: "", // Pode ser uma observação do cliente
                 }),
             });
+            console.log("Enviando pedido com dados:", {
+                id_cliente,
+                id_loja: lojaId,
+                data: dataPedido,
+                total: totalFinal,
+                desconto: descontoAplicado,
+                status,
+                observacoes
+            });
+
 
             const pedidoCriado = await pedidoResponse.json();
             if (!pedidoResponse.ok) {
@@ -283,15 +294,16 @@ export default function CarrinhoCliente({ empresaId }) {
                 }
             }
 
-            alert("Compra finalizada com sucesso!");
+            alert("Pedido realizado com sucesso!");
+           router.push(`/client/finalizarPedido?slug=${slug}&pedidoId=${pedidoId}&clienteId=${cliente.id}`);
+
             setItensCarrinho([]);
             setSubtotal(0);
             setDescontoAplicado(0);
             setPontosParaUsar(0);
-            router.push(`/loja/${slug}`);
         } catch (error) {
-            console.error("Erro ao finalizar compra:", error);
-            alert(`Ocorreu um erro ao finalizar a compra: ${error.message || "Tente novamente."}`);
+            console.error("Erro ao realizar o pedido:", error);
+            alert(`Ocorreu um erro ao realizar o pedido: ${error.message || "Tente novamente."}`);
         }
     }, [
         lojaAberta,
@@ -480,6 +492,21 @@ export default function CarrinhoCliente({ empresaId }) {
                                 </div>
                             ))}
 
+                            <div className="mt-4">
+                                <label htmlFor="observacoes" className="block text-sm font-medium text-gray-700 mb-1">
+                                    Observações para o pedido:
+                                </label>
+                                <textarea
+                                    id="observacoes"
+                                    value={observacoes}
+                                    onChange={(e) => setobservacoes(e.target.value)}
+                                    rows={3}
+                                    placeholder="Ex.: Sem cebola, adicionar picles..."
+                                    className="w-full p-3 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                />
+                            </div>
+
+
                             <div className="flex justify-between font-bold border-t pt-4 text-black text-lg">
                                 <span>Subtotal:</span>
                                 <span>R$ {subtotal.toFixed(2)}</span>
@@ -509,11 +536,11 @@ export default function CarrinhoCliente({ empresaId }) {
                                             : "pointer",
                                 }}
                             >
-                                Finalizar Compra
+                                Realizar Pedido
                             </button>
                             {!lojaAberta && (
                                 <p className="text-red-500 text-center mt-2">
-                                    A loja está fechada. Não é possível finalizar a compra.
+                                    A loja está fechada. Não é possível realizar o pedido.
                                 </p>
                             )}
                         </div>
