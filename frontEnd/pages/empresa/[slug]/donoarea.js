@@ -9,13 +9,13 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
+import { FaTrashAlt } from 'react-icons/fa';
+
 
 import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_KEY);
 
-// --- Definição dos passos do Tour para a Área do Dono e Sidebar ---
-// Renomeado para 'donoAreaTourSteps' para ser mais claro
 const donoAreaTourSteps = [
   {
     target: '.welcome-message',
@@ -110,6 +110,16 @@ export default function OwnerDono() {
     const [saving, setSaving] = useState(false);
     const [open, setOpen] = useState(false);
 
+    const [openCupons, setOpenCupons] = useState(false);
+    const [cupons, setCupons] = useState([]);
+    const [loadingCupons, setLoadingCupons] = useState(false);
+
+    const [openCadastrarCupom, setOpenCadastrarCupom] = useState(false);
+    const [nomeCupom, setNomeCupom] = useState('');
+    const [valorCupom, setValorCupom] = useState('');
+    const [salvandoCupom, setSalvandoCupom] = useState(false);
+
+
     const [runDonoAreaTour, setRunDonoAreaTour] = useState(false); // Novo estado para o tour da Área do Dono
 
     useEffect(() => {
@@ -184,6 +194,79 @@ export default function OwnerDono() {
         setSaving(false);
     }
 
+    async function buscarCupons() {
+        if (!donoData?.loja?.id) return;
+        setLoadingCupons(true);
+
+        const { data, error } = await supabase
+            .from('cupons')
+            .select('*')
+            .eq('id_loja', donoData.loja.id);
+
+        if (error) {
+            console.error('Erro ao buscar cupons:', error);
+            alert('Erro ao buscar cupons.');
+        } else {
+            setCupons(data);
+        }
+
+        setLoadingCupons(false);
+    }
+
+    async function salvarCupom() {
+        if (!donoData?.loja?.id) {
+            alert("Loja não encontrada.");
+            return;
+        }
+
+        if (!nomeCupom.trim() || !valorCupom) {
+            alert("Preencha todos os campos.");
+            return;
+        }
+
+        setSalvandoCupom(true);
+
+        const { error } = await supabase
+            .from('cupons')
+            .insert([{
+                nome: nomeCupom,
+                valor: parseFloat(valorCupom),
+                id_loja: donoData.loja.id
+            }]);
+
+        if (error) {
+            console.error(error);
+            alert("Erro ao salvar cupom.");
+        } else {
+            alert("Cupom salvo com sucesso!");
+            setNomeCupom('');
+            setValorCupom('');
+            setOpenCupons(false);
+        }
+
+        setSalvandoCupom(false);
+    }
+
+    async function excluirCupom(id) {
+        const confirmar = window.confirm('Tem certeza que deseja excluir este cupom?');
+
+        if (!confirmar) return;
+
+        const { error } = await supabase
+            .from('cupons')
+            .delete()
+            .eq('id', id);
+
+        if (error) {
+            console.error('Erro ao excluir cupom:', error);
+            alert('Erro ao excluir cupom.');
+        } else {
+            setCupons(cupons.filter(c => c.id !== id));
+            alert('Cupom excluído com sucesso.');
+        }
+    }
+
+
     if (loading) {
         return (
             <div className="flex justify-center items-center min-h-screen">
@@ -253,6 +336,7 @@ export default function OwnerDono() {
                     <ActionCard icon="/icons/paint_gray.svg" label="Personalizar Loja" path={`/empresa/${donoData.loja.slug_loja}/personalizacao`} className="personalize-store-action-card" />
                     <ActionCard icon="/icons/store_gray.svg" label="Ver Loja" path={`${window.location.origin}/loja/${donoData.loja.slug_loja}`} className="view-store-action-card" />
                     <ActionCard icon="/icons/pontos.svg" label="Configurar Fidelidade" onClick={() => setOpen(true)} className="loyalty-config-action-card" />
+                    <ActionCard icon="/icons/pontos.svg" label="Meus Cupons" onClick={() =>{setOpenCupons(true); buscarCupons();}} className="loyalty-config-action-card" />
                 </div>
                 <div className="bg-white rounded shadow p-4 flex flex-col gap-4">
                     <div className="text-sm font-semibold text-gray-600 border-b pb-1">Promoções</div>
@@ -295,6 +379,101 @@ export default function OwnerDono() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+            
+            <Dialog open={openCupons} onOpenChange={setOpenCupons}>
+                <DialogContent className="bg-white text-black max-w-lg">
+                    <DialogHeader>
+                        <DialogTitle className="text-xl font-bold">Cupons da Loja</DialogTitle>
+                    </DialogHeader>
+
+                    <div className="space-y-4 max-h-80 overflow-y-auto">
+                        {loadingCupons ? (
+                            <p>Carregando cupons...</p>
+                        ) : cupons.length === 0 ? (
+                            <p className="text-gray-600">Nenhum cupom cadastrado.</p>
+                        ) : (
+                            cupons.map((cupom) => (
+                                <div 
+                                    key={cupom.id} 
+                                    className="flex justify-between items-center border rounded p-2"
+                                >
+                                    <div>
+                                        <span className="font-medium">{cupom.nome}</span>
+                                        <span className="ml-4 text-blue-600 font-semibold">
+                                            R$ {cupom.valor.toFixed(2)}
+                                        </span>
+                                    </div>
+                                    <button
+                                        onClick={() => excluirCupom(cupom.id)}
+                                        className="text-red-500 hover:text-red-700"
+                                        title="Excluir cupom"
+                                    >
+                                        <FaTrashAlt size={16} />
+                                    </button>
+                                </div>
+                            ))
+                        )}
+                    </div>
+
+
+                    <DialogFooter className="flex justify-between">
+                        <Button
+                            onClick={() => setOpenCadastrarCupom(true)}
+                            className="bg-[#3681b6] text-white hover:bg-blue-700"
+                        >
+                            Cadastrar Cupom
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={openCadastrarCupom} onOpenChange={setOpenCadastrarCupom}>
+                <DialogContent className="bg-white text-black max-w-lg">
+                    <DialogHeader>
+                        <DialogTitle>Cadastrar Cupom</DialogTitle>
+                    </DialogHeader>
+
+                    <div className="space-y-4 mt-2">
+                        <div>
+                            <label className="block text-sm mb-1">Nome do Cupom</label>
+                            <Input
+                                type="text"
+                                value={nomeCupom}
+                                onChange={(e) => setNomeCupom(e.target.value)}
+                                placeholder="Ex: desconto10"
+                                className="ml-4 text-blue-600 font-semibold"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm mb-1">Valor do Cupom (%)</label>
+                            <Input
+                                type="number"
+                                value={valorCupom}
+                                onChange={(e) => setValorCupom(e.target.value)}
+                                placeholder="Ex: 10"
+                                className="ml-4 text-blue-600 font-semibold"
+                            />
+                        </div>
+                    </div>
+
+                    <DialogFooter>
+                        <Button 
+                            onClick={salvarCupom} 
+                            disabled={salvandoCupom} 
+                            className="bg-[#3681b6] text-white hover:bg-blue-700"
+                        >
+                            {salvandoCupom ? "Salvando..." : "Salvar"}
+                        </Button>
+                        <Button
+                            onClick={() => setOpenCadastrarCupom(false)}
+                            className="bg-gray-300 text-black hover:bg-gray-400"
+                        >
+                            Cancelar
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
 
         <ProductTour steps={donoAreaTourSteps} tourKey="DonoArea" /> {/* tourKey alterado para "DonoArea" */}
 

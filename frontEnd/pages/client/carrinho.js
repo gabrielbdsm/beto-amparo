@@ -15,7 +15,12 @@ export default function CarrinhoCliente({ empresaId }) {
     const [pontosParaUsar, setPontosParaUsar] = useState(0);
     const [descontoAplicado, setDescontoAplicado] = useState(0);
     const [ativarFidelidade, setAtivarFidelidade] = useState(false);
-    const [isLoading, setIsLoading] = useState(true); // Novo estado para carregamento
+    const [observacoes, setobservacoes] = useState("");
+    const [isLoading, setIsLoading] = useState(true); 
+
+    const [codigoCupom, setCodigoCupom] = useState("");
+    const [cupomAplicado, setCupomAplicado] = useState(null);
+    const [descontoCupom, setDescontoCupom] = useState(0);
 
     const router = useRouter();
     const { slug } = router.query;
@@ -166,19 +171,52 @@ export default function CarrinhoCliente({ empresaId }) {
         setDescontoAplicado(Math.min(valorDesconto, subtotal));
     }, [pontosParaUsar, totalPontosCliente, subtotal]);
 
-    // Memoriza o total final para evitar recálculos desnecessários
-    const totalFinal = useMemo(() => Math.max(0, subtotal - descontoAplicado), [
-        subtotal,
-        descontoAplicado,
-    ]);
+    const totalFinal = useMemo(() => {
+        const totalComDesconto = subtotal - descontoAplicado - descontoCupom;
+        return Math.max(0, totalComDesconto);
+    }, [subtotal, descontoAplicado, descontoCupom]);
+
+    const validarCupom = async (codigo) => {
+        try {
+            const response = await fetch(`${API_BASE_URL}/loja/${slug}/validar-cupom?nome=${codigo}`);
+            if (!response.ok) {
+                const erro = await response.json();
+                alert(erro.erro);
+                return null;
+            }
+            const data = await response.json();
+            return data; // { id, nome, valor }
+        } catch (error) {
+            console.error('Erro ao validar cupom:', error);
+            alert('Erro ao validar cupom.');
+            return null;
+        }
+    };
+
+    const handleAplicarCupom = async () => {
+    if (!codigoCupom) {
+        alert("Digite o código do cupom.");
+        return;
+    }
+
+    const cupom = await validarCupom(codigoCupom);
+        if (cupom) {
+            setCupomAplicado(cupom);
+            setDescontoCupom((subtotal * cupom.valor) / 100);
+        } else {
+            setCupomAplicado(null);
+            setDescontoCupom(0);
+        }
+    };
+    
 
     const handleFinalizarCompra = useCallback(async () => {
         if (!lojaAberta) {
-            alert("A loja está fechada e não é possível finalizar a compra no momento.");
+            alert("A loja está fechada e não é possível realizar o pedidodno momento.");
             return;
         }
         if (itensCarrinho.length === 0) {
-            alert("Seu carrinho está vazio. Adicione itens antes de finalizar a compra.");
+            alert("Seu carrinho está vazio. Adicione itens antes de realizar o pedido.");
             return;
         }
         if (lojaId === null) {
@@ -186,7 +224,7 @@ export default function CarrinhoCliente({ empresaId }) {
             return;
         }
         if (!cliente?.id) { // Verifica se o cliente está logado e tem ID
-            alert("Você precisa estar logado para finalizar a compra.");
+            alert("Você precisa estar logado para realizar o pedido.");
             router.push(`/login?redirect=${encodeURIComponent(router.asPath)}`);
             return;
         }
@@ -205,11 +243,21 @@ export default function CarrinhoCliente({ empresaId }) {
                     id_loja: lojaId,
                     data: dataPedido,
                     total: totalFinal,
-                    desconto: descontoAplicado,
+                    desconto: descontoAplicado + descontoCupom,
+                    observacoes: observacoes, 
                     status,
-                    observacoes: "", // Pode ser uma observação do cliente
                 }),
             });
+            console.log("Enviando pedido com dados:", {
+                id_cliente,
+                id_loja: lojaId,
+                data: dataPedido,
+                total: totalFinal,
+                desconto: descontoAplicado,
+                status,
+                observacoes
+            });
+
 
             const pedidoCriado = await pedidoResponse.json();
             if (!pedidoResponse.ok) {
@@ -283,15 +331,16 @@ export default function CarrinhoCliente({ empresaId }) {
                 }
             }
 
-            alert("Compra finalizada com sucesso!");
+            alert("Pedido realizado com sucesso!");
+           router.push(`/client/finalizarPedido?slug=${slug}&pedidoId=${pedidoId}&clienteId=${cliente.id}`);
+
             setItensCarrinho([]);
             setSubtotal(0);
             setDescontoAplicado(0);
             setPontosParaUsar(0);
-            router.push(`/loja/${slug}`);
         } catch (error) {
-            console.error("Erro ao finalizar compra:", error);
-            alert(`Ocorreu um erro ao finalizar a compra: ${error.message || "Tente novamente."}`);
+            console.error("Erro ao realizar o pedido:", error);
+            alert(`Ocorreu um erro ao realizar o pedido: ${error.message || "Tente novamente."}`);
         }
     }, [
         lojaAberta,
@@ -480,15 +529,67 @@ export default function CarrinhoCliente({ empresaId }) {
                                 </div>
                             ))}
 
+                            <div className="mt-4">
+                                <label htmlFor="observacoes" className="block text-sm font-medium text-gray-700 mb-1">
+                                    Observações para o pedido:
+                                </label>
+                                <textarea
+                                    id="observacoes"
+                                    value={observacoes}
+                                    onChange={(e) => setobservacoes(e.target.value)}
+                                    rows={3}
+                                    placeholder="Ex.: Sem cebola, adicionar picles..."
+                                    className="w-full p-3 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                />
+                            </div>
+
+                            <div className="space-y-2 mb-4 p-4 border rounded-lg shadow-sm bg-gray-50">
+                                <label htmlFor="cupom" className="block text-sm font-medium text-gray-700">
+                                    Aplicar cupom de desconto:
+                                </label>
+                                <div className="flex space-x-2">
+                                    <input
+                                        id="cupom"
+                                        type="text"
+                                        value={codigoCupom}
+                                        onChange={(e) => setCodigoCupom(e.target.value)}
+                                        placeholder="Digite o código do cupom"
+                                        className="flex-1 border p-2 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    />
+                                    <button
+                                        onClick={handleAplicarCupom}
+                                        className="px-4 py-2 rounded-md text-white font-semibold shadow-md transition duration-300 ease-in-out hover:opacity-90"
+                                        style={{ backgroundColor: corPrimaria }}
+                                    >
+                                        Aplicar
+                                    </button>
+                                </div>
+
+                                {cupomAplicado && (
+                                    <div className="text-green-700 font-semibold">
+                                        Cupom {cupomAplicado.nome} aplicado! Desconto de R$ {descontoCupom.toFixed(2)}
+                                    </div>
+                                )}
+                            </div>
+
+
+
                             <div className="flex justify-between font-bold border-t pt-4 text-black text-lg">
                                 <span>Subtotal:</span>
                                 <span>R$ {subtotal.toFixed(2)}</span>
                             </div>
 
-                            {ativarFidelidade && (
+                            {descontoAplicado > 0 && (
                                 <div className="flex justify-between text-black">
-                                    <span>Desconto aplicado:</span>
-                                    <span>R$ {descontoAplicado.toFixed(2)}</span>
+                                    <span>Desconto (Fidelidade):</span>
+                                    <span>- R$ {descontoAplicado.toFixed(2)}</span>
+                                </div>
+                            )}
+
+                            {descontoCupom > 0 && (
+                                <div className="flex justify-between text-black">
+                                    <span>Desconto (Cupom):</span>
+                                    <span>- R$ {descontoCupom.toFixed(2)}</span>
                                 </div>
                             )}
 
@@ -509,11 +610,11 @@ export default function CarrinhoCliente({ empresaId }) {
                                             : "pointer",
                                 }}
                             >
-                                Finalizar Compra
+                                Realizar Pedido
                             </button>
                             {!lojaAberta && (
                                 <p className="text-red-500 text-center mt-2">
-                                    A loja está fechada. Não é possível finalizar a compra.
+                                    A loja está fechada. Não é possível realizar o pedido.
                                 </p>
                             )}
                         </div>
