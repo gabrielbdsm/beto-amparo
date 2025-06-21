@@ -428,7 +428,7 @@ export default function OwnerDono() {
             </Dialog>
 
             <Dialog open={openCadastrarCupom} onOpenChange={setOpenCadastrarCupom}>
-                <DialogContent className="bg-[#3681b6] text-white">
+                <DialogContent className="bg-white text-black max-w-lg">
                     <DialogHeader>
                         <DialogTitle>Cadastrar Cupom</DialogTitle>
                     </DialogHeader>
@@ -441,7 +441,7 @@ export default function OwnerDono() {
                                 value={nomeCupom}
                                 onChange={(e) => setNomeCupom(e.target.value)}
                                 placeholder="Ex: desconto10"
-                                className="text-white bg-[#3681b6] border-white focus-visible:ring-white"
+                                className="ml-4 text-blue-600 font-semibold"
                             />
                         </div>
                         <div>
@@ -450,8 +450,8 @@ export default function OwnerDono() {
                                 type="number"
                                 value={valorCupom}
                                 onChange={(e) => setValorCupom(e.target.value)}
-                                placeholder="Ex: 10.00"
-                                className="text-white bg-[#3681b6] border-white focus-visible:ring-white"
+                                placeholder="Ex: 10"
+                                className="ml-4 text-blue-600 font-semibold"
                             />
                         </div>
                     </div>
@@ -460,7 +460,7 @@ export default function OwnerDono() {
                         <Button 
                             onClick={salvarCupom} 
                             disabled={salvandoCupom} 
-                            className="bg-white text-[#3681b6] hover:bg-gray-200"
+                            className="bg-[#3681b6] text-white hover:bg-blue-700"
                         >
                             {salvandoCupom ? "Salvando..." : "Salvar"}
                         </Button>
