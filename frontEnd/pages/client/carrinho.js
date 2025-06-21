@@ -18,6 +18,10 @@ export default function CarrinhoCliente({ empresaId }) {
     const [observacoes, setobservacoes] = useState("");
     const [isLoading, setIsLoading] = useState(true); 
 
+    const [codigoCupom, setCodigoCupom] = useState("");
+    const [cupomAplicado, setCupomAplicado] = useState(null);
+    const [descontoCupom, setDescontoCupom] = useState(0);
+
     const router = useRouter();
     const { slug } = router.query;
 
@@ -167,11 +171,44 @@ export default function CarrinhoCliente({ empresaId }) {
         setDescontoAplicado(Math.min(valorDesconto, subtotal));
     }, [pontosParaUsar, totalPontosCliente, subtotal]);
 
-    // Memoriza o total final para evitar recálculos desnecessários
-    const totalFinal = useMemo(() => Math.max(0, subtotal - descontoAplicado), [
-        subtotal,
-        descontoAplicado,
-    ]);
+    const totalFinal = useMemo(() => {
+        const totalComDesconto = subtotal - descontoAplicado - descontoCupom;
+        return Math.max(0, totalComDesconto);
+    }, [subtotal, descontoAplicado, descontoCupom]);
+
+    const validarCupom = async (codigo) => {
+        try {
+            const response = await fetch(`${API_BASE_URL}/loja/${slug}/validar-cupom?nome=${codigo}`);
+            if (!response.ok) {
+                const erro = await response.json();
+                alert(erro.erro);
+                return null;
+            }
+            const data = await response.json();
+            return data; // { id, nome, valor }
+        } catch (error) {
+            console.error('Erro ao validar cupom:', error);
+            alert('Erro ao validar cupom.');
+            return null;
+        }
+    };
+
+    const handleAplicarCupom = async () => {
+    if (!codigoCupom) {
+        alert("Digite o código do cupom.");
+        return;
+    }
+
+    const cupom = await validarCupom(codigoCupom);
+        if (cupom) {
+            setCupomAplicado(cupom);
+            setDescontoCupom((subtotal * cupom.valor) / 100);
+        } else {
+            setCupomAplicado(null);
+            setDescontoCupom(0);
+        }
+    };
+    
 
     const handleFinalizarCompra = useCallback(async () => {
         if (!lojaAberta) {
@@ -206,7 +243,7 @@ export default function CarrinhoCliente({ empresaId }) {
                     id_loja: lojaId,
                     data: dataPedido,
                     total: totalFinal,
-                    desconto: descontoAplicado,
+                    desconto: descontoAplicado + descontoCupom,
                     observacoes: observacoes, 
                     status,
                 }),
@@ -506,16 +543,53 @@ export default function CarrinhoCliente({ empresaId }) {
                                 />
                             </div>
 
+                            <div className="space-y-2 mb-4 p-4 border rounded-lg shadow-sm bg-gray-50">
+                                <label htmlFor="cupom" className="block text-sm font-medium text-gray-700">
+                                    Aplicar cupom de desconto:
+                                </label>
+                                <div className="flex space-x-2">
+                                    <input
+                                        id="cupom"
+                                        type="text"
+                                        value={codigoCupom}
+                                        onChange={(e) => setCodigoCupom(e.target.value)}
+                                        placeholder="Digite o código do cupom"
+                                        className="flex-1 border p-2 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    />
+                                    <button
+                                        onClick={handleAplicarCupom}
+                                        className="px-4 py-2 rounded-md text-white font-semibold shadow-md transition duration-300 ease-in-out hover:opacity-90"
+                                        style={{ backgroundColor: corPrimaria }}
+                                    >
+                                        Aplicar
+                                    </button>
+                                </div>
+
+                                {cupomAplicado && (
+                                    <div className="text-green-700 font-semibold">
+                                        Cupom {cupomAplicado.nome} aplicado! Desconto de R$ {descontoCupom.toFixed(2)}
+                                    </div>
+                                )}
+                            </div>
+
+
 
                             <div className="flex justify-between font-bold border-t pt-4 text-black text-lg">
                                 <span>Subtotal:</span>
                                 <span>R$ {subtotal.toFixed(2)}</span>
                             </div>
 
-                            {ativarFidelidade && (
+                            {descontoAplicado > 0 && (
                                 <div className="flex justify-between text-black">
-                                    <span>Desconto aplicado:</span>
-                                    <span>R$ {descontoAplicado.toFixed(2)}</span>
+                                    <span>Desconto (Fidelidade):</span>
+                                    <span>- R$ {descontoAplicado.toFixed(2)}</span>
+                                </div>
+                            )}
+
+                            {descontoCupom > 0 && (
+                                <div className="flex justify-between text-black">
+                                    <span>Desconto (Cupom):</span>
+                                    <span>- R$ {descontoCupom.toFixed(2)}</span>
                                 </div>
                             )}
 

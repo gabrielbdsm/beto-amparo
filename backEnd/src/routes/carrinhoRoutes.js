@@ -218,4 +218,37 @@ router.delete('/:slug/carrinho/:id', getLojaIdBySlug, async (req, res) => {
     }
 });
 
+// Rota para validar cupom
+router.get('/:slug/validar-cupom', getLojaIdBySlug, async (req, res) => {
+    const { nome } = req.query;
+    const lojaId = req.lojaId;
+
+    if (!nome) {
+        return res.status(400).json({ erro: 'O nome (código) do cupom não foi informado.' });
+    }
+
+    try {
+        const { data: cupom, error } = await supabase
+            .from('cupons')
+            .select('*')
+            .eq('nome', nome)
+            .eq('id_loja', lojaId)
+            .single();
+
+        if (!cupom) {
+            return res.status(404).json({ erro: 'Cupom não encontrado para esta loja.' });
+        }
+
+        return res.status(200).json({
+            id: cupom.id,
+            nome: cupom.nome,
+            valor: cupom.valor, // valor fixo do desconto (em reais)
+        });
+    } catch (err) {
+        console.error('Erro inesperado ao validar cupom:', err);
+        res.status(500).json({ erro: 'Erro interno ao validar cupom.' });
+    }
+});
+
+
 export default router;
