@@ -329,7 +329,7 @@ export async function criarPedido(req, res) {
             data,
             total,
             status,
-            observacoes,
+            observacoes: observacoes,
             desconto
           }
         ])
@@ -578,7 +578,7 @@ export async function finalizarPedido(req, res) {
     const { data: pedidoAtualizado, error: updateError } = await supabase
       .from('pedidos')
       .update({
-        status: 4,
+        status: 1,
         metodo_pagamento: metodoPagamento,
         endereco_entrega: enderecoEntrega,
         desconto: desconto,
