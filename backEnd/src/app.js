@@ -10,6 +10,7 @@ import enderecoRoutes from './routes/enderecoRoutes.js';
 import categoriaRoutes from './routes/categoriaRoutes.js';
 import donoRoutes from './routes/donoRoutes.js';
 import orderCancellationRoutes from './routes/orderCancellationRoutes.js';
+import suporteRoutes from './routes/suporteRoutes.js';
 import cors from 'cors';
 import multer from 'multer';
 import path from 'path';
