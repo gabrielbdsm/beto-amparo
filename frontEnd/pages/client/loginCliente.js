@@ -54,7 +54,6 @@ export default function LoginPage() {
         return;
       }
 
-      alert('Login realizado com sucesso!');
       router.push(redirectUrl).then(() => window.location.reload());
     } catch (err) {
       console.error(err);

@@ -132,9 +132,7 @@ export default function Pedidos() {
 
     const abrirModalDetalhes = async (pedido) => {
         try {
-            // Note: The API endpoint for item details uses 'http://localhost:4000'.
-            // Ensure this is correct for your production environment or use an environment variable.
-            const res = await fetch(`http://localhost:4000/pedidos/${pedido.id}/itens`);
+            const res = await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/pedidos/${pedido.id}/itens`);
             const itens = await res.json();
             setPedidoDetalhes({ ...pedido, itens });
             setShowDetalhes(true);
@@ -181,33 +179,30 @@ export default function Pedidos() {
                                 <p><strong>Status:</strong> {traduzirStatus(pedido.status)}</p>
                                 <p><strong>Observações:</strong> {pedido.observacoes || 'Nenhuma'}</p>
 
-                                <div className="flex justify-center gap-2"> 
-                                   <button 
-                                        onClick={() => abrirModalDetalhes(pedido)}
-                                        className="px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 border"
-                                        style={{
-                                            backgroundColor: corPrimaria,
-                                            color: getContrastColor(corPrimaria),
-                                            borderColor: corPrimaria
-                                        }}
-                                    >
-                                                Detalhes do pedido
-                                    </button> 
-                                    {(['0'].includes(String(pedido.status))) && (
-                                    <div className="mt-4 flex justify-center gap-2">
+                                <div className="mt-4 space-y-3">
+                                    {/* Exibe mensagens de status de cancelamento, se houver */}
+                                    {['0', '1'].includes(String(pedido.status)) && (
+                                        <>
+                                            {pedido.cancellation_status === 'pendente' ? (
+                                                <div className="p-2 w-full text-center bg-yellow-100 border border-yellow-200 text-yellow-800 rounded-md text-sm">
+                                                    Cancelamento solicitado, aguardando aprovação.
+                                                </div>
+                                            ) : pedido.cancellation_status === 'rejeitado' && (
+                                                <div className="p-3 w-full text-left bg-red-100 border-l-4 border-red-500 text-red-800 rounded-md text-sm">
+                                                    <p className="font-bold">Sua solicitação de cancelamento foi rejeitada.</p>
+                                                    {pedido.rejection_reason && (
+                                                        <p className="mt-1 text-xs italic">Motivo do estabelecimento: "{pedido.rejection_reason}"</p>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </>
+                                    )}
+
+                                    {/* Linha de botões de ação */}
+                                    <div className="flex justify-center items-center gap-3 flex-wrap">
+                                        {/* Botão de DETALHES sempre visível */}
                                         <button
-                                            onClick={() => abrirModalCancelamento(pedido)}
-                                            className="px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 border"
-                                            style={{
-                                                backgroundColor: corSecundaria,
-                                                color: getContrastColor(corSecundaria),
-                                                borderColor: corSecundaria
-                                            }}
-                                        >
-                                            Cancelar pedido
-                                        </button>
-                                        <button
-                                            onClick={() => router.push(`/client/finalizarPedido?slug=${slug}&pedidoId=${pedido.id}&clienteId=${cliente.id}`)}
+                                            onClick={() => abrirModalDetalhes(pedido)}
                                             className="px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 border"
                                             style={{
                                                 backgroundColor: corPrimaria,
@@ -215,13 +210,35 @@ export default function Pedidos() {
                                                 borderColor: corPrimaria
                                             }}
                                         >
-                                            Finalizar pedido
+                                            Detalhes do pedido
                                         </button>
+
+                                        {/* Botão de CANCELAR condicional */}
+                                        {['0', '1'].includes(String(pedido.status)) && pedido.cancellation_status !== 'pendente' && (
+                                            <button
+                                                onClick={() => abrirModalCancelamento(pedido)}
+                                                className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors duration-200"
+                                            >
+                                                Cancelar pedido
+                                            </button>
+                                        )}
+                                        
+                                        {/* Botão de FINALIZAR PEDIDO condicional */}
+                                        {['0, 1, 2, 3'].includes(String(pedido.status)) && (
+                                             <button
+                                                onClick={() => router.push(`/loja/${slug}/finalizarPedido?pedidoId=${pedido.id}&clienteId=${cliente.id}`)}
+                                                className="px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 border"
+                                                style={{
+                                                    backgroundColor: corPrimaria,
+                                                    color: getContrastColor(corPrimaria),
+                                                    borderColor: corPrimaria
+                                                }}
+                                            >
+                                                Finalizar pedido
+                                            </button>
+                                        )}
                                     </div>
-                                )}
                                 </div>
-                                
-                               
                             </div>
                         ))}
                     </div>
@@ -230,7 +247,7 @@ export default function Pedidos() {
                 {showModal && (
                     <CancelarPedidoModal
                         pedidoId={pedidoSelecionado.id}
-                        clienteId={pedidoSelecionado.cliente_id}
+                        clienteId={cliente.id}
                         onClose={() => {
                             setShowModal(false);
                             fetchPedidos(); // Now fetchPedidos is accessible and will re-fetch
