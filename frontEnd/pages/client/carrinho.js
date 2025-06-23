@@ -355,7 +355,8 @@ export default function CarrinhoCliente({ empresaId }) {
         pontosParaUsar,
         subtotal,
         router,
-        cliente // Adicionar cliente como dependência
+        cliente, // Adicionar cliente como dependência
+        observacoes
     ]);
 
     const handleRemoverItem = useCallback(
