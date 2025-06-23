@@ -89,7 +89,7 @@ export default function EditarProdutoPage() {
       }
 
       const result = await response.json();
-      alert("Produto atualizado com sucesso!");
+    //  alert("Produto atualizado com sucesso!");
       router.push(`/empresa/${slug}/produtos`);
 
     } catch (err) {

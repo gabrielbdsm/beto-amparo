@@ -6,16 +6,19 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
   images: {
-      remotePatterns: [
-        {
-          protocol: 'https',
-          hostname: 'cufzswdymzevdeonjgan.supabase.co',
-          pathname: '/storage/v1/object/public/**',
-        },
-      ],
-    },
-
-
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'cufzswdymzevdeonjgan.supabase.co', // Este é o seu domínio de imagens de lojas/banners
+        pathname: '/storage/v1/object/public/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'qkiyyvnyvjqsjnobfyqn.supabase.co', // <-- ADICIONADO: Este é o seu domínio de imagens de clientes/produtos
+        pathname: '/storage/v1/object/public/**',
+      },
+    ],
+  },
 
   async rewrites() {
     return [

@@ -53,3 +53,40 @@ export const marcarPersonalizacaoCompleta = async (req, res) => {
       return res.status(500).json({ mensagem: 'Erro interno do servidor.' });
   }
 };
+
+export async function getLojaBySlug(req, res) { // Ou a função que sua OwnerSidebar.js chama
+  const slug = req.params.slug.toLowerCase();
+
+  try {
+      const { data: lojaData, error: lojaError } = await supabase
+          .from('loja')
+          .select('id, nome_fantasia, foto_loja, is_closed_for_orders, slug_loja, id_empresa') // Inclua id_empresa
+          .eq('slug_loja', slug)
+          .single();
+
+      if (lojaError || !lojaData) {
+          console.error('getLojaBySlug: Erro ao buscar loja por slug:', lojaError?.message || 'Loja não encontrada.');
+          return res.status(404).json({ mensagem: 'Loja não encontrada.' });
+      }
+
+      // Buscar o level_tier da tabela 'empresas' usando o id_empresa da loja
+      const { data: empresaData, error: empresaError } = await supabase
+          .from('empresas')
+          .select('level_tier') // Seleciona a nova coluna
+          .eq('id', lojaData.id_empresa) // Usa o id_empresa da loja encontrada
+          .single();
+
+      if (empresaError && empresaError.code !== 'PGRST116') { // PGRST116 = no rows found
+           console.error('getLojaBySlug: Erro ao buscar nível da empresa:', empresaError.message);
+      }
+
+      res.status(200).json({
+          ...lojaData, // Todos os dados da loja
+          level_tier: empresaData ? empresaData.level_tier : 'Nenhum' // Adiciona o level_tier, com fallback
+      });
+
+  } catch (err) {
+      console.error('getLojaBySlug: Erro inesperado:', err.message, err.stack);
+      res.status(500).json({ mensagem: 'Erro interno do servidor.' });
+  }
+}

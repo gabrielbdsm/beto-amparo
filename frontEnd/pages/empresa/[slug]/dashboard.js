@@ -163,7 +163,7 @@ export default function DashboardPage() {
   return (
     <OwnerSidebar slug={slug}>
       <div className="p-8 max-w-6xl mx-auto bg-white rounded-lg shadow-md min-h-[600px]">
-        <h1 className="text-3xl font-bold text-[#3681B6] mb-6">Dashboard da Empresa</h1>
+        <h1 className="text-3xl font-bold text-[#3681B6] mb-6">Dashboard Overview</h1>
 
         {/* Gráfico de Vendas */}
         <div className="mb-8">

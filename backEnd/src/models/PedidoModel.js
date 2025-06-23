@@ -113,10 +113,9 @@ export async function listarPedidosDaLoja(idLoja) {
           status,
           observacoes,
           metodo_pagamento,
-          metodo_entrega,
           endereco_entrega,
           subtotal,
-          taxa_entrega,
+          data_entrega,
           desconto,
           cupom_id,
           data_finalizacao,
@@ -148,7 +147,7 @@ export async function getDadosVendasAgregados(idLoja, periodo = 'semana') {
       .from('pedidos')
       .select('data, total') // Agora 'data' é TIMESTAMP e 'total' é NUMERIC
       .eq('id_loja', idLoja)
-      .not('status', 'eq', 'cancelado'); // Assume que 'status' é preenchido e que 'cancelado' não deve ser contado
+      .not('status', 'eq', 5); // O número 5 é o que representa 'Cancelado'
 
   if (error) return { data: null, error };
 

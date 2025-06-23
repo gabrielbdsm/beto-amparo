@@ -173,3 +173,67 @@ export const listarProdutosPorLoja = async (lojaId) => {
         return { data: null, error: err.message };
     }
 };
+// --- NOVA FUNÇÃO: Decrementar Estoque (ADICIONE ESTA FUNÇÃO AQUI) ---
+export async function decrementarEstoque(produtoId, quantidadeComprada) {
+    try {
+        // --- LOGS DE DEPURAÇÃO ADICIONAIS ---
+        console.log(`DEBUG_DECREMENT: Chamado para produtoId: ${produtoId}, quantidadeComprada (raw): ${quantidadeComprada}`);
+
+        // Garante que quantidadeComprada é um número inteiro
+        const parsedQuantidadeComprada = parseInt(quantidadeComprada, 10);
+        if (isNaN(parsedQuantidadeComprada) || parsedQuantidadeComprada < 0) {
+            console.error(`DEBUG_DECREMENT: Quantidade comprada inválida para produto ${produtoId}: ${quantidadeComprada}. Deve ser um número inteiro positivo.`);
+            return { success: false, error: 'Quantidade comprada inválida.' };
+        }
+        console.log(`DEBUG_DECREMENT: Quantidade comprada (parsed): ${parsedQuantidadeComprada}`);
+
+
+        const { data: produto, error: fetchError } = await supabase
+            .from('produto')
+            .select('quantidade, controlar_estoque')
+            .eq('id', produtoId)
+            .single();
+
+        if (fetchError || !produto) {
+            console.error(`DEBUG_DECREMENT: Erro ao buscar produto ${produtoId} para decremento de estoque:`, fetchError?.message);
+            return { success: false, error: 'Produto não encontrado ou erro ao buscar.' };
+        }
+
+        console.log(`DEBUG_DECREMENT: Estoque atual do produto ${produtoId} (antes da atualização): ${produto.quantidade}`);
+        console.log(`DEBUG_DECREMENT: Controle de estoque para produto ${produtoId}: ${produto.controlar_estoque}`);
+
+
+        if (!produto.controlar_estoque) {
+            console.log(`DEBUG_DECREMENT: Produto ${produtoId} não controla estoque. Nenhuma ação de decremento.`);
+            return { success: true, message: 'Controle de estoque desativado para este produto.' };
+        }
+
+        let novaQuantidade = produto.quantidade - parsedQuantidadeComprada; // A lógica de subtração
+
+        console.log(`DEBUG_DECREMENT: Cálculo do estoque: ${produto.quantidade} (estoque atual) - ${parsedQuantidadeComprada} (comprado) = ${novaQuantidade}`);
+
+        if (novaQuantidade < 0) {
+            console.warn(`DEBUG_DECREMENT: Tentativa de estoque negativo para produto ${produtoId}. Ajustando para 0.`);
+            novaQuantidade = 0;
+        }
+
+        const { data, error: updateError } = await supabase
+            .from('produto')
+            .update({ quantidade: novaQuantidade })
+            .eq('id', produtoId)
+            .select('id, quantidade, controlar_estoque') // Seleciona campos atualizados para retorno
+            .single();
+
+        if (updateError) {
+            console.error(`DEBUG_DECREMENT: Erro ao atualizar estoque do produto ${produtoId} no Supabase:`, updateError.message);
+            return { success: false, error: updateError.message };
+        }
+
+        console.log(`DEBUG_DECREMENT: Estoque do produto ${produtoId} decrementado com sucesso para: ${novaQuantidade}.`);
+        return { success: true, newQuantity: novaQuantidade, data: data };
+
+    } catch (err) {
+        console.error('DEBUG_DECREMENT: Erro inesperado no catch de decrementarEstoque:', err);
+        return { success: false, error: err.message };
+    }
+}
