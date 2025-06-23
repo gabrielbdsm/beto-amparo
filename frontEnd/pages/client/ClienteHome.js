@@ -6,6 +6,7 @@ import NavBar from "@/components/NavBar";
 import ProdutoCard from "@/components/ProdutoCard";
 import { useRouter } from 'next/router';
 import { createClient } from '@supabase/supabase-js';
+import Link from 'next/link';
 import { Menu } from '@headlessui/react';
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_KEY);
@@ -394,12 +395,15 @@ export default function ClienteHome() {
                                 <Menu.Items className="absolute right-0 mt-2 w-40 bg-white border border-gray-200 rounded shadow-md z-50">
                                     <Menu.Item>
                                         {({ active }) => (
-                                            <button
-                                                onClick={() => router.push(`/cliente/cupons`)}
-                                                className={`block px-4 py-2 w-full text-black text-left text-sm ${active ? 'bg-gray-100' : ''}`}
+                                            <Link 
+                                                // O `site` é o slug da sua loja, que você já tem no estado!
+                                                href={`/loja/${site}/ajuda`} 
+                                                legacyBehavior
                                             >
-                                                Meus Cupons
-                                            </button>
+                                                <a className={`block px-4 py-2 w-full text-black text-left text-sm ${active ? 'bg-gray-100' : ''}`}>
+                                                    Ajuda e Suporte
+                                                </a>
+                                            </Link>
                                         )}
                                     </Menu.Item>
                                     <Menu.Item>
@@ -412,6 +416,7 @@ export default function ClienteHome() {
                                             </button>
                                         )}
                                     </Menu.Item>
+                                    
                                 </Menu.Items>
                             </Menu>
                         ) : (

@@ -36,6 +36,8 @@ router.delete('/empresa/horarios/:data',empresaPrivate, HorariosController.delet
 router.get('/empresa/agendamentos', empresaPrivate, agendamentoEmpresaController.getAgendamentosController);
 router.delete('/empresa/agendamentos', empresaPrivate, agendamentoEmpresaController.deleteAgendamentoController);
 router.put('/empresa/agendamentos', empresaPrivate, agendamentoEmpresaController.updateAgendamentoController);
+router.get('/loja/slug-completo/:slug', EmpresaController.BuscarEmpresaBySlug);
+
 
 
 
