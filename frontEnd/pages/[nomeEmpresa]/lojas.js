@@ -21,7 +21,7 @@ export default function ListaLojasEmpresa() {
 
                 // 1. Validação simplificada
                 const validation = await fetch(
-                    `${process.env.NEXT_PUBLIC_EMPRESA_API}/empresa/validate`,
+                    `${process.env.NEXT_PUBLIC_EMPRESA_API}/${nomeEmpresa}/validate`, // <-- MUDANÇA AQUI!
                     {
                         credentials: 'include',
                         headers: { 'Content-Type': 'application/json' }
@@ -31,7 +31,7 @@ export default function ListaLojasEmpresa() {
                 // 2. Tratamento explícito de erros
                 if (validation.status === 401 || validation.status === 403) {
                     console.log('🔴 Redirecionando para login');
-                    window.location.href = `/empresa/LoginEmpresa?returnTo=/${nomeEmpresa}/lojas`;
+                    window.location.href = `/${nomeEmpresa}/LoginEmpresa?returnTo=/${nomeEmpresa}/lojas`;
                     return;
                 }
 
@@ -53,7 +53,7 @@ export default function ListaLojasEmpresa() {
 
             } catch (err) {
                 console.error('🔴 Erro:', err);
-                window.location.href = `/empresa/LoginEmpresa?returnTo=/${nomeEmpresa}/lojas`;
+                window.location.href = `/empresa/LoginEmpresa?returnTo=/${nomeEmpresa}/lojas`; // mudei aqui
             } finally {
                 setLoading(false);
             }

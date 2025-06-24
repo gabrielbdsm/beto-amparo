@@ -82,5 +82,6 @@ router.get('/empresa/dashboard/nome/:slug', async (req, res) => {
     res.status(500).json({ message: "Erro interno do servidor ao buscar nome da loja para o painel." });
   }
 });
+router.get('/:empresaSlug/lojas', empresaPrivate, EmpresaController.listarLojasPorEmpresaSlug);
 
 export default router;

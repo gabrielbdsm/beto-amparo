@@ -1,7 +1,7 @@
 import { inserirEmpresa } from '../../models/EmpresaModel.js';
 import * as empresas from '../../models/EmpresaModel.js'
 import supabase from '../../config/SupaBase.js';
-
+import * as LojaModel from '../../models/Loja.js';
 export async function getEmpresaBySlug(req, res) {
   const slug = req.params.slug.toLowerCase(); 
 
@@ -51,5 +51,37 @@ export const marcarPersonalizacaoCompleta = async (req, res) => {
   } catch (err) {
       console.error("Erro ao marcar personalização:", err);
       return res.status(500).json({ mensagem: 'Erro interno do servidor.' });
+  }
+};
+export const listarLojasPorEmpresaSlug = async (req, res) => {
+  // O ID da empresa já estará disponível em req.IdEmpresa graças ao middleware 'empresaPrivate'
+  const empresaId = req.IdEmpresa;
+  const empresaSlug = req.params.empresaSlug; // Captura o slug da URL
+
+  console.log(`DEBUG: [EmpresaController.listarLojasPorEmpresaSlug] Buscando lojas para empresa ID: ${empresaId} com slug: ${empresaSlug}`);
+
+  try {
+      const { data: lojas, error } = await LojaModel.buscarLojasPorEmpresaId(empresaId);
+
+      if (error) {
+          console.error("Erro ao buscar lojas no modelo:", error);
+          return res.status(500).json({ message: "Erro interno do servidor ao buscar lojas." });
+      }
+      // req.user já tem os dados da empresa logada
+      const empresaInfo = {
+          id: req.user.id,
+          nome: req.user.nome,
+          site: req.user.site,
+          // Adicione outras propriedades da empresa que você queira enviar para o frontend
+      };
+
+      return res.status(200).json({
+          lojas: lojas || [], // Garante que sempre retorna um array
+          empresa: empresaInfo
+      });
+
+  } catch (err) {
+      console.error("Erro inesperado no controller listarLojasPorEmpresaSlug:", err);
+      return res.status(500).json({ message: "Erro inesperado do servidor." });
   }
 };
