@@ -331,7 +331,6 @@ export default function CarrinhoCliente({ empresaId }) {
                 }
             }
 
-            alert("Pedido realizado com sucesso!");
            router.push(`/client/finalizarPedido?slug=${slug}&pedidoId=${pedidoId}&clienteId=${cliente.id}`);
 
             setItensCarrinho([]);
