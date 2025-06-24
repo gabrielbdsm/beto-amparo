@@ -83,6 +83,7 @@ export default function SuportePage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null); 
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isTecnicoModalOpen, setIsTecnicoModalOpen] = useState(false);
 
     const [openCategory, setOpenCategory] = useState(null);
 
@@ -274,18 +275,16 @@ export default function SuportePage() {
                                 <p className="text-sm text-gray-600">Tire dúvidas sobre produtos ou seu pedido via WhatsApp.</p>
                             </div>
                         </button>
-                        <a 
-                            href="https://seusite.com/suporte-tecnico" // Lembre-se de substituir este link
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="bg-white p-6 rounded-xl shadow-sm hover:shadow-lg transition-shadow flex items-center gap-4 group"
+                        <button
+                            onClick={() => setIsTecnicoModalOpen(true)}
+                            className="bg-white p-6 rounded-xl shadow-sm hover:shadow-lg transition-shadow flex items-center gap-4 group text-left"
                         >
-                            <FiTool className="w-8 h-8 text-purple-500" />
+                            <FiTool className="w-8 h-8 text-purple-500 flex-shrink-0" />
                             <div>
                                 <h3 className="font-semibold text-gray-800 group-hover:text-purple-600">Problema Técnico?</h3>
                                 <p className="text-sm text-gray-600">Relate um erro ou problema com a plataforma.</p>
                             </div>
-                        </a>
+                        </button>
                     </div>
                 </section>
             </main>
@@ -293,6 +292,10 @@ export default function SuportePage() {
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
                 onSubmit={handleContatoSubmit}
+            />
+            <TecnicoModal 
+                isOpen={isTecnicoModalOpen}
+                onClose={() => setIsTecnicoModalOpen(false)}
             />
         </div>
     );
