@@ -12,4 +12,6 @@ router.get('/', orderCancellationController.listar);
 // Admin atualiza status (aprova/rejeita)
 router.put('/:id', orderCancellationController.atualizarStatus);
 
+router.get('/loja/:slug/pendentes', orderCancellationController.listarPendentesPorLoja);
+
 export default router;

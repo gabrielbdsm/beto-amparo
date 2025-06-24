@@ -24,6 +24,10 @@ const nextConfig = {
         destination: '/client/produto',
       },
       {
+        source: '/empresa/:slug/suporte',
+        destination: '/suporte',
+      },
+      {
         source: '/loja/:slug/agendamento',
         destination: '/client/agendamento',
       },
