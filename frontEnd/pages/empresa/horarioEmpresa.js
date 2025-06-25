@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { v4 as uuid } from "uuid";
 import { Trash2, PlusCircle } from "lucide-react";
 import OwnerSidebar from '@/components/OwnerSidebar';
+import toast from 'react-hot-toast'; 
 
 
 function diaDaSemanaLabel(dataStr) {
@@ -80,7 +81,7 @@ function LinhaIntervalo({
 
   const handleDividirClick = () => {
     if (erroLocal) {
-        alert(`Não é possível dividir. Corrija o erro: ${erroLocal}`);
+        toast.error(`Não é possível dividir. Corrija o erro: ${erroLocal}`);
         return;
     }
     if (
@@ -94,13 +95,13 @@ function LinhaIntervalo({
       if (subintervalos.length > 0) {
         onSplit(blocoId, intervalo.id, subintervalos);
       } else {
-        alert("Não foi possível dividir o intervalo com a duração selecionada.");
+        toast.error("Não foi possível dividir o intervalo com a duração selecionada.");
       }
     } else {
-      if (!intervalo.inicio || !intervalo.fim ) alert("Preencha os horários de início e fim (HH:MM).");
-      else if (duracao <= 0) alert("Selecione uma duração válida.");
-      else if (!isMasterInterval) alert("Este sub-intervalo não pode ser dividido.");
-      else alert("Não é possível dividir com as configurações atuais.");
+      if (!intervalo.inicio || !intervalo.fim ) toast.error("Preencha os horários de início e fim (HH:MM).");
+      else if (duracao <= 0) toast.error("Selecione uma duração válida.");
+      else if (!isMasterInterval) toast.error("Este sub-intervalo não pode ser dividido.");
+      else toast.error("Não é possível dividir com as configurações atuais.");
     }
   };
   
@@ -212,14 +213,14 @@ export default function HorariosPorData({ tipo = "agendamento" }) {
       if (response.ok) {
       
         setBlocos(prev => prev.filter(bloco => bloco.id !== b.id));
-        alert("Data excluída com sucesso!");
+        toast.success("Data excluída com sucesso!");
       } else {
         console.error(result);
-        alert("Erro ao excluir a data: " + result.error);
+        toast.error("Erro ao excluir a data: " + result.error);
       }
     } catch (error) {
       console.error("Erro inesperado:", error);
-      alert("Erro inesperado ao tentar excluir a data.");
+      toast.error("Erro inesperado ao tentar excluir a data.");
     }
   }
   
@@ -252,12 +253,12 @@ export default function HorariosPorData({ tipo = "agendamento" }) {
         throw new Error(erroData.message || "Erro ao salvar horários.");
       }
   
-      alert("Horários salvos com sucesso!");
+      toast.success("Horários salvos com sucesso!");
 
     } catch (err) {
       console.error("Erro ao salvar horários:", err);
       setErrorGeral(err.message || "Ocorreu um erro desconhecido ao salvar.");
-      alert(`Erro: ${err.message}`);
+      toast.error(`Erro: ${err.message}`);
     }
   };
 

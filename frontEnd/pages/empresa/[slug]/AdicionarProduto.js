@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
+import toast from 'react-hot-toast'; 
 
 export default function AdicionarProduto() {
     const router = useRouter();
@@ -214,10 +215,10 @@ export default function AdicionarProduto() {
                   if (createCategoryResponse.ok) { // response.ok abrange status 200-299
                       if (createCategoryResponse.status === 200 && createdCategoryData.mensagem === 'Categoria já existe.') {
                           console.log('AdicionarProduto - Categoria já existe, usando ID existente:', createdCategoryData.id);
-                          alert(`Categoria "${novaCategoriaNome}" já existe e será usada.`); // Opcional: avisar o usuário
+                          toast.error(`Categoria "${novaCategoriaNome}" já existe e será usada.`); // Opcional: avisar o usuário
                       } else {
                           console.log('AdicionarProduto - Nova categoria criada, ID:', createdCategoryData.id);
-                          alert(`Categoria "${novaCategoriaNome}" criada com sucesso!`); // Opcional: avisar o usuário
+                          toast.success(`Categoria "${novaCategoriaNome}" criada com sucesso!`); // Opcional: avisar o usuário
                       }
                       categoriaIdParaEnviar = createdCategoryData.id; // Pega o ID (seja novo ou existente)
                   } else {
@@ -291,7 +292,7 @@ export default function AdicionarProduto() {
                   throw new Error(errorMessage);
               }
   
-              alert('Produto cadastrado com sucesso!');
+              toast.success('Produto cadastrado com sucesso!');
               router.push(`/empresa/${slug}/produtos`); // Redireciona para a página de produtos da loja
   
           } catch (error) {
