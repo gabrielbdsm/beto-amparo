@@ -28,7 +28,7 @@ export const listarCategoriasPorLoja = async (req, res) => {
         // Busca as categorias na tabela 'categorias' associadas ao loja_id
         const { data: categorias, error } = await supabase
             .from('categorias')
-            .select('id, nome') // Seleciona apenas o ID e o nome da categoria
+            .select('*') // Seleciona apenas o ID e o nome da categoria
             .eq('loja_id', idLojaNum)
             .order('nome', { ascending: true }); // Ordena por nome, opcional
 
