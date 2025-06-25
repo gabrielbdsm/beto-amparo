@@ -385,7 +385,6 @@ export default function FinalizarPedido() {
             const data = await response.json();
 
             if (response.ok) {
-                alert("Pedido finalizado com sucesso!");
                 router.push(`/loja/${slug}/pedidos`);
             } else {
                 console.error("Erro na resposta:", data);

@@ -17,6 +17,7 @@ const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.
 export default function ClienteHome() {
     const router = useRouter();
     const { site } = router.query; // 'site' é o slug da loja
+    const { isReady } = router;
     const [clienteLogado, setClienteLogado] = useState(false);
     const [cliente, setCliente] = useState(null);
     const [rawRecomendacoes, setRawRecomendacoes] = useState([]); 
@@ -221,42 +222,35 @@ export default function ClienteHome() {
     }, [site]);
 
     useEffect(() => {
-        if (!site || !lojaId) return;
-
+        if (!isReady || !site) {
+            return; 
+        }
         async function fetchRecomendacoes() {
-            console.log("✅ 1. Iniciando busca por recomendações...");
             try {
                 const clienteQuery = cliente?.id ? `?clienteId=${cliente.id}` : '';
                 const url = `${process.env.NEXT_PUBLIC_EMPRESA_API}/loja/${site}/recomendacoes${clienteQuery}`;
                 
                 const response = await fetch(url);
-                console.log("✅ 2. Resposta da API recebida. Status:", response.status);
-
                 if (!response.ok) {
-                    console.error("❌ Erro: Resposta da API não foi OK. Status:", response.status);
                     setRawRecomendacoes([]);
                     return;
                 }
                 
                 const data = await response.json();
-                console.log("✅ 3. Dados da API convertidos para JSON:", data);
                 
                 if (Array.isArray(data)) {
-                    console.log("✅ 4. Os dados são um array. Salvando no estado...");
                     setRawRecomendacoes(data);
                 } else {
-                    console.warn("⚠️ Atenção: Os dados recebidos da API NÃO são um array. Resetando estado.");
                     setRawRecomendacoes([]);
                 }
 
             } catch (error) {
-                console.error("❌ ERRO FATAL: A execução caiu no bloco CATCH!", error);
                 setRawRecomendacoes([]);
             }
         }
 
         fetchRecomendacoes();
-    }, [site, lojaId, cliente]);
+    }, [site, cliente, isReady]);
 
     const recomendacoesFiltradas = useMemo(() => {
         if (!rawRecomendacoes.length) {

@@ -1,6 +1,5 @@
 import supabase from '../config/SupaBase.js';
-
-async function getRecomendacoes(slug, clienteId) {
+export async function getRecomendacoes(slug, clienteId) {
     const { data: loja, error: lojaError } = await supabase
         .from('loja')
         .select('id')
@@ -25,26 +24,51 @@ async function getRecomendacoes(slug, clienteId) {
             const categoriasDeInteresse = [...new Set(produtosComprados.map(p => p.categoria_id).filter(Boolean))];
             if (categoriasDeInteresse.length > 0) {
                 const { data: produtosSugeridos } = await supabase.from('produto').select('id').eq('id_loja', lojaId).in('categoria_id', categoriasDeInteresse);
-                recommendedProductIds = produtosSugeridos.map(p => p.id).filter(id => !purchasedProductIds.has(id));
+                recommendedProductIds = produtosSugeridos.map(p => p.id);
             }
         }
     }
 
     if (recommendedProductIds.length === 0) {
-        const { data: todosPedidosDaLoja } = await supabase.from('pedidos').select('id').eq('id_loja', lojaId).eq('status', 'finalizado');
-        if (todosPedidosDaLoja && todosPedidosDaLoja.length > 0) {
-            const todosPedidoIds = todosPedidosDaLoja.map(p => p.id);
-            const { data: todosItensVendidos } = await supabase.from('pedido_itens').select('produto_id, quantidade').in('pedido_id', todosPedidoIds);
-            const salesCount = {};
-            for (const item of todosItensVendidos) {
-                salesCount[item.produto_id] = (salesCount[item.produto_id] || 0) + item.quantidade;
+        try {
+            const { data: todosPedidosDaLoja, error: pedidosError } = await supabase.from('pedidos').select('id').eq('id_loja', lojaId).eq('status', 4); // Correção para status 4
+            if (pedidosError) throw new Error(`Erro ao buscar pedidos: ${pedidosError.message}`);
+
+            if (todosPedidosDaLoja && todosPedidosDaLoja.length > 0) {
+                const todosPedidoIds = todosPedidosDaLoja.map(p => p.id);
+                const { data: todosItensVendidos, error: itensError } = await supabase.from('pedido_itens').select('produto_id, quantidade').in('pedido_id', todosPedidoIds);
+                if (itensError) throw new Error(`Erro ao buscar itens de pedido: ${itensError.message}`);
+
+                if (todosItensVendidos && todosItensVendidos.length > 0) {
+                    const salesCount = {};
+                    for (const item of todosItensVendidos) {
+                        // VERIFICAÇÃO DE SEGURANÇA: Só processa se o item for válido
+                        if (item && item.produto_id != null && item.quantidade != null) {
+                            salesCount[item.produto_id] = (salesCount[item.produto_id] || 0) + item.quantidade;
+                        }
+                    }
+
+                    // VERIFICAÇÃO DE SEGURANÇA: Só continua se houver algo para ordenar
+                    if (Object.keys(salesCount).length > 0) {
+                        const sortedProducts = Object.entries(salesCount).sort((a, b) => b[1] - a[1]);
+                        
+                        // Lógica de map/filter mais segura
+                        recommendedProductIds = sortedProducts
+                            .map(p => parseInt(p[0], 10)) // Usa radix 10 para segurança
+                            .filter(id => !isNaN(id) && !purchasedProductIds.has(id)); // Remove NaN e IDs já comprados
+                    }
+                }
             }
-            const sortedProducts = Object.entries(salesCount).sort((a, b) => b[1] - a[1]);
-            recommendedProductIds = sortedProducts.map(p => parseInt(p[0])).filter(id => !purchasedProductIds.has(id));
+        } catch (err) {
+            console.error("ERRO CRÍTICO DENTRO DA LÓGICA DE RECOMENDAÇÕES GENÉRICAS:", err);
+            // Não relance o erro para o controller, em vez disso, retorne uma lista vazia para o frontend não quebrar.
+            // O console.error no servidor já te avisou do problema.
+            return [];
         }
     }
 
-    const finalProductIds = recommendedProductIds.slice(0, 10);
+
+    const finalProductIds = recommendedProductIds.slice(0, 6);
     if (finalProductIds.length === 0) return [];
 
     const { data: finalProducts, error: finalProductsError } = await supabase.from('produto').select('*').in('id', finalProductIds).eq('ativo', true);
@@ -56,7 +80,3 @@ async function getRecomendacoes(slug, clienteId) {
     return availableProducts;
 }
 
-// Exporta a função para ser usada pelo Controller
-export {
-    getRecomendacoes,
-};

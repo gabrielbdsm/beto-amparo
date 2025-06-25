@@ -4,7 +4,7 @@
 import { getRecomendacoes } from '../models/recomendacaoModel.js';
 
 // A função do controller recebe 'req' e 'res'
-async function buscarRecomendacoes(req, res) {
+export async function buscarRecomendacoes(req, res) {
     try {
         const { slug } = req.params;
         const { clienteId } = req.query;
@@ -17,7 +17,3 @@ async function buscarRecomendacoes(req, res) {
         res.status(500).json({ error: "Ocorreu um erro ao processar sua solicitação." });
     }
 }
-
-export {
-    buscarRecomendacoes,
-};
