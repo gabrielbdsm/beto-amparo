@@ -4,10 +4,11 @@ import { useRouter } from 'next/router';
 import { useIMask } from 'react-imask';
 import suporteImg from '@/public/suporte_beto.svg'; // ajuste o caminho se necessário
 
+
 export default function Suporte() {
   const router = useRouter();
   const [showSuccessModal, setShowSuccessModal] = useState(false); // <-- NOVO ESTADO
-
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   const [formData, setFormData] = useState({
     nome: '',
@@ -94,11 +95,41 @@ export default function Suporte() {
     }
   };
   
-  const { ref: cnpjRef } = useIMask(
+  const { ref: cnpjRef, maskRef } = useIMask(
     { mask: '00.000.000/0000-00' },
     { onAccept: (value) => handleChange({ target: { name: 'cnpj', value } }) }
   );
 
+  useEffect(() => {
+    const verificarLogin = async () => {
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/verificar-sessao`, {
+          credentials: 'include', // Essencial para enviar o cookie de sessão!
+        });
+
+        if (res.ok) {
+          const userData = await res.json();
+          
+          setFormData(prevData => ({
+            ...prevData,
+            nome: userData.nome || '',
+            email: userData.email || '',
+            cnpj: userData.cnpj || '',
+          }));
+          
+          if (userData.cnpj && maskRef.current) {
+            maskRef.current.value = userData.cnpj;
+          }
+          
+          setIsAuthenticated(true);
+        }
+      } catch (error) {
+        console.error("Erro ao verificar sessão, tratando como visitante.", error);
+      }
+    };
+
+    verificarLogin();
+  }, [maskRef]);
   return (
     <div className="min-h-screen relative flex items-center justify-center bg-blue-50 px-4 py-10">
       {showSuccessModal && (
@@ -137,24 +168,34 @@ export default function Suporte() {
 
             <div className="mb-4">
               <input
-                type="text"
-                name="nome"
-                value={formData.nome}
-                onChange={handleChange}
+                type="text" name="nome" value={formData.nome} onChange={handleChange}
                 placeholder="Nome Completo"
-                className={`w-full p-3 bg-white text-black rounded-full outline-none placeholder:text-[#5698c6] placeholder:font-medium transition-all ${errors.nome ? 'ring-2 ring-red-400' : 'focus:ring-2 focus:ring-blue-200'}`}
+                readOnly={isAuthenticated} // Campo bloqueado se logado
+                className={`w-full p-3 bg-white text-black rounded-full outline-none placeholder:text-[#5698c6] placeholder:font-medium transition-all ${errors.nome ? 'ring-2 ring-red-400' : 'focus:ring-2 focus:ring-blue-200'} ${isAuthenticated ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                required
               />
               {errors.nome && <p className="text-red-300 text-sm mt-1 ml-3">{errors.nome}</p>}
             </div>
             
             <div className="mb-4">
-              <input type="email" name="email" value={formData.email} onChange={handleChange} placeholder="Email" className={`w-full p-3 bg-white text-black rounded-full outline-none placeholder:text-[#5698c6] placeholder:font-medium transition-all ${errors.email ? 'ring-2 ring-red-400' : 'focus:ring-2 focus:ring-blue-200'}`}/>
+              <input
+                type="email" name="email" value={formData.email} onChange={handleChange}
+                placeholder="Email"
+                readOnly={isAuthenticated} // Campo bloqueado se logado
+                className={`w-full p-3 bg-white text-black rounded-full outline-none placeholder:text-[#5698c6] placeholder:font-medium transition-all ${errors.email ? 'ring-2 ring-red-400' : 'focus:ring-2 focus:ring-blue-200'} ${isAuthenticated ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                required
+              />
               {errors.email && <p className="text-red-300 text-sm mt-1 ml-3">{errors.email}</p>}
             </div>
 
-            {/* ✅ CORRIGIDO: Removido 'defaultValue' */}
             <div className="mb-4">
-              <input ref={cnpjRef} type="text" name="cnpj" placeholder="CNPJ" className={`w-full p-3 bg-white text-black rounded-full outline-none placeholder:text-[#5698c6] placeholder:font-medium transition-all ${errors.cnpj ? 'ring-2 ring-red-400' : 'focus:ring-2 focus:ring-blue-200'}`}/>
+              <input
+                ref={cnpjRef} type="text" name="cnpj" placeholder="CNPJ"
+                value={formData.cnpj} onChange={handleChange} // Garante que o valor seja controlado pelo React
+                readOnly={isAuthenticated} // Campo bloqueado se logado
+                className={`w-full p-3 bg-white text-black rounded-full outline-none placeholder:text-[#5698c6] placeholder:font-medium transition-all ${errors.cnpj ? 'ring-2 ring-red-400' : 'focus:ring-2 focus:ring-blue-200'} ${isAuthenticated ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                required
+              />
               {errors.cnpj && <p className="text-red-300 text-sm mt-1 ml-3">{errors.cnpj}</p>}
             </div>
 
