@@ -5,10 +5,17 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
-
   images: {
-    domains: ['cufzswdymzevdeonjgan.supabase.co'],
-  },
+      remotePatterns: [
+        {
+          protocol: 'https',
+          hostname: 'cufzswdymzevdeonjgan.supabase.co',
+          pathname: '/storage/v1/object/public/**',
+        },
+      ],
+    },
+
+
 
   async rewrites() {
     return [
@@ -23,6 +30,14 @@ const nextConfig = {
       {
         source: '/loja/:slug/visualizarAgendamento',
         destination: '/client/visualizarAgendamentoCliente',
+      },
+      {
+        source: '/loja/:slug/carrinho',
+        destination: '/client/carrinho',
+      },
+      {
+        source: '/loja/:slug/pedidos',
+        destination: '/client/pedidos',
       },
       {
         source: '/:slug/carrinho',

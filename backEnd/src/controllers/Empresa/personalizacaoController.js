@@ -5,8 +5,11 @@ dotenv.config();
 
 export const criarPersonalizacao = async (req, res) => {
   try {
-    const { nomeFantasia, corPrimaria, corSecundaria, slogan, fotoLoja, slugLoja } = req.body;
-
+    // --- ALTERAÇÃO AQUI: Adicione idEmpresa ao req.body ---
+    const { nomeFantasia, corPrimaria, corSecundaria, slogan, fotoLoja, slugLoja, idEmpresa } = req.body;
+    // --- FIM DA ALTERAÇÃO ---
+    console.log('criarPersonalizacao: Dados recebidos no req.body:', req.body); // ADICIONE ESTE LOG
+    console.log('criarPersonalizacao: ID da empresa recebido:', idEmpresa); // ADICIONE ESTE LOG
     // Verificar se o slug já existe
     const { data: existingStore, error: checkError } = await supabase
       .from('loja')
@@ -14,8 +17,9 @@ export const criarPersonalizacao = async (req, res) => {
       .eq('slug_loja', slugLoja)
       .single();
 
-    if (checkError && checkError.code !== 'PGRST116') { // PGRST116 significa "nenhum resultado", que é esperado se não existir
-      throw checkError;
+    if (checkError && checkError.code !== 'PGRST116') {
+      console.error('Erro no Supabase ao verificar slug existente:', checkError.message);
+      return res.status(500).json({ message: 'Erro interno ao verificar o link.', error: checkError.message });
     }
     if (existingStore) {
       return res.status(400).json({ message: 'Este link já está em uso. Por favor, escolha outro.' });
@@ -28,17 +32,23 @@ export const criarPersonalizacao = async (req, res) => {
         nome_fantasia: nomeFantasia,
         cor_primaria: corPrimaria,
         cor_secundaria: corSecundaria,
-        slogan: slogan || null, // Permitir nulo se não fornecido
+        slogan: slogan || null,
         foto_loja: fotoLoja || null,
         slug_loja: slugLoja,
+        // --- ALTERAÇÃO AQUI: Adicione id_empresa na inserção ---
+        id_empresa: idEmpresa, // Certifique-se de que o nome da coluna no seu DB é 'id_empresa'
+        // --- FIM DA ALTERAÇÃO ---
       })
       .select();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Erro ao inserir personalização:', error.message);
+      return res.status(500).json({ message: 'Erro ao salvar personalização', error: error.message });
+    }
 
     return res.status(201).json(data[0]);
   } catch (error) {
-    console.error('Erro ao salvar personalização:', error.message);
+    console.error('Erro inesperado em criarPersonalizacao:', error.message);
     return res.status(500).json({ message: 'Erro ao salvar personalização', error: error.message });
   }
 };
@@ -52,18 +62,22 @@ export const verificarSlug = async (req, res) => {
     }
 
     const { data, error } = await supabase
-      .from('Loja')
-      .select('slug_Loja')
-      .eq('slug_Loja', slug)
+      .from('loja') 
+      .select('slug_loja') 
+      .eq('slug_loja', slug)
       .single();
 
     if (error && error.code !== 'PGRST116') {
-      throw error;
+      // Se houver qualquer outro erro do Supabase que não seja "nenhum resultado"
+      console.error('Erro do Supabase ao verificar slug:', error.message);
+      return res.status(500).json({ message: 'Erro interno ao verificar a disponibilidade do link.', error: error.message });
     }
 
+    // Se data for null, significa que não encontrou (ou error.code era PGRST116)
+    // Se data não for null, significa que encontrou e o slug já existe
     return res.status(200).json({ exists: !!data, message: data ? 'Este link já está em uso.' : 'Link disponível.' });
   } catch (error) {
-    console.error('Erro ao verificar slug:', error.message);
+    console.error('Erro inesperado ao verificar slug:', error.message);
     return res.status(500).json({ message: 'Erro ao verificar slug', error: error.message });
   }
 };

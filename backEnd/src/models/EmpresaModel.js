@@ -15,7 +15,8 @@ export const inserirEmpresa = async ({
   senha,
 }) => {
   try {
-    const { error } = await supabase
+    // --- ALTERAÇÃO AQUI: Adicione .select() para retornar os dados inseridos ---
+    const { data, error } = await supabase
       .from('empresas')
       .insert([{
         nome,
@@ -29,13 +30,19 @@ export const inserirEmpresa = async ({
         site,
         email,
         senha,
-        primeiro_login_feito: false, // <-- Adicionando o campo com valor padrão false (ou 0 para INTEGER)
-      }]);
+        primeiro_login_feito: false,
+      }])
+      .select(); 
 
-    if (error) return { error: error.message };
-    return { error: null };
+    if (error) {
+      console.error("Erro Supabase ao inserir empresa:", error.message);
+      return { data: null, error: error.message }; 
+    }
+
+    return { data, error: null }; 
   } catch (err) {
-    return { error: err.message };
+    console.error("Erro inesperado em inserirEmpresa:", err.message);
+    return { data: null, error: err.message }; 
   }
 };
 

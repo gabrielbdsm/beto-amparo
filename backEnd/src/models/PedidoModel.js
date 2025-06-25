@@ -82,32 +82,7 @@ export async function listarPedidosDaLoja(idLoja) {
   // REMOVA TODOS OS COMENTÁRIOS E LINHAS EM BRANCO DA STRING 'select'
   let query = supabase
       .from('pedidos')
-      .select(`
-          id,
-          data,
-          total,
-          id_cliente,
-          id_loja,
-          status,
-          observacoes,
-          metodo_pagamento,
-          metodo_entrega,
-          endereco_entrega,
-          subtotal,
-          taxa_entrega,
-          desconto,
-          cupom_id,
-          data_finalizacao,
-          data_entrega,
-          pedido_itens (
-              id,
-              quantidade,
-              preco_unitario,
-              produto (id, nome, image)
-          )
-          -- Se você tem uma tabela de clientes e quer o nome/email, adicione aqui:
-          -- clientes (id, nome, email)
-      `)
+      .select(`*`)
       .eq('id_loja', idLoja)
       .order('data', { ascending: false });
 

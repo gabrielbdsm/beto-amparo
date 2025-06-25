@@ -8,7 +8,7 @@ import OwnerSidebar from '@/components/OwnerSidebar';
 import HistoricoVendasTable from '@/components/HistoricoVendasTable';
 import DashboardMetrics from "@/components/DashboardMetrics"
 import ControleEstoqueTable from '@/components/ControleEstoqueTable';
-
+import CancelamentosPendentesTable from '@/components/CancelamentosPendentesTable';
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -29,6 +29,13 @@ export default function DashboardPage() {
   const [errorPedidos, setErrorPedidos] = useState(null);
   const [errorGrafico, setErrorGrafico] = useState(null);
   const [errorEstoque, setErrorEstoque] = useState(null);
+
+  //Estados para as solicitações de cancelamento
+  const [cancelamentos, setCancelamentos] = useState([]);
+  const [loadingCancelamentos, setLoadingCancelamentos] = useState(true);
+  const [errorCancelamentos, setErrorCancelamentos] = useState(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
 
   // NOVO: Adicione um estado para o ID da empresa (virá do token)
   const [autenticatedEmpresaId, setAutenticatedEmpresaId] = useState(null);
@@ -141,11 +148,22 @@ export default function DashboardPage() {
         } finally {
             setLoadingEstoque(false);
         }
+        setLoadingCancelamentos(true);
+            try {
+                const response = await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/order-cancellations/loja/${slug}/pendentes`, { credentials: 'include' });
+                if (!response.ok) throw new Error('Falha ao buscar solicitações');
+                const data = await response.json();
+                setCancelamentos(data);
+            } catch (err) {
+                setErrorCancelamentos(err.message);
+            } finally {
+                setLoadingCancelamentos(false);
+            }
     };
 
     fetchAllDashboardData();
 
-  }, [router.isReady, slug, router]); 
+  }, [router.isReady, slug, router, refreshTrigger]); 
 
   // Função para obter a URL da imagem do produto (para ControleEstoqueTable se ela for usar imagens)
   // Se essa função já existe em outro lugar ou é um helper, pode importá-la.
@@ -165,6 +183,7 @@ export default function DashboardPage() {
     <OwnerSidebar slug={slug}>
       <div className="p-8 max-w-6xl mx-auto bg-white rounded-lg shadow-md min-h-[600px]">
         <h1 className="text-3xl font-bold text-[#3681B6] mb-6">Dashboard da Empresa</h1>
+
        
         <button
   onClick={async () => {
@@ -178,6 +197,7 @@ export default function DashboardPage() {
     
      {/* DasborardMetricas de Pedidos */}
 {   mostrarResumo && <DashboardMetrics />}
+
         {/* Histórico de Pedidos */}
         <div className="mb-8">
           <h2 className="text-2xl font-bold text-gray-800 mb-4">Histórico de Pedidos</h2>

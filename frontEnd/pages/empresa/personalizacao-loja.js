@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react'; 
 import axios from 'axios';
 import { createClient } from '@supabase/supabase-js';
 import Image from 'next/image';
@@ -11,7 +11,7 @@ const supabase = createClient(
 
 const PersonalizacaoLoja = () => {
   const router = useRouter();
-  const { slug } = router.query; // Este slug aqui é para o caso de você estar editando uma loja existente
+  const { slug } = router.query;
 
   const [formData, setFormData] = useState({
     nomeFantasia: '',
@@ -20,6 +20,7 @@ const PersonalizacaoLoja = () => {
     corSecundaria: '#ffffff',
     slogan: '',
     slugLoja: '',
+    idEmpresa: null,
   });
 
   const [uploading, setUploading] = useState(false);
@@ -27,6 +28,21 @@ const PersonalizacaoLoja = () => {
   const [slugError, setSlugError] = useState('');
   const [isCheckingSlug, setIsCheckingSlug] = useState(false);
 
+  // URL base para o link do cliente
+  const clientBaseUrl = 'localhost:3000/loja/'; // Você pode substituir por seu domínio quando em produção
+  // --- Início da alteração: Carregar o ID da empresa do localStorage ---
+  useEffect(() => {
+    const storedEmpresaId = localStorage.getItem('id_empresa_cadastrada');
+    console.log('PersonalizacaoLoja: ID da empresa do localStorage:', storedEmpresaId); // ADICIONE ESTE LOG
+    if (storedEmpresaId) {
+      setFormData(prev => ({ ...prev, idEmpresa: storedEmpresaId }));
+    } else {
+      console.warn('PersonalizacaoLoja: ID da empresa não encontrado no localStorage.');
+      // Opcional: Redirecionar aqui se o ID for mandatório
+      // router.push('/cadastrar-empresa');
+    }
+  }, []);
+  // --- Fim da alteração ---
   const handleChange = (e) => {
     const { name, value, type, files, checked } = e.target;
     let formattedValue = value;
@@ -44,7 +60,11 @@ const PersonalizacaoLoja = () => {
     }));
 
     if (name === 'slugLoja' && formattedValue) {
-      checkSlugAvailability(formattedValue);
+      // Pequeno debounce para evitar muitas requisições ao digitar rápido
+      if (e.target.timeout) clearTimeout(e.target.timeout);
+      e.target.timeout = setTimeout(() => {
+        checkSlugAvailability(formattedValue);
+      }, 500); // Verifica após 500ms de inatividade
     } else if (name === 'slugLoja') {
       setSlugError('');
     }
@@ -55,7 +75,6 @@ const PersonalizacaoLoja = () => {
     setSlugError('');
 
     try {
-      // Use axios para sua API de backend Node.js
       const response = await axios.get(`${process.env.NEXT_PUBLIC_EMPRESA_API}/check-slug?slug=${slug}`);
       if (response.data.exists) {
         setSlugError('Este link já está em uso. Por favor, escolha outro.');
@@ -83,9 +102,8 @@ const PersonalizacaoLoja = () => {
 
       if (formData.fotoLoja) {
         const file = formData.fotoLoja;
-        const fileExt = file.name.split('.').pop();
         // Crie um nome de arquivo único para evitar colisões no Supabase Storage
-        const fileName = `${Date.now()}-${file.name.replace(/[^a-z0-9.]/gi, '_')}`; 
+        const fileName = `${Date.now()}-${file.name.replace(/[^a-z0-9.]/gi, '_')}`;
         const filePath = `lojas/${fileName}`;
 
         const { error: uploadError } = await supabase.storage
@@ -108,33 +126,27 @@ const PersonalizacaoLoja = () => {
         slogan: formData.slogan,
         fotoLoja: imageUrl, // URL da imagem salva no Supabase Storage
         slugLoja: formData.slugLoja,
+        idEmpresa: formData.idEmpresa,
       };
 
-      // 1. Enviar os dados de personalização para o backend
-      // Certifique-se de que este endpoint esteja recebendo o ID da empresa da sessão/token
       const saveResponse = await axios.post(`${process.env.NEXT_PUBLIC_EMPRESA_API}/personalizacao`, payload, {
-        withCredentials: true // Importante para enviar cookies de sessão
+        withCredentials: true
       });
 
       if (saveResponse.status !== 200 && saveResponse.status !== 201) {
         throw new Error(saveResponse.data?.message || 'Erro ao salvar personalização da loja.');
       }
 
-      // 2. Marcar o primeiro login como feito após a personalização bem-sucedida
-      // Este endpoint (marcar-personalizacao-completa) precisa ser criado no seu backend EmpresaController.js
       const markLoginResponse = await axios.put(`${process.env.NEXT_PUBLIC_EMPRESA_API}/marcar-personalizacao-completa`, {}, {
-        withCredentials: true // Importante para enviar cookies de sessão
+        withCredentials: true
       });
 
       if (markLoginResponse.status !== 200) {
-        // Logar o erro, mas não impedir o usuário de seguir se a personalização foi salva
         console.error('Erro ao marcar primeiro login como completo:', markLoginResponse.data?.message || 'Erro desconhecido.');
-        // Você pode alertar o usuário ou apenas logar e seguir
       }
 
-
-      alert('Personalização da loja salva com sucesso!');
-      router.push(`/loja/${formData.slugLoja}`); // Redireciona para a página da loja personalizada
+      //alert('Personalização da loja salva com sucesso!');
+      router.push(`/empresa/${formData.slugLoja}/produtos`);
     } catch (error) {
       console.error('Erro ao salvar personalização:', error.response?.data || error.message);
       alert(`Erro ao salvar a personalização: ${error.response?.data?.message || error.message}`);
@@ -144,6 +156,11 @@ const PersonalizacaoLoja = () => {
   };
 
   const handleNext = () => {
+    // Validações antes de ir para o próximo passo
+    if (!formData.nomeFantasia || !formData.slogan) {
+      alert('Por favor, preencha todos os campos obrigatórios do Passo 1.');
+      return;
+    }
     setStep(2);
   };
 
@@ -182,7 +199,7 @@ const PersonalizacaoLoja = () => {
                     onChange={handleChange}
                     placeholder="Ex: Loja da Felicidade"
                     className="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#3681B6] placeholder:text-gray-400"
-                    required // Adicionado required
+                    required
                   />
                 </div>
 
@@ -200,7 +217,7 @@ const PersonalizacaoLoja = () => {
                     <button
                       type="button"
                       className="w-full sm:w-auto p-3 text-white rounded-xl bg-gradient-to-r from-[#3681B6] to-[#2e6e99] flex justify-center items-center hover:from-[#2e6e99] hover:to-[#3681B6]"
-                      onClick={() => document.getElementById('fotoLoja').click()} // Simula o clique no input file
+                      onClick={() => document.getElementById('fotoLoja').click()}
                     >
                       <span>Escolher Arquivo</span>
                     </button>
@@ -241,7 +258,7 @@ const PersonalizacaoLoja = () => {
                     onChange={handleChange}
                     placeholder="Ex: Sua loja, sua alegria!"
                     className="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#3681B6] placeholder:text-gray-400"
-                    required // Adicionado required
+                    required
                   />
                 </div>
 
@@ -271,7 +288,6 @@ const PersonalizacaoLoja = () => {
                   <h3 className="text-xl font-semibold" style={{ color: formData.corPrimaria }}>
                     {formData.nomeFantasia || 'Nome da Loja'}
                   </h3>
-                  {/* Ajustado para usar corPrimaria se a secundaria for branca para melhor contraste */}
                   <p className="text-sm" style={{ color: formData.corSecundaria === '#ffffff' ? '#333' : formData.corSecundaria }}>
                     {formData.slogan || 'Slogan da loja'}
                   </p>
@@ -291,6 +307,7 @@ const PersonalizacaoLoja = () => {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">URL Amigável da Loja</label>
+              {/* Campo para o slug */}
               <input
                 type="text"
                 name="slugLoja"
@@ -298,23 +315,48 @@ const PersonalizacaoLoja = () => {
                 onChange={handleChange}
                 placeholder="exemplo-loja"
                 className="w-full p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#3681B6]"
-                required // Adicionado required
+                required
               />
               {isCheckingSlug ? (
                 <p className="text-sm text-blue-600 mt-1">Verificando disponibilidade...</p>
               ) : slugError ? (
                 <p className="text-sm text-red-600 mt-1">{slugError}</p>
               ) : (
-                formData.slugLoja && <p className="text-sm text-green-600 mt-1">Disponível!</p>
+                formData.slugLoja && <p className="text-sm text-green-600 mt-1">Link disponível!</p>
               )}
             </div>
+
+            {/* NOVO BLOCO PARA EXIBIR O LINK COMPLETO */}
+            <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-sm font-medium text-blue-800 mb-2">
+                Este será o link da sua loja para os clientes:
+              </p>
+              <div className="bg-blue-100 p-3 rounded-md flex items-center justify-between">
+                <span className="font-mono text-blue-900 break-all">
+                  {clientBaseUrl}
+                  <span className="font-bold text-blue-900">
+                    {formData.slugLoja || '[seu-link-aqui]'}
+                  </span>
+                </span>
+                {formData.slugLoja && !slugError && (
+                  <button
+                    onClick={() => navigator.clipboard.writeText(`${clientBaseUrl}${formData.slugLoja}`)}
+                    className="ml-2 p-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    title="Copiar link"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 5H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2m-3-7l3 3m0 0l-3 3m3-3H10"></path></svg>
+                  </button>
+                )}
+              </div>
+            </div>
+            {/* FIM DO NOVO BLOCO */}
 
             <div className="flex space-x-4">
               <button
                 type="button"
                 onClick={handleBack}
                 className="w-full bg-gray-300 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-400"
-                disabled={uploading} // Desabilita o botão enquanto está salvando
+                disabled={uploading}
               >
                 Voltar
               </button>
@@ -322,7 +364,7 @@ const PersonalizacaoLoja = () => {
               <button
                 type="button"
                 onClick={handleSubmit}
-                disabled={uploading || isCheckingSlug || slugError} // Desabilita se estiver enviando, verificando slug ou se houver erro no slug
+                disabled={uploading || isCheckingSlug || slugError || !formData.slugLoja} // Desabilita se o slug estiver vazio
                 className="w-full bg-gradient-to-r from-[#3681B6] to-[#2e6e99] text-white py-3 rounded-xl font-semibold hover:from-[#2e6e99] hover:to-[#3681B6] transition"
               >
                 {uploading ? 'Salvando...' : 'Salvar Personalização'}
