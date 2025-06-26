@@ -37,8 +37,13 @@ router.delete('/empresa/horarios/:data',empresaPrivate, HorariosController.delet
 router.get('/empresa/agendamentos', empresaPrivate, agendamentoEmpresaController.getAgendamentosController);
 router.delete('/empresa/agendamentos', empresaPrivate, agendamentoEmpresaController.deleteAgendamentoController);
 router.put('/empresa/agendamentos', empresaPrivate, agendamentoEmpresaController.updateAgendamentoController);
+router.get('/loja/slug-completo/:slug', EmpresaController.BuscarEmpresaBySlug);
+
 
 router.get('/empresa/insights/:slug', insightController.buscarInsightsPorSlug);
+
+router.get('/verificar-sessao', AuthController.verificarSessao);
+
 
 router.get('/verifyAuthStatus', routePrivate, (req, res) => {
   // Se o middleware routePrivate passou, significa que o usuário está autenticado
