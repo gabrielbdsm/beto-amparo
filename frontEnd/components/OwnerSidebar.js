@@ -141,6 +141,7 @@ export default function OwnerSidebar({ children, slug }) {
 
 
   const currentActiveSlug = slug || slugEmpresa;
+ 
 
   const handleLogout = async () => {
     try {

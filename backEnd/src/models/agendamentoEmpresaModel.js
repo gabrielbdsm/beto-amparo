@@ -1,11 +1,13 @@
 import supabase from '../config/SupaBase.js';
 
 
-export const buscarAgendamentosPorEmpresa = async (empresaId) => {
+export const buscarAgendamentosPorEmpresa = async (empresaId  , slug) => {
   const { data, error } = await supabase
     .from('agendamentos')
     .select('*')
-    .eq('id_empresa', empresaId);
+    .eq('id_empresa', empresaId)
+    .eq("slug" , slug)
+    
     console.log(empresaId)
   if (error) {
     throw new Error(`Erro ao buscar agendamentos: ${error.message}`);
@@ -14,7 +16,7 @@ export const buscarAgendamentosPorEmpresa = async (empresaId) => {
   return data;
 }
 
-export const deletarAgendamentoPorId = async (date , time, empresaId , id_cliente) => {
+export const deletarAgendamentoPorId = async (date , time, empresaId , id_cliente , slug) => {
   const { data, error } = await supabase
     .from('agendamentos')
     .delete()
@@ -22,6 +24,7 @@ export const deletarAgendamentoPorId = async (date , time, empresaId , id_client
     .eq('time', time)
     .eq('id_empresa', empresaId)
     .eq('id_cliente', id_cliente)
+    .eq("slug" , slug)
     .select();
 
   if (error) {
@@ -30,7 +33,7 @@ export const deletarAgendamentoPorId = async (date , time, empresaId , id_client
 
   return data;
 }
-export const updateAgendamentoController = async (date, time, empresaId, status, id_cliente) => {
+export const updateAgendamentoController = async (date, time, empresaId, status, id_cliente , slug) => {
   const { data, error } = await supabase
     .from('agendamentos')
     .update({ status })
@@ -38,6 +41,7 @@ export const updateAgendamentoController = async (date, time, empresaId, status,
     .eq('time', time)
     .eq('id_empresa', empresaId)
     .eq('id_cliente', id_cliente)
+    .eq("slug" , slug)
     .select();
 
   if (error) {

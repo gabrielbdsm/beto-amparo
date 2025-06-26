@@ -4,9 +4,11 @@ import { IntervalosHorarioModel } from '../../models/IntervalosHorarioModel.js';
 // GET - Buscar todas as datas configuradas por empresa
 export const getDatasConfiguradasByEmpresa = async (req, res) => {
   const empresaId = req.IdEmpresa;
+  const slug = req.params.slug
+
 
   try {
-    const datasConfig = await DatasConfiguradasModel.buscarDatasPorEmpresaPorId(empresaId);
+    const datasConfig = await DatasConfiguradasModel.buscarDatasPorEmpresaPorId(empresaId , slug);
     const datasConfigIds = datasConfig.map(dc => dc.id).filter(Boolean);
 
     let intervalos = [];
@@ -32,6 +34,7 @@ export const getDatasConfiguradasByEmpresa = async (req, res) => {
 export const saveDatasConfiguradas = async (req, res) => {
   const empresaId = req.IdEmpresa;
   const datasToSave = req.body;
+  const slug = req.params.slug
 
   if (!Array.isArray(datasToSave)) {
     return res.status(400).json({ error: 'A requisição deve ser um array de configurações.' });
@@ -58,13 +61,13 @@ export const saveDatasConfiguradas = async (req, res) => {
       let dataExistente = null;
 
     
-      dataExistente = await DatasConfiguradasModel.getByDataAndEmpresa(data, empresaId);
+      dataExistente = await DatasConfiguradasModel.getByDataAndEmpresa(data, empresaId , slug);
       
 
       if (dataExistente) {
         
         
-        await DatasConfiguradasModel.update(dataExistente.id, { data, tipoConfig, fechado });
+        await DatasConfiguradasModel.update(dataExistente.id, { data, tipoConfig, fechado , slug });
 
         if (fechado) {
           await IntervalosHorarioModel.deleteByDataConfigId(dataExistente.id);
@@ -90,8 +93,9 @@ export const saveDatasConfiguradas = async (req, res) => {
 
       } else {
         // Inserção nova
-        const [novaData] = await DatasConfiguradasModel.bulkInsert([{ data, tipoConfig, fechado, empresa_id: empresaId }]);
-
+       
+        const [novaData] = await DatasConfiguradasModel.bulkInsert([{ data, tipoConfig, fechado, empresa_id: empresaId , slug}]);
+        
         if (!fechado && intervalos?.length > 0) {
           const novos = intervalos.map(iv => ({
             ...iv,
@@ -114,11 +118,11 @@ export const saveDatasConfiguradas = async (req, res) => {
 
 
 export const deleteDataConfigurada = async (req, res) => {
-  const { data } = req.params;
+  const { data , slug } = req.params;
   const empresaId = req.IdEmpresa;
 
   try {
-    const dataExistente = await DatasConfiguradasModel.getByDataAndEmpresa(data, empresaId)
+    const dataExistente = await DatasConfiguradasModel.getByDataAndEmpresa(data, empresaId , slug)
     
 
     if (!dataExistente ) {

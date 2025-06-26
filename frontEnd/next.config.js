@@ -1,4 +1,11 @@
 /** @type {import('next').NextConfig} */
+
+
+const withPWA = require('next-pwa')({
+  dest: 'public',
+  register: true,
+  skipWaiting: true,
+});
 const nextConfig = {
   reactStrictMode: true,
 
@@ -80,8 +87,12 @@ const nextConfig = {
         destination: '/empresa/AdicionarProduto',
       },
       {
-        source: '/empresa/meusAgendamentos',
+        source: '/empresa/:slug/meusAgendamentos',
         destination: '/empresa/visualizacaoAgendamento',
+      },
+      {
+        source: '/empresa/:slug/horarioEmpresa',
+        destination: '/empresa/horarioEmpresa',
       },
     ];
   },
