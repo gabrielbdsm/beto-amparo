@@ -196,8 +196,7 @@ export default function DashboardPage() {
 </button>
     
      {/* DasborardMetricas de Pedidos */}
-{   mostrarResumo && <DashboardMetrics />}
-
+{   mostrarResumo && <DashboardMetrics slug ={slug} />}
         {/* Histórico de Pedidos */}
         <div className="mb-8">
           <h2 className="text-2xl font-bold text-gray-800 mb-4">Histórico de Pedidos</h2>

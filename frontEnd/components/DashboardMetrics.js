@@ -27,7 +27,8 @@ ChartJS.register(
   Filler
 );
 
-const Index = () => {
+const Index = (slug) => {
+  const slugLoja = slug.slug
   const [ticketData, setTicketData] = useState([]);
   const [metrics, setMetrics] = useState({});
   const [topProducts, setTopProducts] = useState([]);
@@ -52,10 +53,11 @@ const Index = () => {
   
     return `?start=${formatDate(periodStart)}&end=${formatDate(periodEnd)}`;
   };
+
   function getDate(){
     const query = getDateRangeQuery();
-    console.log(query)
-    fetch( `${process.env.NEXT_PUBLIC_EMPRESA_API}/empresa/insights/ben-burguer${query}`)
+
+    fetch( `${process.env.NEXT_PUBLIC_EMPRESA_API}/empresa/insights/${slugLoja}${query}`)
       .then(res => res.json())
       .then(data => {
         setOriginalData(data);
@@ -69,7 +71,7 @@ const Index = () => {
   useEffect(() => {
     getDate()
     dataATT = new Date().toLocaleTimeString('pt-BR')
-  },[dateFilter, currentPeriod]);
+  },[dateFilter, currentPeriod], slugLoja);
 
 
   useEffect(() => {

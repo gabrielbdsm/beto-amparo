@@ -215,7 +215,8 @@ export async function buscarPedidosPorSlugAndData(slug , start , end) {
     const { data: pedidos, error: pedidosError } = await supabase
       .from('pedidos')
       .select('*')
-      .eq('id_loja', loja.id) // <--- CONFIRMADO: FK na tabela 'pedidos' é 'id_loja'
+      .eq('id_loja', loja.id)
+      .eq('status','4') 
       .order('data', { ascending: false }) 
       .gte('data', start)
       .lte('data', end); 
