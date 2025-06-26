@@ -94,6 +94,10 @@ const nextConfig = {
         source: '/empresa/:slug/horarioEmpresa',
         destination: '/empresa/horarioEmpresa',
       },
+       {
+        source: '/api/:path*',
+        destination: 'https://beto-amparo.onrender.com/:path*', 
+      },
     ];
   },
 };
