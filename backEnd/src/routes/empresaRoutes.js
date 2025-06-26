@@ -9,6 +9,7 @@ import { atualizarPersonalizacao, criarPersonalizacao, getLojaBySlug, verificarS
 import * as HorariosController from '../controllers/Empresa/horariosCotroller.js'; 
 import * as agendamentoEmpresaController from '../controllers/Empresa/AgendamentoEmpresaController.js'; // <-- CORRIGIDO AQUI!
 import { empresaPrivate } from '../middleware/protectRouterEmpresa.js'; // <-- CORRIGIDO AQUI!
+import * as insightController from "../controllers/Empresa/insightController.js"
 
 const router = express.Router();
 
@@ -37,6 +38,9 @@ router.get('/empresa/agendamentos', empresaPrivate, agendamentoEmpresaController
 router.delete('/empresa/agendamentos', empresaPrivate, agendamentoEmpresaController.deleteAgendamentoController);
 router.put('/empresa/agendamentos', empresaPrivate, agendamentoEmpresaController.updateAgendamentoController);
 router.get('/loja/slug-completo/:slug', EmpresaController.BuscarEmpresaBySlug);
+
+
+router.get('/empresa/insights/:slug', insightController.buscarInsightsPorSlug);
 
 router.get('/verificar-sessao', AuthController.verificarSessao);
 

@@ -6,7 +6,7 @@ import { useRouter } from 'next/router';
 // Importe seus componentes
 import OwnerSidebar from '@/components/OwnerSidebar';
 import HistoricoVendasTable from '@/components/HistoricoVendasTable';
-import VendasChart from '@/components/VendasChart';
+import DashboardMetrics from "@/components/DashboardMetrics"
 import ControleEstoqueTable from '@/components/ControleEstoqueTable';
 import CancelamentosPendentesTable from '@/components/CancelamentosPendentesTable';
 
@@ -14,6 +14,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const { slug } = router.query; // Este é o SLUG DA LOJA (ex: 'ben-burguer')
 
+  const [mostrarResumo, setMostrarResumo] = useState(false);
   // Estados de dados
   const [historicoPedidos, setHistoricoPedidos] = useState([]);
   const [dadosGrafico, setDadosGrafico] = useState({ labels: [], totals: [] });
@@ -183,37 +184,19 @@ export default function DashboardPage() {
       <div className="p-8 max-w-6xl mx-auto bg-white rounded-lg shadow-md min-h-[600px]">
         <h1 className="text-3xl font-bold text-[#3681B6] mb-6">Dashboard da Empresa</h1>
 
-        {/* Gráfico de Vendas */}
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-800 mb-4">Vendas por Período</h2>
-          {loadingGrafico ? (
-            <p>Carregando dados do gráfico...</p>
-          ) : errorGrafico ? (
-            <p className="text-red-500">Erro ao carregar gráfico: {errorGrafico}</p>
-          ) : (
-            <VendasChart labels={dadosGrafico.labels} totals={dadosGrafico.totals} />
-          )}
-        </div>
-
-        <div className="mb-8 p-4 border border-orange-300 ...">
-          <h2 className="text-2xl font-bold text-orange-700 mb-4">
-            ⚠️ Solicitações de Cancelamentos
-          </h2>
-
-          {loadingCancelamentos ? (
-            <p>Carregando...</p>
-          ) : errorCancelamentos ? (
-            <p className="text-red-500">Erro: {errorCancelamentos}</p>
-          ) : (
-            // ---- MUDANÇA 3: Passe a função de SET do gatilho para o filho ----
-            <CancelamentosPendentesTable
-              requests={cancelamentos}
-              onActionComplete={setRefreshTrigger}
-            />
-          )}
-        </div>
-
-
+       
+        <button
+  onClick={async () => {
+    setMostrarResumo((prev) => !prev)
+  }}
+  
+  className="w-full bg-blue-100 text-blue-800 border border-blue-300 px-4 py-3 rounded-lg text-left hover:bg-blue-200 transition-colors mb-6"
+>
+  📊 Ver Resumo Financeiro da Loja
+</button>
+    
+     {/* DasborardMetricas de Pedidos */}
+{   mostrarResumo && <DashboardMetrics slug ={slug} />}
         {/* Histórico de Pedidos */}
         <div className="mb-8">
           <h2 className="text-2xl font-bold text-gray-800 mb-4">Histórico de Pedidos</h2>

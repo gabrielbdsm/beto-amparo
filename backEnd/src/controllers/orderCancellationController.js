@@ -1,7 +1,7 @@
 // orderCancellationController.js
 
 import OrderCancellationModel from '../models/OrderCancellationModel.js';
-import { atualizarStatusPedido, buscarPedidoPorId } from '../models/pedidoModel.js';
+import { atualizarStatusPedido, buscarPedidoPorId } from '../models/PedidoModel.js';
 import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 
