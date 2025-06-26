@@ -75,6 +75,7 @@ export default function VisualizarAgendamento() {
   const [agendamentoParaCancelar, setAgendamentoParaCancelar] = useState(null);
   const [corPrimaria, setCorPrimaria] = useState("#3B82F6");
 
+
   const getAgendamentos = useCallback(async () => {
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/cliente/viewAgendamentos/${slug}`, {
