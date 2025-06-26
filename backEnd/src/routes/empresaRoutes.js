@@ -30,13 +30,13 @@ router.post('/loginEmpresa', AuthController.loginEmpresa);
 router.post('/logout', AuthController.logout);
 
 router.get('/logout', AuthController.logout);
-router.get('/empresa/horarios',empresaPrivate, HorariosController.getDatasConfiguradasByEmpresa);
-router.post('/empresa/horarios',empresaPrivate, HorariosController.saveDatasConfiguradas);
-router.delete('/empresa/horarios/:data',empresaPrivate, HorariosController.deleteDataConfigurada);
+router.get('/empresa/horarios/:slug',empresaPrivate, HorariosController.getDatasConfiguradasByEmpresa);
+router.post('/empresa/horarios/:slug',empresaPrivate, HorariosController.saveDatasConfiguradas);
+router.delete('/empresa/horarios/:data/:slug',empresaPrivate, HorariosController.deleteDataConfigurada);
 
-router.get('/empresa/agendamentos', empresaPrivate, agendamentoEmpresaController.getAgendamentosController);
-router.delete('/empresa/agendamentos', empresaPrivate, agendamentoEmpresaController.deleteAgendamentoController);
-router.put('/empresa/agendamentos', empresaPrivate, agendamentoEmpresaController.updateAgendamentoController);
+router.get('/empresa/agendamentos/:slug', empresaPrivate, agendamentoEmpresaController.getAgendamentosController);
+router.delete('/empresa/agendamentos/:slug', empresaPrivate, agendamentoEmpresaController.deleteAgendamentoController);
+router.put('/empresa/agendamentos/:slug', empresaPrivate, agendamentoEmpresaController.updateAgendamentoController);
 router.get('/loja/slug-completo/:slug', EmpresaController.BuscarEmpresaBySlug);
 
 
