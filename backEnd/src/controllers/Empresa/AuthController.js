@@ -142,3 +142,29 @@ export const logout = (req, res) => {
 
     res.status(200).send('Logout realizado com sucesso');
 };
+// ...
+export const verificarSessao = async (req, res) => {
+    try {
+        const token = req.cookies.token_empresa;
+        if (!token) {
+            return res.status(401).json({ error: "Não autenticado" });
+        }
+
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const { data: empresa, error } = await empresas.buscarEmpresaPorId(decoded.id);
+
+        if (error || !empresa) {
+            return res.status(401).json({ error: "Sessão inválida" });
+        }
+
+        // Retorna os dados completos que precisamos para o formulário
+        res.status(200).json({
+            nome: empresa.responsavel, // Nome do responsável pela empresa
+            email: empresa.email,
+            cnpj: empresa.cnpj
+        });
+
+    } catch (error) {
+        return res.status(401).json({ error: "Token inválido ou expirado" });
+    }
+};

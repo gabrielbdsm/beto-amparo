@@ -38,7 +38,7 @@ router.delete('/empresa/agendamentos', empresaPrivate, agendamentoEmpresaControl
 router.put('/empresa/agendamentos', empresaPrivate, agendamentoEmpresaController.updateAgendamentoController);
 router.get('/loja/slug-completo/:slug', EmpresaController.BuscarEmpresaBySlug);
 
-
+router.get('/verificar-sessao', AuthController.verificarSessao);
 
 
 router.get('/verifyAuthStatus', routePrivate, (req, res) => {
