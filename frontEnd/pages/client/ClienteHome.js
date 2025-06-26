@@ -7,6 +7,7 @@ import ProdutoCard from "@/components/ProdutoCard";
 import { useRouter } from 'next/router';
 import { createClient } from '@supabase/supabase-js';
 import Link from 'next/link';
+import { QuestionMarkCircleIcon } from '@heroicons/react/24/outline';
 import { Menu } from '@headlessui/react';
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_KEY);
@@ -395,19 +396,6 @@ export default function ClienteHome() {
                                 <Menu.Items className="absolute right-0 mt-2 w-40 bg-white border border-gray-200 rounded shadow-md z-50">
                                     <Menu.Item>
                                         {({ active }) => (
-                                            <Link 
-                                                // O `site` é o slug da sua loja, que você já tem no estado!
-                                                href={`/loja/${site}/ajuda`} 
-                                                legacyBehavior
-                                            >
-                                                <a className={`block px-4 py-2 w-full text-black text-left text-sm ${active ? 'bg-gray-100' : ''}`}>
-                                                    Ajuda e Suporte
-                                                </a>
-                                            </Link>
-                                        )}
-                                    </Menu.Item>
-                                    <Menu.Item>
-                                        {({ active }) => (
                                             <button
                                                 onClick={handleLogout}
                                                 className={`block px-4 py-2 w-full text-left text-sm text-red-600 ${active ? 'bg-red-100' : ''}`}
@@ -537,6 +525,16 @@ export default function ClienteHome() {
                     </div>
                 )}
             </div>
+            {site && (
+                <Link
+                    href={`/loja/${site}/ajuda`}
+                    className="fixed bottom-20 right-4 w-14 h-14 rounded-full flex items-center justify-center text-white shadow-lg transition-transform transform hover:scale-110 z-30"
+                    style={{ backgroundColor: corPrimaria }}
+                    aria-label="Ajuda e Suporte"
+                    >
+                    <QuestionMarkCircleIcon className="w-8 h-8 text-white" />
+                </Link>
+            )}
             <NavBar site={site} corPrimaria={corPrimaria} />
         </div>
     );

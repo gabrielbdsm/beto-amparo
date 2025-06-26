@@ -119,18 +119,18 @@ export default function TecnicoModal({ isOpen, onClose }) {
                             {/* Linha 1: Nome e Email */}
                             <div className="grid sm:grid-cols-2 gap-4">
                                 <div>
-                                    <label htmlFor="nome" className="block text-sm font-medium text-gray-700 mb-1">O seu Nome</label>
+                                    <label htmlFor="nome" className="block text-sm font-medium text-gray-700 mb-1">O seu Nome:</label>
                                     <input type="text" id="nome" value={nome} onChange={e => setNome(e.target.value)} required className="w-full border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-gray-900"/>
                                 </div>
                                 <div>
-                                    <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">O seu Email</label>
+                                    <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">O seu Email:</label>
                                     <input type="email" id="email" value={email} onChange={e => setEmail(e.target.value)} required className="w-full border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-gray-900"/>
                                 </div>
                             </div>
 
                             {/* Linha 2: CPF */}
                             <div>
-                                <label htmlFor="cpf" className="block text-sm font-medium text-gray-700 mb-1">CPF</label>
+                                <label htmlFor="cpf" className="block text-sm font-medium text-gray-700 mb-1">CPF:</label>
                                 <input 
                                   type="text" 
                                   id="cpf" 
@@ -145,7 +145,7 @@ export default function TecnicoModal({ isOpen, onClose }) {
 
                             {/* Linha 3: Título (Select) */}
                             <div>
-                                <label htmlFor="titulo" className="block text-sm font-medium text-gray-700 mb-1">Motivo do Contato</label>
+                                <label htmlFor="titulo" className="block text-sm font-medium text-gray-700 mb-1">Motivo do Contato:</label>
                                 <select id="titulo" value={titulo} onChange={e => setTitulo(e.target.value)} required className="w-full border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-gray-900">
                                     <option value="" disabled>Selecione um motivo...</option>
                                     {titulosDeSuporte.map(opt => <option key={opt} value={opt}>{opt}</option>)}
@@ -154,7 +154,7 @@ export default function TecnicoModal({ isOpen, onClose }) {
 
                             {/* Linha 4: Descrição */}
                             <div>
-                                <label htmlFor="descricao" className="block text-sm font-medium text-gray-700 mb-1">Descreva o problema</label>
+                                <label htmlFor="descricao" className="block text-sm font-medium text-gray-700 mb-1">Descreva o problema:</label>
                                 {/* ✅ CORRIGIDO: Adicionada a classe text-gray-900 para garantir boa legibilidade */}
                                 <textarea id="descricao" rows="4" value={descricao} onChange={e => setDescricao(e.target.value)} required placeholder="Por favor, detalhe o máximo possível o que aconteceu..." className="w-full border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 text-gray-900"></textarea>
                             </div>
