@@ -8,7 +8,7 @@ export async function getEmpresaBySlug(req, res) {
   try {
     const { data, error } = await supabase
       .from('loja')
-      .select('id_empresa, nome_fantasia, foto_loja')
+      .select('*')
       .eq('slug_loja', slug )
       .single();
     
@@ -51,5 +51,47 @@ export const marcarPersonalizacaoCompleta = async (req, res) => {
   } catch (err) {
       console.error("Erro ao marcar personalização:", err);
       return res.status(500).json({ mensagem: 'Erro interno do servidor.' });
+  }
+};
+
+export async function BuscarEmpresaBySlug(req, res) {
+  const slug = req.params.slug.toLowerCase(); 
+
+  try {
+    // Busca a 'loja' e faz o JOIN implícito para trazer a 'empresa' junto
+    const { data: lojaData, error } = await supabase
+      .from('loja')
+      .select(`
+        *,
+        empresas: id_empresa(*)
+      `)
+      .eq('slug_loja', slug)
+      .single();
+    
+    if (error) {
+      if (error.code === 'PGRST116') { // Código para "Não encontrado"
+        return res.status(404).json({ erro: 'Loja não encontrada.' });
+      }
+      throw error; // Lança outros erros do Supabase
+    }
+
+    const empresaData = lojaData.empresas;
+
+    if (!empresaData) {
+      return res.status(404).json({ erro: 'Dados da empresa associada não encontrados.' });
+    }
+    
+    // Remove o objeto aninhado para evitar redundância
+    delete lojaData.empresas;
+
+    // Retorna o JSON no formato exato que o frontend espera: { loja: {...}, empresa: {...} }
+    res.status(200).json({
+      loja: lojaData,
+      empresa: empresaData // Aqui dentro estão o telefone, email, etc.
+    });
+    
+  } catch (err) {
+    console.error("Erro ao buscar dados completos da loja:", err.message);
+    res.status(500).json({ erro: 'Erro interno do servidor.' });
   }
 };

@@ -40,6 +40,10 @@ const nextConfig = {
         destination: '/client/carrinho',
       },
       {
+        source: '/loja/:slug/ajuda',
+        destination: '/client/faq_suporte',
+      },
+      {
         source: '/loja/:slug/pedidos',
         destination: '/client/pedidos',
       },
