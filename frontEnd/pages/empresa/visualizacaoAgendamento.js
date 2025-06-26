@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import OwnerSidebar from '@/components/OwnerSidebar';
 import { se } from 'date-fns/locale';
+import { useRouter } from 'next/router';
 const statusOptions = ['Agendado', 'Confirmado', 'Concluído', 'Cancelado'];
 
 const getStatusColor = (status) => ({
@@ -98,6 +99,8 @@ const ModalAlterarStatus = ({ statusAtual, onClose, onSave }) => {
 };
 
 export default function VisualizarAgendamento() {
+const router = useRouter()
+const { slug } = router.query;
   const [clientData, setClientData] = useState([]);
   const [agendamentos, setAgendamentos] = useState([]);
   const [clienteSelecionado, setClienteSelecionado] = useState(null);
@@ -106,11 +109,11 @@ export default function VisualizarAgendamento() {
   const [pesquisaCliente, setPesquisaCliente] = useState('');
   const [filtroData, setFiltroData] = useState('');
   const [agendamentoParaEditarStatus, setAgendamentoParaEditarStatus] = useState(null);
-    const[slug, setSlug] = useState('');
+
   useEffect(() => {
     const getAgendamentos = async () => {
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/empresa/agendamentos`, { credentials: 'include' });
+        const response = await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/empresa/agendamentos/`+ slug, { credentials: 'include' });
         if (response.status === 401) return window.location.href = '/loginEmpresa';
         const data = await response.json();
         if (!data?.length) return;
@@ -133,12 +136,12 @@ export default function VisualizarAgendamento() {
       }
     };
     getAgendamentos();
-  }, []);
+  }, slug);
 
   const deletarAgendamento = async (id) => {
     const agendamento = agendamentos.find((a) => a.id === id);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/empresa/agendamentos`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/empresa/agendamentos/`+ slug, {
         method: 'DELETE',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -155,7 +158,7 @@ export default function VisualizarAgendamento() {
   const alterarStatus = async (id, status) => {
     const agendamento = agendamentos.find((a) => a.id === id);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/empresa/agendamentos`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/empresa/agendamentos/`+ slug, {
         method: 'PUT',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -178,7 +181,7 @@ export default function VisualizarAgendamento() {
   });
 
   return (
-       <OwnerSidebar slug={""}>
+       <OwnerSidebar slug={slug}>
         
           
     <div className="max-w-3xl mx-auto  bg-gray-50 p-6">
@@ -238,6 +241,7 @@ export default function VisualizarAgendamento() {
       {agendamentoParaDeletar && <ConfirmacaoModal onCancel={() => setAgendamentoParaDeletar(null)} onConfirm={() => deletarAgendamento(agendamentoParaDeletar.id)} />}
       {agendamentoParaEditarStatus && <ModalAlterarStatus statusAtual={agendamentoParaEditarStatus.status} onClose={() => setAgendamentoParaEditarStatus(null)} onSave={(status) => alterarStatus(agendamentoParaEditarStatus.id, status)} />}
     </div>
+    
     </OwnerSidebar>
   );
 }

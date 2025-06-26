@@ -3,7 +3,8 @@ import { v4 as uuid } from "uuid";
 import { Trash2, PlusCircle } from "lucide-react";
 import OwnerSidebar from '@/components/OwnerSidebar';
 import toast from 'react-hot-toast'; 
-
+import { useRouter } from 'next/router';
+import Notification from '@/components/ui/Notification.js'; 
 
 function diaDaSemanaLabel(dataStr) {
   const date = new Date(dataStr + "T00:00:00");
@@ -37,6 +38,7 @@ function LinhaIntervalo({
   onDelete,
   onUpdate,
   onSplit,
+  onNotify,
 }) {
   const [duracao, setDuracao] = useState(30);
   const [erroLocal, setErroLocal] = useState("");
@@ -55,6 +57,7 @@ function LinhaIntervalo({
   }, [intervalo.inicio, intervalo.fim]);
 
   function dividirIntervaloInterno(inicioStr, fimStr, duracaoMinutos) {
+
     const resultado = [];
     if (!inicioStr || !fimStr || inicioStr.length !== 5 || fimStr.length !== 5) return resultado;
     const [h, m] = inicioStr.split(":").map(Number);
@@ -80,10 +83,36 @@ function LinhaIntervalo({
   }
 
   const handleDividirClick = () => {
+   
+
+  
+ 
+  
     if (erroLocal) {
+<<<<<<< HEAD
         toast.error(`Não é possível dividir. Corrija o erro: ${erroLocal}`);
+=======
+        
+      onNotify(`Não é possível dividir. Corrija o erro: ${erroLocal}`, "error");
+>>>>>>> aa7f49603894214a45d7881a29e50f85a8829b0b
         return;
     }
+    console.log( typeof intervalo.inicio) 
+    console.log(intervalo.fim.length )
+    console.log( isMasterInterval &&
+      intervalo.inicio && intervalo.inicio.length === 5 &&
+      intervalo.fim && intervalo.fim.length === 5 &&
+      intervalo.inicio < intervalo.fim &&
+      duracao > 0)
+      const partesInicio = intervalo.inicio.split(":");
+      if (partesInicio.length >= 2) {
+        intervalo.inicio = `${partesInicio[0].padStart(2, "0")}:${partesInicio[1].padStart(2, "0")}`;
+      }
+      const partesFim= intervalo.fim.split(":");
+      if (partesFim.length >= 2) {
+        intervalo.fim = `${partesFim[0].padStart(2, "0")}:${partesFim[1].padStart(2, "0")}`;
+      }
+
     if (
       isMasterInterval &&
       intervalo.inicio && intervalo.inicio.length === 5 &&
@@ -92,9 +121,11 @@ function LinhaIntervalo({
       duracao > 0
     ) {
       const subintervalos = dividirIntervaloInterno(intervalo.inicio, intervalo.fim, duracao);
+
       if (subintervalos.length > 0) {
         onSplit(blocoId, intervalo.id, subintervalos);
       } else {
+<<<<<<< HEAD
         toast.error("Não foi possível dividir o intervalo com a duração selecionada.");
       }
     } else {
@@ -102,6 +133,16 @@ function LinhaIntervalo({
       else if (duracao <= 0) toast.error("Selecione uma duração válida.");
       else if (!isMasterInterval) toast.error("Este sub-intervalo não pode ser dividido.");
       else toast.error("Não é possível dividir com as configurações atuais.");
+=======
+        
+        onNotify(`Não foi possível dividir o intervalo com a duração selecionada.`, "error");
+      }
+    } else {
+      if (!intervalo.inicio || !intervalo.fim ) onNotify("Preencha os horários de início e fim (HH:MM).");
+      else if (duracao <= 0) onNotify("Selecione uma duração válida.");
+      else if (!isMasterInterval) onNotify("Este sub-intervalo não pode ser dividido.");
+      else onNotify("Não é possível dividir com as configurações atuais." , "error");
+>>>>>>> aa7f49603894214a45d7881a29e50f85a8829b0b
     }
   };
   
@@ -132,17 +173,30 @@ function LinhaIntervalo({
 
 
 export default function HorariosPorData({ tipo = "agendamento" }) {
+
+const router = useRouter()
+const { slug } = router.query;
+
   const [blocos, setBlocos] = useState([]);
   const [novaData, setNovaData] = useState("");
   const [errorGeral, setErrorGeral] = useState("");
   const [isLoading, setIsLoading] = useState(false); 
+  const [notification, setNotification] = useState(null);
 
+
+  const show = (msg, type) => {
+
+    setNotification({ message: msg, type });
+    
+  };
 
   const carregarHorarios = async () => {
+    
+    if (!slug )return
     setIsLoading(true);
     setErrorGeral("");
     try {
-      const response = await fetch(process.env.NEXT_PUBLIC_EMPRESA_API + "/empresa/horarios", {
+      const response = await fetch(process.env.NEXT_PUBLIC_EMPRESA_API + "/empresa/horarios/"+slug, {
         method: "GET",
         credentials: 'include', 
         headers: {
@@ -180,6 +234,7 @@ export default function HorariosPorData({ tipo = "agendamento" }) {
 
     } catch (err) {
       console.error("Erro ao carregar horários:", err);
+      
       setErrorGeral(err.message || "Não foi possível carregar os horários salvos.");
     } finally {
       setIsLoading(false);
@@ -190,14 +245,14 @@ export default function HorariosPorData({ tipo = "agendamento" }) {
   useEffect(() => {
     carregarHorarios();
   
-  }, []); 
+  }, slug); 
 
   async function handleDeletarData(b ) {
     const confirmar = confirm("Tem certeza que deseja excluir esta data?");
     if (!confirmar) return;
     
     try {
-      const response = await fetch(process.env.NEXT_PUBLIC_EMPRESA_API + "/empresa/horarios/" + b.data, {
+      const response = await fetch(process.env.NEXT_PUBLIC_EMPRESA_API + "/empresa/horarios/" + b.data + '/' + slug, {
         method: 'DELETE',
         credentials: 'include',
 
@@ -213,6 +268,7 @@ export default function HorariosPorData({ tipo = "agendamento" }) {
       if (response.ok) {
       
         setBlocos(prev => prev.filter(bloco => bloco.id !== b.id));
+<<<<<<< HEAD
         toast.success("Data excluída com sucesso!");
       } else {
         console.error(result);
@@ -221,6 +277,19 @@ export default function HorariosPorData({ tipo = "agendamento" }) {
     } catch (error) {
       console.error("Erro inesperado:", error);
       toast.error("Erro inesperado ao tentar excluir a data.");
+=======
+
+        show("Data excluída com sucesso!", "success");
+      } else {
+        console.error(result);
+        show(result.error, "error");
+
+      }
+    } catch (error) {
+      console.error("Erro inesperado:", error);
+      show("Erro inesperado ao tentar excluir a data.", "error");
+
+>>>>>>> aa7f49603894214a45d7881a29e50f85a8829b0b
     }
   }
   
@@ -238,7 +307,7 @@ export default function HorariosPorData({ tipo = "agendamento" }) {
         })),
       }));
   
-      const response = await fetch(process.env.NEXT_PUBLIC_EMPRESA_API + "/empresa/horarios", {
+      const response = await fetch(process.env.NEXT_PUBLIC_EMPRESA_API + "/empresa/horarios/"+ slug, {
         method: "POST",
         credentials: 'include',
         headers: {
@@ -253,12 +322,23 @@ export default function HorariosPorData({ tipo = "agendamento" }) {
         throw new Error(erroData.message || "Erro ao salvar horários.");
       }
   
+<<<<<<< HEAD
       toast.success("Horários salvos com sucesso!");
+=======
+    
+      show("Agendamento criado com sucesso!", "success");
+>>>>>>> aa7f49603894214a45d7881a29e50f85a8829b0b
 
     } catch (err) {
       console.error("Erro ao salvar horários:", err);
+      show("Error: " + err.message, "error");
       setErrorGeral(err.message || "Ocorreu um erro desconhecido ao salvar.");
+<<<<<<< HEAD
       toast.error(`Erro: ${err.message}`);
+=======
+     
+      
+>>>>>>> aa7f49603894214a45d7881a29e50f85a8829b0b
     }
   };
 
@@ -413,7 +493,7 @@ export default function HorariosPorData({ tipo = "agendamento" }) {
   // Renderização condicional baseada no estado de carregamento
   if (isLoading) {
     return (
-      <OwnerSidebar slug={""}>
+      <OwnerSidebar slug={slug}>
         <div className="max-w-3xl mx-auto p-4 md:p-6 text-center">
           <p className="text-lg text-gray-500">Carregando horários...</p>
           {/* Você pode adicionar um spinner SVG ou componente de spinner aqui */}
@@ -423,8 +503,8 @@ export default function HorariosPorData({ tipo = "agendamento" }) {
   }
 
   return (
-    <OwnerSidebar slug={""}>
-      <div className="max-w-3xl mx-auto p-4 md:p-6 bg-white rounded-xl shadow-2xl font-sans">
+    <OwnerSidebar slug={slug}>
+      <div className="max-w-3xl mx-auto p-4 md:p-10 bg-white rounded-xl shadow-2xl font-sans">
         <h1 className="text-xl md:text-2xl font-bold text-[#3681B6] mb-6 text-center tracking-tight">
           {tipo === "agendamento" ? "Configurar Horários Disponíveis para Agendamento" : "Configurar Horário de Funcionamento"}
         </h1>
@@ -511,6 +591,7 @@ export default function HorariosPorData({ tipo = "agendamento" }) {
                       onUpdate={atualizarDadosIntervalo}
                       onDelete={removerIntervaloDoBloco} // Esta função já remove do estado do frontend
                       onSplit={handleIntervaloDividido}
+                      onNotify={show} 
                     />
                   ))}
                   <button
@@ -559,6 +640,17 @@ export default function HorariosPorData({ tipo = "agendamento" }) {
           </div>
         )}
       </div>
+   
+      {
+      
+      notification && (
+              <Notification
+                message={notification.message}
+                type={notification.type}
+                onClose={() => setNotification(null)}
+              />
+            )}
+        
     </OwnerSidebar>
   );
 }
