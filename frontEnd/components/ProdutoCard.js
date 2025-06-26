@@ -21,7 +21,7 @@ export default function ProdutoCard({
     const [imageSrc, setImageSrc] = useState(getImagemProduto(produto.image));
 
     const handleCardClick = () => {
-        window.location.href = `/produto/${slug}/${produto.id}`;
+        window.location.href = `produto/${slug}/${produto.id}`;
     };
 
     const handleAdicionarClick = (event) => {
