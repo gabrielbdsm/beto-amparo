@@ -5,12 +5,14 @@ import * as agendamento from '../../models/agendamentoEmpresaModel.js';
 export const getAgendamentosController = async (req, res) => {
     
     const empresaId = req.IdEmpresa;
+    const slug = req.params.slug
+
 
     
 
     try {
        
-      const agendamentos = await agendamento.buscarAgendamentosPorEmpresa(empresaId);
+      const agendamentos = await agendamento.buscarAgendamentosPorEmpresa(empresaId , slug);
         if (!agendamentos || agendamentos.length === 0) {
             return res.status(404).json({ message: "Nenhum agendamento encontrado para esta empresa." });
         }
@@ -25,10 +27,11 @@ export const getAgendamentosController = async (req, res) => {
 export const deleteAgendamentoController = async (req, res) => {
     const data= req.body;
     const empresaId = req.IdEmpresa;
+    const slug = req.params.slug
  
 
     try {
-        const result = await agendamento.deletarAgendamentoPorId(data.data, data.time, empresaId , data.id_cliente);
+        const result = await agendamento.deletarAgendamentoPorId(data.data, data.time, empresaId , data.id_cliente , slug);
         if (!result || result.length === 0) {
             return res.status(404).json({ message: "Agendamento não encontrado ou já deletado." });
         }   
@@ -42,10 +45,11 @@ export const deleteAgendamentoController = async (req, res) => {
 export const updateAgendamentoController = async (req, res) => {
     const data = req.body;
     const empresaId = req.IdEmpresa;
+    const slug = req.params.slug
 
 
     try {
-        const result = await agendamento.updateAgendamentoController(data.data, data.time, empresaId  , data.status , data.id_cliente);
+        const result = await agendamento.updateAgendamentoController(data.data, data.time, empresaId  , data.status , data.id_cliente ,slug);
         if (!result || result.length === 0) {
             return res.status(404).json({ message: "Agendamento não encontrado ou já deletado." });
         }   
