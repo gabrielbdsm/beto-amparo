@@ -14,9 +14,9 @@ export const getHoraririosAgendamentoController = async (req, res) => {
         if (modelError || !lojaData) {
             return res.status(404).json({ message: "Loja não encontrada para este slug." });
         }
-        const datasConfig = await DatasConfiguradasModel.buscarDatasPorEmpresaPorId(lojaData.id_empresa);
+        const datasConfig = await DatasConfiguradasModel.buscarDatasPorEmpresaPorSlug(slug);
         const datasConfigIds = datasConfig.map(dc => dc.id).filter(Boolean);
-
+   
         let intervalos = [];
         if (datasConfigIds.length > 0) {
         intervalos = await IntervalosHorarioModel.getByDataConfigIds(datasConfigIds);
@@ -29,7 +29,7 @@ export const getHoraririosAgendamentoController = async (req, res) => {
             .sort((a, b) => a.inicio.localeCompare(b.inicio))
         }));
 
-    
+  
         
         res.status(200).json(result);
     } catch (err) {
@@ -71,7 +71,7 @@ export const postAgendamentoController = async (req, res) => {
         }
 
         // Verificar se a data está configurada
-        const dataConfigurada = await DatasConfiguradasModel.getByDataAndEmpresa(dataAgendada, id_empresa);
+        const dataConfigurada = await DatasConfiguradasModel.getByDataAndEmpresa(dataAgendada, id_empresa , slug);
         if (!dataConfigurada) {
             return res.status(400).json({ message: "A data escolhida não está disponível para agendamentos." });
         }

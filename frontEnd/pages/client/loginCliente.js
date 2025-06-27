@@ -34,7 +34,7 @@ export default function LoginPage() {
     e.preventDefault();
     setIsSubmitting(true);
     setErros([]);
-    
+
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/login`, {
         method: 'POST',
@@ -44,17 +44,16 @@ export default function LoginPage() {
         credentials: 'include',
         body: JSON.stringify(formData),
       });
-      
+
       const data = await res.json();
-      
-      
+
+
       if (!res.ok) {
         const mensagem = data?.error || data?.mensagem || 'Erro desconhecido.';
         setErrors({ geral: mensagem });
         return;
       }
 
-      alert('Login realizado com sucesso!');
       router.push(redirectUrl).then(() => window.location.reload());
     } catch (err) {
       console.error(err);
@@ -81,7 +80,7 @@ export default function LoginPage() {
             </h2>
           </div>
         </div>
-        
+
         {/* Lado direito - Formulário de login */}
         <div className="w-full md:w-1/2 p-8">
           <div className="text-center mb-8">
@@ -90,7 +89,7 @@ export default function LoginPage() {
               Acesse sua conta para continuar
             </p>
           </div>
-          
+
           {erros.length > 0 && (
             <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-700">
               <ul className="list-disc pl-5">
@@ -100,7 +99,7 @@ export default function LoginPage() {
               </ul>
             </div>
           )}
-          
+
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700">
@@ -117,7 +116,7 @@ export default function LoginPage() {
                 placeholder="seu@email.com"
               />
             </div>
-            
+
             <div>
               <label htmlFor="senha" className="block text-sm font-medium text-gray-700">
                 Senha *
@@ -134,7 +133,7 @@ export default function LoginPage() {
                 placeholder="••••••"
               />
             </div>
-            
+
             <div className="flex items-center justify-between">
               <div className="flex items-center">
                 <input
@@ -147,14 +146,14 @@ export default function LoginPage() {
                   Lembrar de mim
                 </label>
               </div>
-              
+
               <div className="text-sm">
-              <Link href="/recuperar-senha" className="font-medium text-blue-600 hover:text-blue-500">
-  Esqueceu sua senha?
-</Link>
+                <Link href="/recuperar-senha" className="font-medium text-blue-600 hover:text-blue-500">
+                  Esqueceu sua senha?
+                </Link>
               </div>
             </div>
-            
+
             <div>
               <button
                 type="submit"
@@ -165,15 +164,15 @@ export default function LoginPage() {
               </button>
             </div>
           </form>
-          
+
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
               Não tem uma conta?{' '}
               <Link href="/cadastro" className="font-medium text-blue-600 hover:text-blue-500">
-              
+
                 Cadastre-se
-              
-            </Link>
+
+              </Link>
             </p>
           </div>
         </div>

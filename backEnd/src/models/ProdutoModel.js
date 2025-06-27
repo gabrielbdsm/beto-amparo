@@ -173,3 +173,23 @@ export const listarProdutosPorLoja = async (lojaId) => {
         return { data: null, error: err.message };
     }
 };
+
+
+export const getProduto = async (ids) => {
+  try {
+    const { data, error } = await supabase
+      .from('produto')
+      .select('nome, id , preco')
+      .in('id', ids);
+
+    if (error) {
+      console.error('Erro ao buscar pedido_itens:', error.message);
+      return [];
+    }
+
+    return data ?? [];
+  } catch (e) {
+    console.error('Erro inesperado em getPedido_itens:', e);
+    return [];
+  }
+};

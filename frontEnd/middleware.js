@@ -23,7 +23,7 @@ export async function middleware(req) {
 
     const tokenEmpresaCookie = req.cookies.get('token_empresa')?.value;
     const tokenClienteCookie = req.cookies.get('token_cliente')?.value;
-
+  
     // 1. ROTAS PÚBLICAS OU INTERNAS DO NEXT.JS (SEM AUTENTICAÇÃO)
     if (
         pathname === loginEmpresaPath ||
@@ -42,11 +42,10 @@ export async function middleware(req) {
 
     let token;
     let decodedPayload;
-
+   
     // 2. ROTAS PROTEGIDAS DA EMPRESA
     if (pathname.startsWith('/empresa')) {
         token = tokenEmpresaCookie;
-
 
         if (!token) {
             const redirectUrl = new URL(loginEmpresaPath, req.url);
@@ -62,10 +61,14 @@ export async function middleware(req) {
                 console.error('Middleware: ERRO CRÍTICO: Variável de ambiente NEXT_PUBLIC_JWT_SECRET_KEY_EMPRESA não definida ou vazia!');
                 throw new Error('Chave secreta de empresa não fornecida para verificar o JWT.');
             }
-
+           
             const encodedSecret = new TextEncoder().encode(secretKey);
             const { payload } = await jose.jwtVerify(token, encodedSecret);
+          
             decodedPayload = payload;
+            
+            
+         
 
             if (decodedPayload.tipo !== 'empresa') {
                 const redirectUrl = new URL(loginEmpresaPath, req.url);

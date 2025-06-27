@@ -7,9 +7,11 @@ import * as EmpresaController from '../controllers/Empresa/EmpresaController.js'
 
 import { atualizarPersonalizacao, criarPersonalizacao, getLojaBySlug, verificarSlug  } from '../controllers/Empresa/personalizacaoController.js';
 import * as HorariosController from '../controllers/Empresa/horariosCotroller.js'; 
-import * as agendamentoEmpresaController from '../controllers/Empresa/AgendamentoEmpresaController.js';
 
-import { empresaPrivate } from '../middleware/protectRouterEmpresa.js';
+import * as agendamentoEmpresaController from '../controllers/Empresa/AgendamentoEmpresaController.js'; // <-- CORRIGIDO AQUI!
+import { empresaPrivate } from '../middleware/protectRouterEmpresa.js'; // <-- CORRIGIDO AQUI!
+import * as insightController from "../controllers/Empresa/insightController.js"
+
 
 const router = express.Router();
 
@@ -30,14 +32,21 @@ router.post('/loginEmpresa', AuthController.loginEmpresa);
 router.post('/logout', AuthController.logout);
 
 router.get('/logout', AuthController.logout);
-router.get('/empresa/horarios', empresaPrivate, HorariosController.getDatasConfiguradasByEmpresa);
-router.post('/empresa/horarios', empresaPrivate, HorariosController.saveDatasConfiguradas);
-router.delete('/empresa/horarios/:data', empresaPrivate, HorariosController.deleteDataConfigurada);
 
-router.get('/empresa/agendamentos', empresaPrivate, agendamentoEmpresaController.getAgendamentosController);
-router.delete('/empresa/agendamentos', empresaPrivate, agendamentoEmpresaController.deleteAgendamentoController);
-router.put('/empresa/agendamentos', empresaPrivate, agendamentoEmpresaController.updateAgendamentoController);
+router.get('/empresa/horarios/:slug',empresaPrivate, HorariosController.getDatasConfiguradasByEmpresa);
+router.post('/empresa/horarios/:slug',empresaPrivate, HorariosController.saveDatasConfiguradas);
+router.delete('/empresa/horarios/:data/:slug',empresaPrivate, HorariosController.deleteDataConfigurada);
 
+
+router.get('/empresa/agendamentos/:slug', empresaPrivate, agendamentoEmpresaController.getAgendamentosController);
+router.delete('/empresa/agendamentos/:slug', empresaPrivate, agendamentoEmpresaController.deleteAgendamentoController);
+router.put('/empresa/agendamentos/:slug', empresaPrivate, agendamentoEmpresaController.updateAgendamentoController);
+router.get('/loja/slug-completo/:slug', EmpresaController.BuscarEmpresaBySlug);
+
+
+router.get('/empresa/insights/:slug', insightController.buscarInsightsPorSlug);
+
+router.get('/verificar-sessao', AuthController.verificarSessao);
 
 
 router.get('/verifyAuthStatus', routePrivate, (req, res) => {

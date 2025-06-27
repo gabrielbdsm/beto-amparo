@@ -1,4 +1,11 @@
 /** @type {import('next').NextConfig} */
+
+
+const withPWA = require('next-pwa')({
+  dest: 'public',
+  register: true,
+  skipWaiting: true,
+});
 const nextConfig = {
   reactStrictMode: true,
 
@@ -24,6 +31,10 @@ const nextConfig = {
         destination: '/client/produto',
       },
       {
+        source: '/empresa/:slug/suporte',
+        destination: '/suporte',
+      },
+      {
         source: '/loja/:slug/agendamento',
         destination: '/client/agendamento',
       },
@@ -34,6 +45,10 @@ const nextConfig = {
       {
         source: '/loja/:slug/carrinho',
         destination: '/client/carrinho',
+      },
+      {
+        source: '/loja/:slug/ajuda',
+        destination: '/client/faq_suporte',
       },
       {
         source: '/loja/:slug/pedidos',
@@ -72,8 +87,16 @@ const nextConfig = {
         destination: '/empresa/AdicionarProduto',
       },
       {
-        source: '/empresa/meusAgendamentos',
+        source: '/empresa/:slug/meusAgendamentos',
         destination: '/empresa/visualizacaoAgendamento',
+      },
+      {
+        source: '/empresa/:slug/horarioEmpresa',
+        destination: '/empresa/horarioEmpresa',
+      },
+      {
+        source: '/api/:path*',
+        destination: 'https://beto-amparo.onrender.com/:path*', 
       },
     ];
   },

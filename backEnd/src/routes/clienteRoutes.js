@@ -1,7 +1,6 @@
 // src/routes/clienteRoutes.js
 import express from 'express';
 import clienteController from '../controllers/client/clienteController.js';
-
 import * as AuthClinteController from "../controllers/client/AuthClinteController.js";
 
 import * as AgendamentoController from"../controllers/client/AgendamentoController.js"
@@ -9,7 +8,6 @@ import { clientePrivate } from '../middleware/protectRouterClient.js';
 
 const router = express.Router();
 
-// Middleware específico para estas rotas
 router.use((req, res, next) => {
   console.log(`Recebida requisição para: ${req.method} ${req.path}`);
   next();
@@ -31,8 +29,6 @@ router.delete('/clientes/:id', clienteController.remover);  // Ajuste aqui para 
 router.put('/clientes/:id/pontos', clienteController.atualizarPontos); 
 
 router.post('/clientes/:id/ganhar-pontos', clienteController.ganharPontos);
-
-
 
 router.get('/me', clientePrivate, async (req, res) => {
   try {

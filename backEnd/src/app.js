@@ -6,9 +6,11 @@ import clienteRoutes from './routes/clienteRoutes.js';
 import carrinhoRoutes from './routes/carrinhoRoutes.js';
 import lojaRoutes from './routes/lojaRoutes.js';
 import pedidoRoutes from './routes/pedidoRoutes.js';
+import enderecoRoutes from './routes/enderecoRoutes.js';
 import categoriaRoutes from './routes/categoriaRoutes.js';
 import donoRoutes from './routes/donoRoutes.js';
 import orderCancellationRoutes from './routes/orderCancellationRoutes.js';
+import suporteRoutes from './routes/suporteRoutes.js';
 import cors from 'cors';
 import multer from 'multer';
 import path from 'path';
@@ -19,7 +21,7 @@ dotenv.config();
 const app = express();
 
 app.use(cors({
-  origin: true, 
+  origin: true,
   credentials: true
 }));
 
@@ -30,19 +32,19 @@ app.use(express.json());
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    
+
     cb(null, 'uploads/');
   },
   filename: (req, file, cb) => {
 
-    cb(null, Date.now() + path.extname(file.originalname)); 
+    cb(null, Date.now() + path.extname(file.originalname));
   }
 });
 
 
 const upload = multer({
   storage: storage,
-  limits: { fileSize: 50 * 1024 * 1024 }, 
+  limits: { fileSize: 50 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     const filetypes = /jpeg|jpg|png|gif/;
     const isValid = filetypes.test(path.extname(file.originalname).toLowerCase()) && filetypes.test(file.mimetype);
@@ -77,6 +79,8 @@ app.use(empresaRoutes);
 app.use(produtosRoutes);
 app.use(clienteRoutes);
 app.use(pedidoRoutes);
+app.use(enderecoRoutes);
+app.use(suporteRoutes);
 app.use('/loja', carrinhoRoutes);
 app.use('/categorias', categoriaRoutes);
 app.use('/loja', lojaRoutes);
