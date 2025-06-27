@@ -333,17 +333,13 @@ export default function OwnerSidebar({ children, slug }) {
                         />
                         
                         {/* Para Meus Produtos, podemos relacionar com Portfólio Diversificado e Portfólio em Crescimento */}
-                        <NavItem 
-                            icon={(router.asPath.startsWith(`/empresa/${currentActiveSlug}/produtos`) && 
-                                   (shopLevel === 'Prata' || shopLevel === 'Ouro')) // Ou se a missão 'portfolio_growth'/'diverse_portfolio' foi atingida.
-                                ? "/badges/portfolio_growth.png" // Ou diverse_portfolio.png, dependendo da sua escolha
-                                : "/icons/add_white.svg"} 
-                            label="Meus Produtos" 
-                            path="/produtos" 
-                            currentSlug={currentActiveSlug} 
-                            className="sidebar-produtos-item" 
+                        <NavItem
+                        icon="/icons/add_white.svg"
+                        label="Meus Produtos"
+                        path="/produtos"
+                        currentSlug={currentActiveSlug}
+                        className="sidebar-produtos-item"
                         />
-                        
                         <NavItem icon="/icons/paint_white.svg" label="Personalizar Loja" path="/personalizacao" currentSlug={currentActiveSlug} className="sidebar-personalizar-item" />
                         <NavItem icon="/icons/clock_white.svg" label="Horarios" path="/horarioEmpresa" currentSlug={currentActiveSlug} className="sidebar-horarios-item" />
                         <NavItem icon="/icons/notes.png" label="Meus agendamentos" path="/meusAgendamentos" currentSlug={currentActiveSlug} className="sidebar-agendamentos-item" />

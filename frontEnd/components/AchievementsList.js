@@ -8,41 +8,31 @@ export default function AchievementsList({ ownerSlug }) {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    // NOVO LOG: Dispara sempre que o useEffect é acionado
-    console.log('DEBUG_ACHIEVEMENT_LIST: useEffect acionado. ownerSlug:', ownerSlug);
-
     const fetchAchievements = async () => {
       setLoading(true);
       setError(null); // Limpa erros anteriores ao tentar buscar novamente
-      console.log('DEBUG_ACHIEVEMENT_LIST: Iniciando fetchAchievements...'); // NOVO LOG: Antes de iniciar o fetch
       try {
         // --- MUDANÇA CRÍTICA AQUI: Incluir ownerSlug na URL ---
         const response = await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/empresa/${ownerSlug}/achievements`, {
           credentials: 'include', // Para enviar cookies de autenticação
         });
-        console.log('DEBUG_ACHIEVEMENT_LIST: Resposta do fetch recebida. Status:', response.status); // NOVO LOG: Depois de receber a resposta HTTP
 
         if (response.status === 401) {
-          console.warn('DEBUG_ACHIEVEMENT_LIST: 401 Não Autorizado. Redirecionando para login.'); // NOVO LOG
           window.location.href = '/empresa/LoginEmpresa'; // Exemplo de redirecionamento
           return; // Importante para parar a execução após o redirecionamento
         }
 
         if (!response.ok) {
           const errorData = await response.json();
-          console.error('DEBUG_ACHIEVEMENT_LIST: Fetch não OK. Dados do erro:', errorData); // NOVO LOG
           throw new Error(errorData.mensagem || `Erro HTTP! Status: ${response.status}`);
         }
 
         const data = await response.json();
-        console.log('DEBUG_ACHIEVEMENT_LIST: Dados recebidos:', data); // NOVO LOG: Dados recebidos com sucesso
         setAchievements(data);
       } catch (err) {
-        console.error("DEBUG_ACHIEVEMENT_LIST: Erro no bloco catch de fetchAchievements:", err); // NOVO LOG: Erro no catch
         setError(err.message || "Erro ao carregar conquistas.");
       } finally {
         setLoading(false);
-        console.log('DEBUG_ACHIEVEMENT_LIST: fetchAchievements finalizado. Loading definido como false.'); // NOVO LOG: Sempre dispara no final
       }
     };
 
@@ -86,11 +76,12 @@ export default function AchievementsList({ ownerSlug }) {
               <h4 className="font-bold text-lg text-gray-800">{mission.name}</h4>
               <p className="text-gray-600 text-sm">{mission.description}</p>
 
-              {/* Barra de Progresso */}
+              {/* Barra de Progresso ATUALIZADA */}
               <div className="w-full bg-gray-200 rounded-full h-2.5 mt-2">
                 <div
                   className={`h-2.5 rounded-full ${mission.is_completed ? 'bg-green-500' : 'bg-blue-500'}`}
-                  style={{ width: `${(mission.current_progress / mission.goal) * 100}%` }}
+                  // AQUI ESTÁ A MUDANÇA: Usando Math.min para limitar a largura a 100%
+                  style={{ width: `${Math.min((mission.current_progress / mission.goal) * 100, 100)}%` }}
                 ></div>
               </div>
               {/* MUDANÇA AQUI: Sintaxe da linha de progresso e data de conclusão REVISADA */}

@@ -4,8 +4,6 @@ import supabase from '../src/config/SupaBase.js'; // Garanta que este caminho es
 
 export async function checkAndUpgradeShopLevel(lojaId) {
     try {
-        console.log(`DEBUG_LEVEL: Iniciando verificação de nível para loja: ${lojaId}`);
-
         // 1. Obtenha o nível atual da LOJA
         const { data: lojaAtual, error: fetchLojaError } = await supabase
             .from('loja') // Busca na tabela 'loja'
@@ -14,14 +12,11 @@ export async function checkAndUpgradeShopLevel(lojaId) {
             .single();
 
         if (fetchLojaError || !lojaAtual) {
-            console.error('DEBUG_LEVEL: Erro ao buscar loja para verificar nível:', fetchLojaError?.message);
             return { success: false, message: 'Erro ao buscar loja.' };
         }
-        console.log(`DEBUG_LEVEL: Nível atual da loja ${lojaId}: ${lojaAtual.level_tier}`);
 
         // Se a loja já é Ouro, não precisa verificar mais (assumindo Ouro é o máximo)
         if (lojaAtual.level_tier === 'Ouro') {
-            console.log(`DEBUG_LEVEL: Loja ${lojaId} já está no nível máximo (Ouro).`);
             return { success: true, message: 'Loja já no nível máximo.' };
         }
 
@@ -33,7 +28,6 @@ export async function checkAndUpgradeShopLevel(lojaId) {
             .not('completed_at', 'is', null); // Filtra apenas conquistas COMPLETADAS
 
         if (fetchAchievementsError) {
-            console.error('DEBUG_LEVEL: Erro ao buscar conquistas completadas da loja para nível:', fetchAchievementsError.message);
             return { success: false, message: 'Erro ao buscar conquistas.' };
         }
         
@@ -42,8 +36,6 @@ export async function checkAndUpgradeShopLevel(lojaId) {
             name: oa.achievement.name,
             level: oa.achievement.level
         }));
-        console.log(`DEBUG_LEVEL: Missões completadas da loja ${lojaId}:`, completedMissionsWithLevels);
-
 
         // --- Lógica para Nível BRONZE ---
         const requiredMissionsForBronze = ['Primeira Venda', 'Novo Produto', 'Ajuste Preciso'];
@@ -54,20 +46,15 @@ export async function checkAndUpgradeShopLevel(lojaId) {
         const allBronzeMissionsCompleted = completedBronzeMissionsCount >= requiredMissionsForBronze.length;
         const isCurrentlyNenhum = lojaAtual.level_tier === 'Nenhum';
 
-        console.log(`DEBUG_LEVEL: Contagem missões Bronze completadas: ${completedBronzeMissionsCount}/${requiredMissionsForBronze.length}. Todas completadas: ${allBronzeMissionsCompleted}. Nível atual 'Nenhum': ${isCurrentlyNenhum}.`);
-
         if (allBronzeMissionsCompleted && isCurrentlyNenhum) {
-            console.log(`DEBUG_LEVEL: Condição para Bronze ATENDIDA. Tentando atualizar para Bronze.`);
             const { error: updateError } = await supabase
                 .from('loja') 
                 .update({ level_tier: 'Bronze' })
                 .eq('id', lojaId);
 
             if (updateError) {
-                console.error('DEBUG_LEVEL: Erro ao atualizar nível da loja para Bronze:', updateError.message);
                 return { success: false, message: 'Erro ao atualizar nível.' };
             }
-            console.log(`DEBUG_LEVEL: Loja ${lojaId} alcançou o nível Bronze! Nível atualizado no DB.`);
             return { success: true, newLevel: 'Bronze' };
         }
 
@@ -77,12 +64,7 @@ export async function checkAndUpgradeShopLevel(lojaId) {
             m.name === requiredSilverMissionName && m.level === 2
         );
 
-        console.log(`DEBUG_LEVEL: Verificando Vendedor Prata: ${isVendedorPrataCompleted} (Nome: '${requiredSilverMissionName}', Nível: 2).`);
-        console.log(`DEBUG_LEVEL: Nível atual da loja: '${lojaAtual.level_tier}'.`);
-
         if (isVendedorPrataCompleted && (lojaAtual.level_tier === 'Bronze' || lojaAtual.level_tier === 'Nenhum')) {
-            console.log(`DEBUG_LEVEL: Condição para Prata ATENDIDA. Nível atual é '${lojaAtual.level_tier}'. Tentando atualizar para Prata.`);
-            
             if (lojaAtual.level_tier !== 'Prata' && lojaAtual.level_tier !== 'Ouro') {
                 const { error: updateError } = await supabase
                     .from('loja')
@@ -90,13 +72,9 @@ export async function checkAndUpgradeShopLevel(lojaId) {
                     .eq('id', lojaId);
 
                 if (updateError) {
-                    console.error('DEBUG_LEVEL: Erro ao atualizar nível da loja para Prata:', updateError.message);
                     return { success: false, message: 'Erro ao atualizar nível.' };
                 }
-                console.log(`DEBUG_LEVEL: Loja ${lojaId} alcançou o nível Prata! Nível atualizado no DB.`);
                 return { success: true, newLevel: 'Prata' };
-            } else {
-                console.log(`DEBUG_LEVEL: Loja ${lojaId} já é nível '${lojaAtual.level_tier}', não é necessário subir para Prata.`);
             }
         }
         
@@ -114,15 +92,10 @@ export async function checkAndUpgradeShopLevel(lojaId) {
         );
         const allGoldMissionsCompleted = completedGoldMissions.length >= requiredGoldMissionNames.length;
 
-        console.log(`DEBUG_LEVEL: Verificando Ouro. Missões Ouro necessárias: ${requiredGoldMissionNames.length}, Completadas: ${completedGoldMissions.length}. Todas completadas: ${allGoldMissionsCompleted}.`);
-        console.log(`DEBUG_LEVEL: Nível atual da loja: '${lojaAtual.level_tier}'.`);
-
         // Condição para upgrade para OURO:
         // 1. Todas as missões de nível Ouro (3) devem estar completas.
         // 2. O nível atual da loja deve ser 'Prata' ou 'Bronze' ou 'Nenhum' (nunca Ouro).
         if (allGoldMissionsCompleted && (lojaAtual.level_tier === 'Prata' || lojaAtual.level_tier === 'Bronze' || lojaAtual.level_tier === 'Nenhum')) {
-            console.log(`DEBUG_LEVEL: Condição para Ouro ATENDIDA. Nível atual é '${lojaAtual.level_tier}'. Tentando atualizar para Ouro.`);
-            
             // Certifica-se de que a loja ainda não é Ouro
             if (lojaAtual.level_tier !== 'Ouro') {
                 const { error: updateError } = await supabase
@@ -131,22 +104,15 @@ export async function checkAndUpgradeShopLevel(lojaId) {
                     .eq('id', lojaId);
 
                 if (updateError) {
-                    console.error('DEBUG_LEVEL: Erro ao atualizar nível da loja para Ouro:', updateError.message);
                     return { success: false, message: 'Erro ao atualizar nível.' };
                 }
-                console.log(`DEBUG_LEVEL: Loja ${lojaId} alcançou o nível Ouro! Nível atualizado no DB.`);
                 return { success: true, newLevel: 'Ouro' };
-            } else {
-                console.log(`DEBUG_LEVEL: Loja ${lojaId} já é nível 'Ouro', não é necessário subir para Ouro.`);
             }
         }
 
-
-        console.log(`DEBUG_LEVEL: Loja ${lojaId} ainda não alcançou o próximo nível ou já possui nível adequado.`);
         return { success: true, message: 'Nível não alterado.' };
 
     } catch (error) {
-        console.error('DEBUG_LEVEL: Erro inesperado ao verificar/atualizar nível da loja:', error.message, error.stack);
         return { success: false, message: 'Erro interno ao verificar nível.' };
     }
 }
@@ -154,9 +120,6 @@ export async function checkAndUpgradeShopLevel(lojaId) {
 // --- FUNÇÃO: trackMissionProgress (ATUALIZADA para lógica de completed_at) ---
 export async function trackMissionProgress(lojaId, eventType, amount = 1, data = {}) { 
     try {
-        console.log(`trackMissionProgress_MT: --- INICIANDO RASTREAMENTO PARA LOJA ${lojaId}, TIPO ${eventType}, AMOUNT ${amount} ---`); 
-        console.log('trackMissionProgress_MT: Dados adicionais recebidos (se houver):', data);
-
         let ownerId = data.ownerId; 
         if (!ownerId) {
             const { data: lojaDetalhes, error: lojaDetalhesError } = await supabase
@@ -165,12 +128,10 @@ export async function trackMissionProgress(lojaId, eventType, amount = 1, data =
                 .eq('id', lojaId)
                 .single();
             if (lojaDetalhesError || !lojaDetalhes || !lojaDetalhes.id_empresa) {
-                console.error(`trackMissionProgress_MT: ERRO: Não foi possível obter owner_id (id_empresa) para loja ${lojaId}.`, lojaDetalhesError?.message);
                 return { success: false, message: 'Owner ID não encontrado para a loja.' };
             }
             ownerId = lojaDetalhes.id_empresa;
         }
-        console.log(`trackMissionProgress_MT: Owner ID (id_empresa) para loja ${lojaId}: ${ownerId}`);
 
         const { data: missions, error: missionsError } = await supabase
             .from('achievements')
@@ -178,18 +139,13 @@ export async function trackMissionProgress(lojaId, eventType, amount = 1, data =
             .eq('type', eventType); 
 
         if (missionsError) {
-            console.error('trackMissionProgress_MT: Erro ao buscar missões:', missionsError.message);
             return { success: false, message: 'Erro ao buscar missões.' };
         }
         if (!missions || missions.length === 0) {
-            console.log(`trackMissionProgress_MT: Nenhuma missão encontrada para o tipo ${eventType}.`); 
             return { success: true, message: 'Nenhuma missão encontrada para este evento.' };
         }
-        console.log(`trackMissionProgress_MT: ${missions.length} missões encontradas para o tipo ${eventType}.`); 
 
         for (const mission of missions) {
-            console.log(`trackMissionProgress_MT: Processando missão: ${mission.name} (ID: ${mission.id})`); 
-
             let ownerAchievement;
             let existingProgress = 0;
             let wasCompletedBefore = false; 
@@ -202,7 +158,6 @@ export async function trackMissionProgress(lojaId, eventType, amount = 1, data =
                 .single();
 
             if (fetchProgressError && fetchProgressError.code !== 'PGRST116') { 
-                console.error(`trackMissionProgress_MT: Erro ao buscar progresso para missão ${mission.name} da loja ${lojaId}:`, fetchProgressError.message);
                 continue; 
             }
 
@@ -240,7 +195,6 @@ export async function trackMissionProgress(lojaId, eventType, amount = 1, data =
                     }
 
                     if (shouldReset) {
-                        console.log(`trackMissionProgress_MT: Missão '${mission.name}' para loja ${lojaId} AGORA RESETADA.`); 
                         existingProgress = 0; // Zera o progresso
                         ownerAchievement.completed_at = null; // Remove o status de completada
                         ownerAchievement.last_reset_at = now.toISOString(); 
@@ -248,7 +202,6 @@ export async function trackMissionProgress(lojaId, eventType, amount = 1, data =
                     }
                 }
             } else {
-                console.log(`trackMissionProgress_MT: Nenhum progresso existente para missão ${mission.name}. Criando novo.`); 
                 ownerAchievement = {
                     loja_id: lojaId,
                     owner_id: ownerId, 
@@ -263,7 +216,6 @@ export async function trackMissionProgress(lojaId, eventType, amount = 1, data =
             
             if (mission.type === 'portfolio_diversificado' || mission.type === 'active_products_count' ||
                 mission.type === 'weekly_revenue' || mission.type === 'monthly_revenue' || mission.type === 'best_selling_product' || mission.type === 'product_sold_out') { 
-                console.log(`DEBUG_MT: Detectado type '${mission.type}'. Sobrescrevendo progresso com amount: ${amount}`);
                 newProgress = amount;
             } 
             else { 
@@ -281,8 +233,6 @@ export async function trackMissionProgress(lojaId, eventType, amount = 1, data =
             let missionShouldBeCompletedNow = newProgress >= mission.goal; // Se o progresso atinge a meta
             let missionWasJustCompleted = missionShouldBeCompletedNow && !wasCompletedBefore; // Se atingiu a meta E não estava completa antes
 
-            console.log(`trackMissionProgress_MT: Progresso calculado para missão ${mission.name}: ${existingProgress} -> ${newProgress}. Meta: ${mission.goal}. MissionShouldBeCompletedNow: ${missionShouldBeCompletedNow}. MissionWasJustCompleted: ${missionWasJustCompleted}. Estava Completa Antes: ${wasCompletedBefore}`);
-
             const updatePayload = {
                 current_progress: newProgress,
                 // Lógica de completed_at:
@@ -294,18 +244,14 @@ export async function trackMissionProgress(lojaId, eventType, amount = 1, data =
             };
             
             if (existingOwnerAchievement) {
-                console.log(`trackMissionProgress_MT: Atualizando progresso no DB para missão ${mission.name}... Payload:`, updatePayload);
                 const { error: updateError } = await supabase
                     .from('owner_achievements')
                     .update(updatePayload)
                     .eq('id', ownerAchievement.id);
-                if (updateError) {
-                    console.error(`trackMissionProgress_MT: ERRO ao ATUALIZAR progresso para missão ${mission.name}:`, updateError.message); 
+                if (updateError) { 
                     throw updateError;
                 }
-                console.log(`trackMissionProgress_MT: Progresso ATUALIZADO no DB para missão ${mission.name}.`); 
             } else {
-                console.log(`trackMissionProgress_MT: Inserindo novo progresso no DB para missão ${mission.name}... Payload:`, updatePayload); 
                 const { error: insertError } = await supabase
                     .from('owner_achievements')
                     .insert([
@@ -318,29 +264,23 @@ export async function trackMissionProgress(lojaId, eventType, amount = 1, data =
                             last_reset_at: null,
                         }
                     ]);
-                if (insertError) {
-                    console.error(`trackMissionProgress_MT: ERRO ao INSERIR novo progresso para missão ${mission.name}:`, insertError.message); 
+                if (insertError) { 
                     throw insertError;
                 }
-                console.log(`trackMissionProgress_MT: Novo progresso INSERIDO no DB para missão ${mission.name}.`); 
             }
 
             if (missionWasJustCompleted) { // Chamar upgrade de nível APENAS quando a missão acabou de ser completada
-                console.log(`trackMissionProgress_MT: *** CONQUISTA COMPLETA AGORA: Loja ${lojaId} completou a missão: ${mission.name}! ***`);
                 await checkAndUpgradeShopLevel(lojaId); 
             }
             // Se a missão era completada e agora descompleta (progresso < goal e não é repetível)
             else if (wasCompletedBefore && newProgress < mission.goal && mission.is_repeatable === false) { // Se a missão era completa e agora não é mais
-                 console.log(`trackMissionProgress_MT: !!! CONQUISTA DESCOMPLETADA: Loja ${lojaId} descompleta a missão: ${mission.name}! !!!`);
                  await checkAndUpgradeShopLevel(lojaId); // Re-verifica o nível, pode haver downgrade
             }
         }
 
-        console.log(`trackMissionProgress_MT: --- RASTREAMENTO FINALIZADO PARA LOJA ${lojaId}, TIPO ${eventType} ---`); 
         return { success: true, message: 'Progresso da missão atualizado.' };
 
     } catch (error) {
-        console.error('trackMissionProgress_MT: ERRO INESPERADO NO CATCH GERAL:', error.message, error.stack);
         return { success: false, message: 'Erro interno no rastreamento de missões.' };
     }
 }
