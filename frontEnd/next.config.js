@@ -14,6 +14,7 @@ const nextConfig = withPWA({
   },
 
   images: {
+
     remotePatterns: [
       {
         protocol: 'https',
@@ -27,6 +28,16 @@ const nextConfig = withPWA({
       },
     ],
   },
+/*
+      remotePatterns: [
+        {
+          protocol: 'https',
+          hostname: 'qkiyyvnyvjqsjnobfyqn.supabase.co',
+          pathname: '/storage/v1/object/public/**',
+        },
+      ],
+    },
+*/
 
   async rewrites() {
     return [

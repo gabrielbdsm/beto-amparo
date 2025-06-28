@@ -4,6 +4,7 @@ import { useRouter } from 'next/router';
 import Image from 'next/image';
 // import LogoutButton from 'components/LogoutButton'; // Esta linha será removida ou comentada
 import ProductFormulario from 'components/ProductFormulario';
+import toast from 'react-hot-toast'; 
 
 export default function EditarProdutoPage() {
   const router = useRouter();
@@ -89,7 +90,7 @@ export default function EditarProdutoPage() {
       }
 
       const result = await response.json();
-      alert("Produto atualizado com sucesso!");
+      toast.success("Produto atualizado com sucesso!");
       router.push(`/empresa/${slug}/produtos`);
 
     } catch (err) {
