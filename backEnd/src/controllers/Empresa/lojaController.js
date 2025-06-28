@@ -1,5 +1,6 @@
 import { buscarLojaPorSlugCompleta, toggleLojaStatus  } from '../../models/Loja.js';
-
+import supabase from '../../config/SupaBase.js';
+import bcrypt from 'bcryptjs';
 export const getLojaBySlugAndEmpresaController = async (req, res) => {
     // O ID da empresa vem do middleware `empresaPrivate`
     const empresaId = req.IdEmpresa; // Confere com o que você já está usando
@@ -75,5 +76,105 @@ export const toggleLojaStatusController = async (req, res) => {
     } catch (err) {
         console.error("Erro no controller ao alternar status da loja:", err);
         return res.status(500).json({ message: 'Erro interno do servidor ao alternar status da loja.' });
+    }
+};
+export const deletarLoja = async (req, res) => {
+    try {
+        const { idLoja } = req.params;
+        const { password } = req.body;
+        const idEmpresaLogado = req.idEmpresa;
+
+        if (!idLoja || !password) {
+            return res.status(400).json({ mensagem: 'ID da loja e senha são obrigatórios.' });
+        }
+
+        const idLojaNum = parseInt(idLoja, 10);
+        if (isNaN(idLojaNum)) {
+            return res.status(400).json({ mensagem: 'ID da loja inválido.' });
+        }
+        
+        if (!idEmpresaLogado) {
+            return res.status(403).json({ mensagem: 'Acesso não autorizado. ID da empresa logada não disponível.' });
+        }
+
+        // 1. Verificar se a loja existe E se ela pertence à empresa do usuário logado
+        const { data: lojaData, error: lojaError } = await supabase
+            .from('loja')
+            .select('id_empresa')
+            .eq('id', idLojaNum)
+            .eq('id_empresa', idEmpresaLogado)
+            .single();
+
+        if (lojaError || !lojaData) {
+            console.error('LojaController: Erro ao buscar loja ou não pertence à empresa do usuário logado:', lojaError?.message);
+            return res.status(404).json({ mensagem: 'Loja não encontrada ou você não tem permissão para excluí-la.' });
+        }
+
+        // 2. Obter as informações da EMPRESA (dono) para verificar a senha
+        const { data: empresaData, error: empresaError } = await supabase
+            .from('empresas')
+            .select('senha') 
+            .eq('id', idEmpresaLogado)
+            .single();
+
+        if (empresaError || !empresaData) {
+            console.error('LojaController: Erro ao buscar dados da empresa/dono para verificação de senha:', empresaError?.message);
+            return res.status(401).json({ mensagem: 'Acesso não autorizado: Dados da empresa não encontrados.' });
+        }
+
+        // 3. Comparar a senha fornecida com o hash armazenado
+        const isPasswordValid = await bcrypt.compare(password, empresaData.senha); 
+        if (!isPasswordValid) {
+            return res.status(401).json({ mensagem: 'Senha incorreta. Por favor, digite sua senha atual para confirmar.' });
+        }
+
+        // --- 4. Excluir dados associados APENAS a ESTA LOJA (ordem importa!) ---
+        // A ordem de exclusão deve ser:
+        // Dependentes de 'produtos' (se houver, ex: itens_pedido_produto, avaliacoes_produto)
+        // Pedidos
+        // Carrinhos
+        // Produtos
+        // Categorias
+        // OWNER ACHIEVEMENTS (NOVO!) <-- Esta é a que causa o erro
+        // Loja
+
+        // Excluir pedidos relacionados a esta loja
+        const { error: pedidosDeleteError } = await supabase.from('pedidos').delete().eq('id_loja', idLojaNum);
+        if (pedidosDeleteError) console.error('Erro ao deletar pedidos:', pedidosDeleteError.message);
+
+        // Excluir itens de carrinho relacionados a esta loja
+        const { error: carrinhoDeleteError } = await supabase.from('carrinho').delete().eq('loja_id', idLojaNum);
+        if (carrinhoDeleteError) console.error('Erro ao deletar carrinho:', carrinhoDeleteError.message);
+
+        // Excluir produtos vinculados a esta loja
+        const { error: produtoDeleteError } = await supabase.from('produto').delete().eq('id_loja', idLojaNum);
+        if (produtoDeleteError) console.error('Erro ao deletar produtos:', produtoDeleteError.message);
+
+        // Excluir categorias vinculadas a esta loja
+        const { error: categoriasDeleteError } = await supabase.from('categorias').delete().eq('loja_id', idLojaNum);
+        if (categoriasDeleteError) console.error('Erro ao deletar categorias:', categoriasDeleteError.message);
+
+        // NOVO: Excluir conquistas do proprietário vinculadas a esta loja
+        // A coluna de ligação na tabela 'owner_achievements' é 'loja_id' (conforme o nome da constraint)
+        const { error: achievementsDeleteError } = await supabase.from('owner_achievements').delete().eq('loja_id', idLojaNum);
+        if (achievementsDeleteError) console.error('Erro ao deletar conquistas do proprietário:', achievementsDeleteError.message);
+
+
+        // --- 5. Finalmente, excluir a loja em si ---
+        const { error: deleteLojaError } = await supabase
+            .from('loja')
+            .delete()
+            .eq('id', idLojaNum);
+
+        if (deleteLojaError) {
+            console.error('LojaController: Erro no Supabase ao deletar loja:', deleteLojaError.message);
+            return res.status(500).json({ mensagem: 'Erro ao deletar a loja. Tente novamente.' });
+        }
+        
+        return res.status(200).json({ mensagem: 'Loja e dados associados excluídos com sucesso. Você ainda pode acessar outras lojas ou criar uma nova.' });
+
+    } catch (err) {
+        console.error('LojaController: Erro inesperado ao deletar loja:', err.message);
+        return res.status(500).json({ mensagem: 'Erro interno do servidor ao encerrar a conta da loja.', erro: err.message });
     }
 };

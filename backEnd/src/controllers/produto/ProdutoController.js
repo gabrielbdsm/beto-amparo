@@ -278,7 +278,7 @@ export const inativarProduto = async (req, res) => {
 
         console.log('DEBUG InativarProduto: Produto inativado com sucesso.');
         return res.status(200).json({
-            mensagem: 'Produto inativado com sucesso.',
+          //  mensagem: 'Produto inativado com sucesso.',
         });
     } catch (erro) {
         console.error('DEBUG InativarProduto: Erro inesperado no controlador inativarProduto:', erro);
@@ -355,7 +355,7 @@ export const ativarProduto = async (req, res) => {
 
         console.log('DEBUG AtivarProduto: Produto ativado com sucesso.');
         return res.status(200).json({
-            mensagem: 'Produto ativado com sucesso.',
+           //mensagem: 'Produto ativado com sucesso.',
         });
     } catch (erro) {
         console.error('DEBUG AtivarProduto: Erro inesperado no controlador ativarProduto:', erro);

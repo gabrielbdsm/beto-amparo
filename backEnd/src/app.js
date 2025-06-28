@@ -26,29 +26,12 @@ dotenv.config();
 const app = express();
 
 app.use(cors({
-  origin: true, // Ou defina especificamente seu FRONTEND_URL
+  origin: true, 
   credentials: true
 }));
 
 app.use(cookieParser());
 app.use(express.json());
-
-// Agendamento dos Cron Jobs (mantido, mas você pode comentar temporariamente para testar as chamadas manuais)
-/*
-cron.schedule('0 5 * * 1', async () => { // Toda Segunda-feira à 00:05
-  console.log('CRON JOB: Executando checkWeeklyRevenue...');
-  await checkWeeklyRevenue();
-}, {
-  timezone: "America/Sao_Paulo" // Defina seu fuso horário (ex: America/Sao_Paulo para Palmas)
-});
-
-cron.schedule('0 5 1 * *', async () => { // Todo primeiro dia do mês à 00:05
-    console.log('CRON JOB: Executando checkBestSellingProduct...');
-    await checkBestSellingProduct();
-}, {
-    timezone: "America/Sao_Paulo" // Defina seu fuso horário
-});
-*/
 
 // Configuração do Multer para upload de imagens (mantida)
 const storage = multer.diskStorage({
@@ -118,4 +101,4 @@ const PORT = process.env.PORT || 4000;
   await checkWeeklyRevenue(); // Teste manual do semanal
   await checkBestSellingProduct(); // Teste manual do mensal
   console.log('TESTE MANUAL: Cron jobs concluídos.');
-})(); // Funções assíncronas autoinvocáveis para usar await no nível superior
+})();
