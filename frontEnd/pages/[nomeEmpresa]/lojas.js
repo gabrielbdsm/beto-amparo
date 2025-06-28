@@ -156,17 +156,7 @@ export default function ListaLojasEmpresa() {
         <div className="min-h-screen bg-gray-50">
             <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
                 <div className="text-center mb-12">
-                    <h1 className="text-3xl font-bold text-gray-900 mb-2">Lojas da {empresa?.nome}</h1>
-                    {empresa?.site && (
-                        <a
-                            href={empresa.site.startsWith('http') ? empresa.site : `https://${empresa.site}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-600 hover:text-blue-800 text-sm"
-                        >
-                            {empresa.site.replace(/^https?:\/\//, '')}
-                        </a>
-                    )}
+                    <h1 className="text-3xl font-bold text-gray-900 mb-2">Lojas {empresa?.nome}</h1>
                 </div>
 
                 {lojas.length === 0 ? (
@@ -208,7 +198,7 @@ export default function ListaLojasEmpresa() {
                                 <div
                                     key={loja.id}
                                     className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer"
-                                    onClick={() => router.push(`/empresa/${loja.slug_loja}/produtos`)}
+                                    onClick={() => router.push(`/empresa/${loja.slug_loja}/donoarea`)}
                                 >
                                     <div className="relative h-48 w-full bg-gray-100">
                                         <img
@@ -228,9 +218,6 @@ export default function ListaLojasEmpresa() {
                                             <p className="text-gray-600 text-sm mb-3 line-clamp-2">{loja.slogan}</p>
                                         )}
                                         <div className="flex justify-between items-center">
-                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                                {loja.categoria || 'Geral'}
-                                            </span>
                                             <button
                                                 className="text-blue-600 hover:text-blue-800 text-sm font-medium"
                                                 onClick={(e) => {
@@ -242,6 +229,7 @@ export default function ListaLojasEmpresa() {
                                             </button>
                                         </div>
                                     </div>
+
                                 </div>
                             );
                         })}
