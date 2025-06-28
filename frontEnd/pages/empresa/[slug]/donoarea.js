@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import Image from 'next/image';
 import OwnerSidebar from '@/components/OwnerSidebar';
-import ProductTour from '@/components/ProductTour'; // Importe o componente ProductTour
+import ProductTour from '@/components/ProductTour'; 
 
 import FloatingNotificationsTop from '@/components/notification'; 
 import { Button } from "@/components/ui/button";

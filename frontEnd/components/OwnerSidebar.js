@@ -1,3 +1,4 @@
+// OwnerSidebar.js
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -7,11 +8,12 @@ import { useState, useEffect } from 'react';
 function NavItem({ icon, label, path, currentSlug, onClick, className }) {
     const router = useRouter();
     // Constrói o caminho completo para o Link
-    const fullPath = currentSlug ? `/empresa/${currentSlug}${path}` : path;
+    // Se o path já inclui o slug (como para '/empresa/slug/configuracoes'), não adicione novamente
+    const fullPath = path.startsWith('/empresa/') ? path : (currentSlug ? `/empresa/${currentSlug}${path}` : path);
 
     // Determina se o item é o ativo/selecionado de forma mais robusta para SSR/CSR
     // Verifica se a rota atual é exatamente a fullPath ou se começa com a fullPath
-    // (útil para sub-rotas, ex: /produtos/editar)
+    // (útil para sub-rotas, ex: /produtos/editar ou /configuracoes/minhas-categorias)
     const isActive = router.asPath === fullPath || router.asPath.startsWith(`${fullPath}/`);
 
     // Classe base para os itens de navegação
@@ -53,7 +55,7 @@ function LevelMedal({ level }) {
 
     switch (level) {
         case 'Bronze':
-            medalImage = '/icons/medal_bronze.png'; 
+            medalImage = '/icons/medal_bronze.png';
             altText = 'Medalha de Bronze';
             break;
         case 'Prata':
@@ -65,12 +67,12 @@ function LevelMedal({ level }) {
             altText = 'Medalha de Ouro';
             break;
         default:
-            return null; 
+            return null;
     }
 
     return (
         <div className="flex items-center justify-center">
-            <Image src={medalImage} alt={altText} width={30} height={30} /> 
+            <Image src={medalImage} alt={altText} width={30} height={30} />
         </div>
     );
 }
@@ -95,7 +97,7 @@ export default function OwnerSidebar({ children, slug }) {
     useEffect(() => {
         setIsClient(true);
 
-        if (typeof window !== 'undefined') { 
+        if (typeof window !== 'undefined') {
             const savedVisibility = localStorage.getItem('linkBlockVisibility');
             if (savedVisibility !== null) {
                 setShowLinkBlock(JSON.parse(savedVisibility));
@@ -122,7 +124,7 @@ export default function OwnerSidebar({ children, slug }) {
                     setLojaData(data);
                     setSlugEmpresa(data?.slug_loja || '');
                     setIsLojaClosed(data?.is_closed_for_orders || false);
-                    setShopLevel(data?.level_tier || 'Nenhum'); 
+                    setShopLevel(data?.level_tier || 'Nenhum');
                     console.log("OwnerSidebar: Dados da loja obtidos com sucesso:", data);
                 } else {
                     const errorData = await response.json();
@@ -130,8 +132,8 @@ export default function OwnerSidebar({ children, slug }) {
                     setErrorLoja(errorData.message || `Erro ${response.status}: ${response.statusText}`);
                     setLojaData(null);
                     setSlugEmpresa('');
-                    setIsLojaClosed(false); 
-                    setShopLevel('Nenhum'); 
+                    setIsLojaClosed(false);
+                    setShopLevel('Nenhum');
                 }
             } catch (error) {
                 console.error('OwnerSidebar: Erro ao buscar dados da loja:', error);
@@ -139,17 +141,17 @@ export default function OwnerSidebar({ children, slug }) {
                 setLojaData(null);
                 setSlugEmpresa('');
                 setIsLojaClosed(false);
-                setShopLevel('Nenhum'); 
+                setShopLevel('Nenhum');
             } finally {
                 setLoadingLoja(false);
             }
         };
 
         getLojaDetails();
-    }, [slug]); 
+    }, [slug]);
 
     useEffect(() => {
-        if (isClient && typeof window !== 'undefined') { 
+        if (isClient && typeof window !== 'undefined') {
             localStorage.setItem('linkBlockVisibility', JSON.stringify(showLinkBlock));
         }
     }, [showLinkBlock, isClient]);
@@ -184,18 +186,18 @@ export default function OwnerSidebar({ children, slug }) {
     };
 
     const handleToggleLojaStatus = async () => {
-        const newStatus = !isLojaClosed; 
+        const newStatus = !isLojaClosed;
         try {
             const response = await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/loja/${currentActiveSlug}/toggle-status`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
-                body: JSON.stringify({ isClosed: newStatus }), 
+                body: JSON.stringify({ isClosed: newStatus }),
             });
 
             if (response.ok) {
                 const data = await response.json();
-                setIsLojaClosed(data.is_closed_for_orders); 
+                setIsLojaClosed(data.is_closed_for_orders);
             } else {
                 const errorData = await response.json();
                 alert(`Erro ao alternar status da loja: ${errorData.mensagem || 'Tente novamente.'}`);
@@ -286,10 +288,10 @@ export default function OwnerSidebar({ children, slug }) {
                         )}
                         {/* Botão para re-exibir o bloco do link, se ele estiver escondido - Renderizado condicionalmente apenas no cliente após hidratação */}
                         {isClient && !showLinkBlock && (
-                            <div className="flex justify-center mt-2"> 
+                            <div className="flex justify-center mt-2">
                                 <button
                                     onClick={() => setShowLinkBlock(true)}
-                                    className="p-2 text-white flex items-center gap-2 hover-shadow-blue rounded transition-all duration-200 cursor-pointer text-center" 
+                                    className="p-2 text-white flex items-center gap-2 hover-shadow-blue rounded transition-all duration-200 cursor-pointer text-center"
                                     title="Mostrar link da loja"
                                 >
                                     Mostrar Link da Loja
@@ -298,16 +300,16 @@ export default function OwnerSidebar({ children, slug }) {
                         )}
 
                         {/* TOGGLE: Switch de alternar o status da loja - Cor de fundo condicional */}
-                        {lojaData && ( 
+                        {lojaData && (
                             <div className={`mt-4 p-2 rounded-md text-white flex items-center justify-between ${isLojaClosed ? 'bg-gray-500' : 'bg-blue-700'}`}>
                                 <span>Loja: {isLojaClosed ? 'Fechada' : 'Aberta'} para Pedidos</span>
-                                <label className="switch"> 
+                                <label className="switch">
                                     <input
                                         type="checkbox"
-                                        checked={!isLojaClosed} 
+                                        checked={!isLojaClosed}
                                         onChange={handleToggleLojaStatus}
                                     />
-                                    <span className="slider round"></span> 
+                                    <span className="slider round"></span>
                                 </label>
                             </div>
                         )}
@@ -321,18 +323,16 @@ export default function OwnerSidebar({ children, slug }) {
                         </Link>
 
                         {/* NavItems ATUALIZADOS com lógica condicional para ícones de "prata" */}
-                        {/* Para o Dashboard, podemos assumir que "Vendedor Prata" se relaciona a ele */}
-                        <NavItem 
-                            icon={router.asPath === `/empresa/${currentActiveSlug}/dashboard` && shopLevel === 'Prata' 
-                                ? "/icons/dashboard_white.svg" 
-                                : "/icons/dashboard_white.svg"} 
-                            label="Dashboard" 
-                            path="/dashboard" 
-                            currentSlug={currentActiveSlug} 
-                            className="sidebar-dashboard-item" 
+                        <NavItem
+                            icon={router.asPath === `/empresa/${currentActiveSlug}/dashboard` && shopLevel === 'Prata'
+                                ? "/icons/dashboard_white.svg"
+                                : "/icons/dashboard_white.svg"}
+                            label="Dashboard"
+                            path="/dashboard"
+                            currentSlug={currentActiveSlug}
+                            className="sidebar-dashboard-item"
                         />
-                        
-                        {/* Para Meus Produtos, podemos relacionar com Portfólio Diversificado e Portfólio em Crescimento */}
+
                         <NavItem
                         icon="/icons/add_white.svg"
                         label="Meus Produtos"
@@ -343,13 +343,21 @@ export default function OwnerSidebar({ children, slug }) {
                         <NavItem icon="/icons/paint_white.svg" label="Personalizar Loja" path="/personalizacao" currentSlug={currentActiveSlug} className="sidebar-personalizar-item" />
                         <NavItem icon="/icons/clock_white.svg" label="Horarios" path="/horarioEmpresa" currentSlug={currentActiveSlug} className="sidebar-horarios-item" />
                         <NavItem icon="/icons/notes.png" label="Meus agendamentos" path="/meusAgendamentos" currentSlug={currentActiveSlug} className="sidebar-agendamentos-item" />
-                        
-                        {/* Para a página de Conquistas, manter o ícone de troféu, pois é o ícone da categoria */}
+
                         <NavItem icon="/icons/trophy_white.svg" label="Minhas Conquistas" path="/conquistas" currentSlug={currentActiveSlug} className="sidebar-conquistas-item" />
-                        
+
                         <NavItem icon="/icons/help_white.svg" label="Suporte" path="/suporte" currentSlug={currentActiveSlug} className="sidebar-suporte-item" />
 
-                    </div> 
+                        {/* NOVO: Item de Configurações */}
+                        <NavItem 
+                            icon="/icons/settings_white.svg" // Assumindo que você tem um ícone de configurações branco
+                            label="Configurações" 
+                            path="/configuracoes/" // Aponta para a página de configurações principal
+                            currentSlug={currentActiveSlug} 
+                            className="sidebar-configuracoes-item" 
+                        />
+
+                    </div>
                 </div>
 
                 <button

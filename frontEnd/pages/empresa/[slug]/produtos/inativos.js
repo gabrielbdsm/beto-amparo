@@ -64,7 +64,6 @@ export default function ProdutosInativosPage() {
       }
 
       setProdutosInativos(prevProdutos => prevProdutos.filter(p => p.id !== productToHandle.id));
-     // alert('Produto ativado com sucesso!');
       handleCloseConfirmModal();
 
     } catch (err) {
