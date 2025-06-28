@@ -41,6 +41,45 @@ class DonoController {
       return res.status(500).json({ error: 'Erro interno do servidor' });
     }
   }
+
+  //CONFLITO NÃO RESOLVIDO E NÃO FAÇO IDEIA DE QUAL DEIXAR - neci
+  /*
+  async getLojaPorNomeEmpresa(req, res) {
+  try {
+    const { nomeEmpresa } = req.params;
+
+    // Buscar a empresa pelo nome (ignora maiúsculas/minúsculas)
+    const { data: empresa, error: empresaError } = await supabase
+      .from('empresas')
+      .select('*')
+      .ilike('nome', nomeEmpresa)
+      .single();
+
+    if (empresaError || !empresa) {
+      return res.status(404).json({ error: 'Empresa não encontrada' });
+    }
+
+    // Buscar todas as lojas associadas ao id da empresa
+    const { data: lojas, error: lojaError } = await supabase
+      .from('loja')
+      .select('*')
+      .eq('id_empresa', empresa.id);
+
+    if (lojaError) {
+      return res.status(500).json({ error: 'Erro ao buscar lojas' });
+    }
+
+    return res.status(200).json({
+      empresa,
+      lojas: lojas ?? [],
+    });
+
+  } catch (err) {
+    console.error('Erro inesperado:', err);
+    return res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+}
+*/
     // NOVO MÉTODO: Para obter o ID da empresa do token
     async getEmpresaIdFromTokenEndpoint(req, res) {
       console.log('DEBUG: DonoController: Chamando getEmpresaIdFromTokenEndpoint!');

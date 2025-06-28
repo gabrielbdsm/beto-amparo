@@ -90,7 +90,7 @@ export async function buscarIdLoja(idEmpresa) {
             .from('loja')
             .select('id')
             .eq('id_empresa', idEmpresa)
-            .single();
+            //.single();
 
         if (error) {
             console.error('LojaModel: Erro no Supabase ao buscar ID da loja por ID da empresa:', error.message);
@@ -103,7 +103,8 @@ export async function buscarIdLoja(idEmpresa) {
             return { data: null, error: 'Loja não encontrada para a empresa fornecida.' };
         }
 
-        return { data: { id: data.id }, error: null };
+        return { data: data.map(loja => loja.id), error: null };
+        //return { data: { id: data.id }, error: null };
     } catch (err) {
         console.error('LojaModel: Erro inesperado em buscarIdLoja:', err.message);
         return { data: null, error: err.message };
