@@ -4,7 +4,7 @@ import supabase from '../../config/SupaBase.js';
 import * as LojaModel from '../../models/Loja.js';
 
 export async function getEmpresaBySlug(req, res) {
-  const slug = req.params.slug.toLowerCase(); 
+  const slug = req.params.slug.toLowerCase();
 
   try {
     const { data, error } = await supabase
@@ -12,7 +12,7 @@ export async function getEmpresaBySlug(req, res) {
       .select('id_empresa, nome_fantasia, foto_loja')
       .eq('slug_loja', slug)
       .single();
-    
+
     if (error || !data || data.length === 0) {
       return res.status(404).json({ erro: 'Loja não encontrada' });
     }
@@ -28,7 +28,7 @@ export async function getEmpresaBySlug(req, res) {
       nome_fantasia: data.nome_fantasia,
       foto_loja: data.foto_loja
     });
-    
+
   } catch (err) {
     console.log(err.message);
     res.status(500).json({ erro: err.message });
@@ -64,7 +64,11 @@ export const listarLojasPorEmpresaSlug = async (req, res) => {
   console.log(`DEBUG: [EmpresaController.listarLojasPorEmpresaSlug] Buscando lojas para empresa ID: ${empresaId} com slug: ${empresaSlug}`);
 
   try {
-    const { data: lojas, error } = await LojaModel.buscarLojasPorEmpresaId(empresaId);
+    const { data: lojas, error } = await supabase
+      .from('loja')
+      .select('id, nome_fantasia, slogan, foto_loja')
+      .eq('id_empresa', empresaId);
+
 
     if (error) {
       console.error("Erro ao buscar lojas no modelo:", error);
@@ -90,7 +94,7 @@ export const listarLojasPorEmpresaSlug = async (req, res) => {
 };
 
 export async function BuscarEmpresaBySlug(req, res) {
-  const slug = req.params.slug.toLowerCase(); 
+  const slug = req.params.slug.toLowerCase();
 
   try {
     // Busca a 'loja' e faz o JOIN implícito para trazer a 'empresa' junto
@@ -102,7 +106,7 @@ export async function BuscarEmpresaBySlug(req, res) {
       `)
       .eq('slug_loja', slug)
       .single();
-    
+
     if (error) {
       if (error.code === 'PGRST116') { // Código para "Não encontrado"
         return res.status(404).json({ erro: 'Loja não encontrada.' });
@@ -115,7 +119,7 @@ export async function BuscarEmpresaBySlug(req, res) {
     if (!empresaData) {
       return res.status(404).json({ erro: 'Dados da empresa associada não encontrados.' });
     }
-    
+
     // Remove o objeto aninhado para evitar redundância
     delete lojaData.empresas;
 
@@ -124,7 +128,7 @@ export async function BuscarEmpresaBySlug(req, res) {
       loja: lojaData,
       empresa: empresaData // Aqui dentro estão o telefone, email, etc.
     });
-    
+
   } catch (err) {
     console.error("Erro ao buscar dados completos da loja:", err.message);
     res.status(500).json({ erro: 'Erro interno do servidor.' });

@@ -1,28 +1,32 @@
 /** @type {import('next').NextConfig} */
 
-
 const withPWA = require('next-pwa')({
   dest: 'public',
   register: true,
   skipWaiting: true,
 });
-const nextConfig = {
+
+const nextConfig = withPWA({
   reactStrictMode: true,
 
   eslint: {
     ignoreDuringBuilds: true,
   },
+
   images: {
-      remotePatterns: [
-        {
-          protocol: 'https',
-          hostname: 'cufzswdymzevdeonjgan.supabase.co',
-          pathname: '/storage/v1/object/public/**',
-        },
-      ],
-    },
-
-
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'cufzswdymzevdeonjgan.supabase.co',
+        pathname: '/storage/v1/object/public/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'qkiyyvnyvjqsjnobfyqn.supabase.co',
+        pathname: '/storage/v1/object/public/**',
+      },
+    ],
+  },
 
   async rewrites() {
     return [
@@ -96,10 +100,10 @@ const nextConfig = {
       },
       {
         source: '/api/:path*',
-        destination: 'https://beto-amparo.onrender.com/:path*', 
+        destination: 'https://beto-amparo.onrender.com/:path*',
       },
     ];
   },
-};
+});
 
 module.exports = nextConfig;

@@ -12,25 +12,42 @@ export default function ListaLojasEmpresa() {
     const router = useRouter();
     const { nomeEmpresa } = router.query;
 
+    const getImagemLoja = (loja) => {
+        if (!loja) return "/icons/store_gray.svg";
+
+        const caminhoImagem = loja?.foto_loja || loja?.imagem_url || loja?.logo || loja?.foto;
+
+        if (!caminhoImagem) return "/icons/store_gray.svg";
+
+        if (caminhoImagem.startsWith('http')) return caminhoImagem;
+
+        const baseUrl = 'https://qkiyyvnyvjqsjnobfyqn.supabase.co/storage/v1/object/public';
+        const cleanedPath = caminhoImagem.replace(/^\/+/, ''); // remove barras iniciais
+        return `${baseUrl}/lojas/${encodeURIComponent(cleanedPath)}?v=${Date.now()}`;
+    };
+
+
+
     useEffect(() => {
         if (!nomeEmpresa) return;
 
         async function fetchLojas() {
             try {
-                console.log('🔴 [DEBUG] Validando acesso para:', nomeEmpresa);
+                console.log('Validando acesso para:', nomeEmpresa);
 
-                // 1. Validação simplificada
+                // 1. Adicione logs para verificar a chamada da API
+                console.log('Chamando endpoint:', `${process.env.NEXT_PUBLIC_EMPRESA_API}/${nomeEmpresa}/validate`);
+
                 const validation = await fetch(
-                    `${process.env.NEXT_PUBLIC_EMPRESA_API}/${nomeEmpresa}/validate`, // <-- MUDANÇA AQUI!
+                    `${process.env.NEXT_PUBLIC_EMPRESA_API}/${nomeEmpresa}/validate`,
                     {
                         credentials: 'include',
                         headers: { 'Content-Type': 'application/json' }
                     }
                 );
 
-                // 2. Tratamento explícito de erros
                 if (validation.status === 401 || validation.status === 403) {
-                    console.log('🔴 Redirecionando para login');
+                    console.log('Redirecionando para login');
                     window.location.href = `/${nomeEmpresa}/LoginEmpresa?returnTo=/${nomeEmpresa}/lojas`;
                     return;
                 }
@@ -39,7 +56,9 @@ export default function ListaLojasEmpresa() {
                     throw new Error('Falha na validação');
                 }
 
-                // 3. Busca as lojas
+                // 2. Adicione log para verificar a chamada das lojas
+                console.log('Buscando lojas em:', `${process.env.NEXT_PUBLIC_EMPRESA_API}/${nomeEmpresa}/lojas`);
+
                 const res = await fetch(
                     `${process.env.NEXT_PUBLIC_EMPRESA_API}/${nomeEmpresa}/lojas`,
                     { credentials: 'include' }
@@ -48,12 +67,36 @@ export default function ListaLojasEmpresa() {
                 if (!res.ok) throw new Error('Erro ao buscar lojas');
 
                 const data = await res.json();
+
+                // Adicione isso logo após o const data = await res.json();
+                console.log('--- DADOS RECEBIDOS DA API ---');
+                console.log('Dados completos da empresa:', data.empresa);
+                console.log('Dados das lojas (primeira loja como exemplo):', {
+                    ...data.lojas[0],  // Mostra a primeira loja como exemplo
+                    camposImagem: {
+                        foto_loja: data.lojas[0]?.foto_loja,
+                        imagem_url: data.lojas[0]?.imagem_url,
+                        logo: data.lojas[0]?.logo,
+                        foto: data.lojas[0]?.foto
+                    }
+                });
+
+                // 3. Log completo dos dados recebidos
+                console.log('Dados recebidos da API:', {
+                    lojas: data.lojas,
+                    camposImagem: data.lojas?.map(loja => ({
+                        id: loja.id,
+                        temImagem: !!loja.foto_loja,
+                        valorImagem: loja.foto_loja
+                    }))
+                });
+
                 setLojas(data.lojas || []);
                 setEmpresa(data.empresa);
 
             } catch (err) {
-                console.error('🔴 Erro:', err);
-                window.location.href = `/empresa/LoginEmpresa?returnTo=/${nomeEmpresa}/lojas`; // mudei aqui
+                console.error('Erro ao carregar lojas:', err);
+                setError('Não foi possível carregar as lojas. Tente novamente mais tarde.');
             } finally {
                 setLoading(false);
             }
@@ -64,61 +107,154 @@ export default function ListaLojasEmpresa() {
 
     if (loading) {
         return (
-            <div className="flex justify-center items-center min-h-screen">
-                <p className="text-gray-700 text-lg">Carregando lojas...</p>
+            <div className="min-h-screen bg-gray-50">
+                <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+                    <div className="animate-pulse space-y-8">
+                        <div className="h-8 bg-gray-200 rounded w-1/3 mx-auto"></div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {[...Array(3)].map((_, i) => (
+                                <div key={i} className="bg-white rounded-lg shadow overflow-hidden">
+                                    <div className="h-48 bg-gray-200"></div>
+                                    <div className="p-4 space-y-3">
+                                        <div className="h-6 bg-gray-200 rounded w-3/4"></div>
+                                        <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
             </div>
         );
     }
 
     if (error) {
         return (
-            <div className="flex justify-center items-center min-h-screen">
-                <p className="text-red-600 text-lg">{error}</p>
+            <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
+                <div className="max-w-md text-center">
+                    <div className="text-red-500 mb-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <h2 className="text-xl font-bold text-gray-800 mb-2">Ocorreu um erro</h2>
+                    <p className="text-gray-600 mb-6">{error}</p>
+                    <button
+                        onClick={() => window.location.reload()}
+                        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+                    >
+                        Tentar novamente
+                    </button>
+                </div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-gray-100">
-            <div className="max-w-5xl mx-auto py-10 px-4">
-                <h1 className="text-3xl font-bold text-gray-700 mb-8 text-center">
-                    Lojas da {empresa?.nome}
-                </h1>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-                    {lojas.map((loja) => (
-                        <div
-                            key={loja.id}
-                            className="bg-white rounded shadow-md overflow-hidden hover:shadow-lg transition cursor-pointer"
-                            onClick={() => router.push(`/loja/${loja.slug_loja}`)}
+        <div className="min-h-screen bg-gray-50">
+            <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+                <div className="text-center mb-12">
+                    <h1 className="text-3xl font-bold text-gray-900 mb-2">Lojas da {empresa?.nome}</h1>
+                    {empresa?.site && (
+                        <a
+                            href={empresa.site.startsWith('http') ? empresa.site : `https://${empresa.site}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:text-blue-800 text-sm"
                         >
-                            <Image
-                                src={loja.foto_loja || '/icons/store_gray.svg'}
-                                alt={loja.nome_fantasia}
-                                width={400}
-                                height={200}
-                                className="w-full h-40 object-cover"
-                            />
-                            <div className="p-4">
-                                <h2 className="text-xl font-semibold text-gray-800">{loja.nome_fantasia}</h2>
-                                <p className="text-sm text-gray-500 mt-1">{loja.slogan}</p>
-                                <button className="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-4 py-1 rounded text-sm">
-                                    Ver loja
-                                </button>
-                            </div>
-                        </div>
-                    ))}
-                    <button
-                        onClick={() => router.push(`/empresa/${nomeEmpresa}/nova-loja`)}
-                        className="fixed bottom-6 right-6 bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-full shadow-lg transition"
-                    >
-                        + Adicionar loja
-                    </button>
-
+                            {empresa.site.replace(/^https?:\/\//, '')}
+                        </a>
+                    )}
                 </div>
+
+                {lojas.length === 0 ? (
+                    <div className="text-center py-12">
+                        <div className="mx-auto h-24 w-24 text-gray-400 mb-4">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                            </svg>
+                        </div>
+                        <h3 className="text-lg font-medium text-gray-900 mb-1">Nenhuma loja cadastrada</h3>
+                        <p className="text-gray-500 mb-6">Comece adicionando sua primeira loja</p>
+                        <button
+                            onClick={() => router.push(`/empresa/personalizacao-loja?idEmpresa=${empresa.id}`)}
+                            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none"
+                        >
+                            Adicionar loja
+                        </button>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                        {lojas.map((loja) => {
+
+                            const imgUrl = getImagemLoja(loja);
+                            console.log('Imagem da loja:', imgUrl);
+
+
+                            console.log(`Loja ${loja.id} - ${loja.nome_fantasia}:`, {
+                                ...loja,
+                                urlImagemGerada: getImagemLoja(loja)
+                            });
+
+                            // Log para verificar cada loja individualmente
+                            console.log(`Dados da loja ${loja.id}:`, {
+                                ...loja,
+                                urlImagem: getImagemLoja(loja.foto_loja)
+                            });
+
+                            return (
+                                <div
+                                    key={loja.id}
+                                    className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer"
+                                    onClick={() => router.push(`/empresa/${nomeEmpresa}/produtos`)}
+                                >
+                                    <div className="relative h-48 w-full bg-gray-100">
+                                        <img
+                                            src={getImagemLoja(loja)}
+                                            alt={`${loja.nome_fantasia} - Foto da loja`}
+                                            className="object-cover w-full h-full"
+                                            onError={(e) => {
+                                                e.target.onerror = null;
+                                                e.target.src = '/icons/store_gray.svg';
+                                            }}
+                                        />
+                                    </div>
+
+                                    <div className="p-5">
+                                        <h2 className="text-xl font-semibold text-gray-900 mb-1">{loja.nome_fantasia}</h2>
+                                        {loja.slogan && (
+                                            <p className="text-gray-600 text-sm mb-3 line-clamp-2">{loja.slogan}</p>
+                                        )}
+                                        <div className="flex justify-between items-center">
+                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                                {loja.categoria || 'Geral'}
+                                            </span>
+                                            <button
+                                                className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    router.push(`/empresa/${nomeEmpresa}/produtos`);
+                                                }}
+                                            >
+                                                Ver detalhes →
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+
+                <button
+                    onClick={() => router.push(`/empresa/personalizacao-loja?idEmpresa=${empresa.id}`)}
+                    className="fixed bottom-8 right-8 inline-flex items-center p-3 border border-transparent rounded-full shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none transition-all"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                </button>
             </div>
         </div>
-
-
     );
 }
