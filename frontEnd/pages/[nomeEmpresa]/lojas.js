@@ -206,7 +206,7 @@ export default function ListaLojasEmpresa() {
                                 <div
                                     key={loja.id}
                                     className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer"
-                                    onClick={() => router.push(`/empresa/${nomeEmpresa}/produtos`)}
+                                    onClick={() => router.push(`/empresa/${loja.slug_loja}/produtos`)}
                                 >
                                     <div className="relative h-48 w-full bg-gray-100">
                                         <img
@@ -233,7 +233,7 @@ export default function ListaLojasEmpresa() {
                                                 className="text-blue-600 hover:text-blue-800 text-sm font-medium"
                                                 onClick={(e) => {
                                                     e.stopPropagation();
-                                                    router.push(`/empresa/${nomeEmpresa}/produtos`);
+                                                    router.push(`/empresa/${loja.slug_loja}/produtos`);
                                                 }}
                                             >
                                                 Ver detalhes →

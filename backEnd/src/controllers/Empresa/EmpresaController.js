@@ -66,7 +66,7 @@ export const listarLojasPorEmpresaSlug = async (req, res) => {
   try {
     const { data: lojas, error } = await supabase
       .from('loja')
-      .select('id, nome_fantasia, slogan, foto_loja')
+      .select('id, nome_fantasia, slogan, foto_loja, slug_loja')
       .eq('id_empresa', empresaId);
 
 
