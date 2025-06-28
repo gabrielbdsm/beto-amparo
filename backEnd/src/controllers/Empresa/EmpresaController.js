@@ -69,6 +69,8 @@ export const listarLojasPorEmpresaSlug = async (req, res) => {
       .select('id, nome_fantasia, slogan, foto_loja, slug_loja')
       .eq('id_empresa', empresaId);
 
+    console.log("Resultado da consulta de lojas:", lojas);
+
 
     if (error) {
       console.error("Erro ao buscar lojas no modelo:", error);

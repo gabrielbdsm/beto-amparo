@@ -92,6 +92,8 @@ export default function ListaLojasEmpresa() {
                 });
 
                 setLojas(data.lojas || []);
+                console.log("Lojas recebidas para exibir na tela:", data.lojas);
+
                 setEmpresa(data.empresa);
 
             } catch (err) {
