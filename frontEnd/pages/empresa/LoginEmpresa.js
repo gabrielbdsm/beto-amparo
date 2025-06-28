@@ -28,10 +28,8 @@ export default function LoginEmpresa() {
       } else if (returnTo) {
         redirectPath = returnTo;
       } else if (slugLoja) {
-        redirectPath = `/empresa/${slugLoja}/produtos`;
-      } else {
-        redirectPath = `/empresa/${slugLoja}/produtos`;
-      }
+        redirectPath = `/empresa/minhas-lojas`;
+      } 
 
       console.log('LoginEmpresa - useEffect: Redirecionando APÓS LOGIN para:', redirectPath);
       router.replace(redirectPath);

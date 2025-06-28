@@ -3,13 +3,13 @@ import { useRouter } from 'next/router';
 import Image from 'next/image';
 import OwnerSidebar from '@/components/OwnerSidebar';
 import ProductTour from '@/components/ProductTour'; // Importe o componente ProductTour
+import { FaTrashAlt, FaBuilding, FaArrowRight } from 'react-icons/fa';
 
 import FloatingNotificationsTop from '@/components/notification'; 
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { FaTrashAlt } from 'react-icons/fa';
 import toast from 'react-hot-toast'; 
 
 
@@ -324,7 +324,7 @@ export default function OwnerDono() {
                 <div className="col-span-2 md:col-span-4">
                     <h2 className="text-lg font-semibold text-gray-600 mb-1">Resumo geral:</h2>
                 </div>
-                <InfoCard value={donoData.produtos ? donoData.produtos.length : 0} sub="produtos ativos" />
+                <InfoCard value={donoData.produtosAtivos} sub="produtos ativos" />
                 <InfoCard value={metrics.novosPedidos} sub="novos pedidos" />
                 <InfoCard value={metrics.pedidosFinalizados} sub="pedidos finalizados" />
                 <InfoCard value="3" sub="notificações" />
@@ -336,13 +336,28 @@ export default function OwnerDono() {
                     <ActionCard icon="/icons/notification.svg" label="Notificações" path={`/empresa/${donoData.loja.slug_loja}/notificacoes`} className="notifications-action-card" />
                     <ActionCard icon="/icons/paint_gray.svg" label="Personalizar Loja" path={`/empresa/${donoData.loja.slug_loja}/personalizacao`} className="personalize-store-action-card" />
                     <ActionCard icon="/icons/store_gray.svg" label="Ver Loja" path={`${window.location.origin}/loja/${donoData.loja.slug_loja}`} className="view-store-action-card" />
-                    <ActionCard icon="/icons/pontos.svg" label="Configurar Fidelidade" onClick={() => setOpen(true)} className="loyalty-config-action-card" />
-                    <ActionCard icon="/icons/pontos.svg" label="Meus Cupons" onClick={() =>{setOpenCupons(true); buscarCupons();}} className="loyalty-config-action-card" />
                 </div>
                 <div className="bg-white rounded shadow p-4 flex flex-col gap-4">
                     <div className="text-sm font-semibold text-gray-600 border-b pb-1">Promoções</div>
-                    <ActionCard icon="/icons/sale.svg" label="Adicionar Promoção" noBg className="add-promo-action-card" />
-                    <ActionCard icon="/icons/check.svg" label="Promoções Ativas" noBg className="active-promos-action-card" />
+                    <ActionCard icon="/icons/pontos.svg" label="Configurar Fidelidade" onClick={() => setOpen(true)} className="loyalty-config-action-card" />
+                    <ActionCard icon="/icons/pontos.svg" label="Meus Cupons" onClick={() =>{setOpenCupons(true); buscarCupons();}} className="loyalty-config-action-card" />
+                </div>
+            </div>
+            <div className="w-full max-w-3xl mx-auto mt-8">
+                <div
+                    onClick={() => router.push('/empresa/minhas-lojas')}
+                    className="group block w-full p-6 bg-gradient-to-r from-[#3681B6] to-blue-700 text-white rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 cursor-pointer"
+                >
+                    <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-4">
+                            <FaBuilding size={28} />
+                            <div>
+                                <h3 className="text-xl font-bold">Gerenciar Minhas Lojas</h3>
+                                <p className="text-sm opacity-80 mt-1">Visualize e navegue entre todas as suas lojas.</p>
+                            </div>
+                        </div>
+                        <FaArrowRight className="group-hover:translate-x-1 transition-transform duration-300" size={24} />
+                    </div>
                 </div>
             </div>
             

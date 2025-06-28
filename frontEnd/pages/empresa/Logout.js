@@ -16,7 +16,7 @@ export default function LogoutButton() {
       });
      
       if (response.ok) {
-        window.location.href = '/loginEmpresa'; 
+        window.location.href = '/home'; 
       } else {
         console.error('Erro ao fazer logout');
       }

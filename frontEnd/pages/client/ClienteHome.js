@@ -491,7 +491,18 @@ export default function ClienteHome() {
                                     </div>
                                     <span className="text-[10px] mt-1">Conta</span>
                                 </Menu.Button>
-                                <Menu.Items className="absolute right-0 mt-2 w-40 bg-white border border-gray-200 rounded shadow-md z-50">
+                                <Menu.Items className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-50 focus:outline-none overflow-hidden">
+                                    <Menu.Item>
+                                        {({ active }) => (
+                                            <Link
+                                                href={`/loja/${site}/minha-conta`}
+                                                className={`block px-4 py-2 text-sm w-full text-left text-gray-700 ${active ? 'bg-gray-100' : ''}`}
+                                            >
+                                                Minha Conta
+                                            </Link>
+                                        )}
+                                    </Menu.Item>
+
                                     <Menu.Item>
                                         {({ active }) => (
                                             <button
@@ -518,7 +529,7 @@ export default function ClienteHome() {
                                 <span className="text-[10px] mt-1">Entrar</span>
                             </button>
                         )}
-                        {ativarFidelidade && <PontosFidelidade clienteId={cliente?.id} />}
+                        {ativarFidelidade && clienteLogado && <PontosFidelidade clienteId={cliente?.id} />}
                     </div>
                 )}
             </header>
