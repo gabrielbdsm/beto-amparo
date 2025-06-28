@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { FiPhone, FiMail, FiMessageSquare, FiTool } from 'react-icons/fi'; // Importando todos os ícones usados
 import ContatoModal from '@/components//ContatoModal'; 
 import TecnicoModal from '@/components/TecnicoModal';
+import toast from 'react-hot-toast'; 
 
 function FaqItem({ question, answer }) {
     const [isOpen, setIsOpen] = useState(false);
@@ -135,7 +136,7 @@ export default function SuportePage() {
     // Função com a lógica de mensagem aprimorada
     const handleContatoSubmit = (motivo, numeroPedido) => {
         if (!empresa || !empresa.telefone) {
-            alert("O número de contato da loja não está disponível.");
+            toast.error("O número de contato da loja não está disponível.");
             return;
         }
 

@@ -1,6 +1,6 @@
 // frontEnd/pages/client/ClienteHome.js
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import Image from "next/image";
 import NavBar from "@/components/NavBar";
 import ProdutoCard from "@/components/ProdutoCard";
@@ -9,6 +9,8 @@ import { createClient } from '@supabase/supabase-js';
 import Link from 'next/link';
 import { QuestionMarkCircleIcon } from '@heroicons/react/24/outline';
 import { Menu } from '@headlessui/react';
+import SecaoRecomendacoes from "@/components/SecaoRecomendacoes";
+import SecaoCategoria from "@/components/SecaoCategoria";
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_KEY);
 
@@ -16,13 +18,14 @@ const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.
 export default function ClienteHome() {
     const router = useRouter();
     const { site } = router.query; // 'site' é o slug da loja
+    const { isReady } = router;
     const [clienteLogado, setClienteLogado] = useState(false);
     const [cliente, setCliente] = useState(null);
-
+    const [rawRecomendacoes, setRawRecomendacoes] = useState([]); 
     const [lojaId, setLojaId] = useState(null);
     const [nomeFantasia, setNomeFantasia] = useState("Carregando...");
     const [isLojaClosed, setIsLojaClosed] = useState(false); // Estado para o status da loja
-
+    const [categorias, setCategorias] = useState([]);
     const [produtos, setProdutos] = useState([]);
     const [searchTerm, setSearchTerm] = useState("");
     const [bannerLoja, setBannerLoja] = useState(null);
@@ -54,6 +57,41 @@ export default function ClienteHome() {
     const [fotoLoja, setFotoLoja] = useState(null);
     const [corPrimaria, setCorPrimaria] = useState("#3B82F6");
     const [corSecundaria, setCorSecundaria] = useState("#F3F4F6");
+
+    const produtosVisiveis = useMemo(() => {
+      return produtos.filter((produto) => !produto.indisponivel_automatico);
+    }, [produtos]);
+
+    const produtosAgrupadosEFiltrados = useMemo(() => {
+        const produtosFiltradosPorBusca = produtosVisiveis.filter((produto) => 
+            removeAccents(produto.nome.toLowerCase()).includes(removeAccents(searchTerm.toLowerCase()))
+        );
+
+        const agrupados = produtosFiltradosPorBusca.reduce((acc, produto) => {
+            const categoriaDoProduto = categorias.find(c => c.id === produto.categoria_id);
+            const nomeCategoria = categoriaDoProduto ? categoriaDoProduto.nome : 'Outros';
+            
+            if (!acc[nomeCategoria]) {
+                acc[nomeCategoria] = [];
+            }
+            acc[nomeCategoria].push(produto);
+            return acc;
+        }, {});
+        const categoriasOrdenadas = categorias.map(c => c.nome);
+        const resultadoOrdenado = {};
+
+        for (const nomeCat of categoriasOrdenadas) {
+            if (agrupados[nomeCat]) {
+                resultadoOrdenado[nomeCat] = agrupados[nomeCat];
+            }
+        }
+        if (agrupados['Outros']) {
+             resultadoOrdenado['Outros'] = agrupados['Outros'];
+        }
+
+        return resultadoOrdenado;
+
+    }, [searchTerm, produtosVisiveis, categorias]);
 
     const verificarLoginCliente = useCallback(async () => {
         try {
@@ -126,6 +164,23 @@ export default function ClienteHome() {
         fetchEmpresa();
     }, [site]);
 
+    useEffect(() => {
+        if (!lojaId) return;
+        async function fetchCategorias() {
+            try {
+                const url = `${process.env.NEXT_PUBLIC_EMPRESA_API}/categorias/loja/${lojaId}`;
+                const response = await fetch(url);
+                if (!response.ok) throw new Error('Erro ao buscar categorias');
+                const data = await response.json();
+                setCategorias(Array.isArray(data) ? data : []);
+            } catch (error) {
+                console.error("DEBUG: Erro ao buscar categorias:", error.message);
+                setCategorias([]);
+            }
+        }
+        fetchCategorias();
+    }, [lojaId]);
+
 
     useEffect(() => {
         console.log('DEBUG: ClienteHome - useEffect para fetchProdutos disparado. Site:', site);
@@ -166,6 +221,52 @@ export default function ClienteHome() {
 
         fetchProdutos();
     }, [site]);
+
+    useEffect(() => {
+        if (!isReady || !site) {
+            return; 
+        }
+        async function fetchRecomendacoes() {
+            try {
+                const clienteQuery = cliente?.id ? `?clienteId=${cliente.id}` : '';
+                const url = `${process.env.NEXT_PUBLIC_EMPRESA_API}/loja/${site}/recomendacoes${clienteQuery}`;
+                
+                const response = await fetch(url);
+                if (!response.ok) {
+                    setRawRecomendacoes([]);
+                    return;
+                }
+                
+                const data = await response.json();
+                
+                if (Array.isArray(data)) {
+                    setRawRecomendacoes(data);
+                } else {
+                    setRawRecomendacoes([]);
+                }
+
+            } catch (error) {
+                setRawRecomendacoes([]);
+            }
+        }
+
+        fetchRecomendacoes();
+    }, [site, cliente, isReady]);
+
+    const recomendacoesFiltradas = useMemo(() => {
+        if (!rawRecomendacoes.length) {
+            return [];
+        }
+
+        const produtosAtuaisIds = new Set(produtos.map(p => p.id));
+        const resultadoFiltrado = rawRecomendacoes.filter(p => !produtosAtuaisIds.has(p.id));
+        if (resultadoFiltrado.length === 0 && rawRecomendacoes.length > 0) {
+            return rawRecomendacoes;
+        }
+        
+        return resultadoFiltrado;
+
+    }, [rawRecomendacoes, produtos]);
 
     const handleShareClick = async () => {
         console.log('DEBUG: ClienteHome - Tentando compartilhar link.');
@@ -225,15 +326,13 @@ export default function ClienteHome() {
     const handleAdicionar = async (produto) => {
         console.log('DEBUG: ClienteHome - Tentando adicionar produto ao carrinho:', produto.nome);
         
-        // Impedir adição ao carrinho e mostrar aviso suave se a loja estiver fechada
         if (isLojaClosed) {
             setMensagem('Desculpe, a loja está fechada para pedidos no momento.');
             setCorMensagem('text-red-600');
-            setTimeout(() => setMensagem(''), 5000); // Mensagem por 5 segundos
-            return; // Impede a continuação da função
+            setTimeout(() => setMensagem(''), 5000); 
+            return; 
         }
 
-        // Impedir adição ao carrinho se o produto estiver indisponível automaticamente (esgotado)
         if (produto.indisponivel_automatico) {
             setMensagem('Produto indisponível no momento.');
             setCorMensagem('text-red-600');
@@ -270,7 +369,6 @@ export default function ClienteHome() {
                     console.error('DEBUG: ClienteHome - Erro de estoque ao adicionar ao carrinho:', data.erro);
                     throw new Error(data.erro);
                 }
-                // Adicional: Lidar com erro 403 (loja fechada) caso o backend também retorne
                 if (response.status === 403 && data.erro && data.erro.includes('fechada para pedidos')) {
                     console.error('DEBUG: ClienteHome - Loja fechada para pedidos (backend):', data.erro);
                     throw new Error(data.erro);
@@ -472,7 +570,6 @@ export default function ClienteHome() {
 
             )}
 
-            {/* AQUI: Mudei a seção de Atendimento para exibir "Loja fechada no momento" */}
             {isLojaClosed ? (
                 <div className="bg-red-50 border border-red-200 rounded-md mx-4 my-4 mt-3 px-3 py-2 flex items-center gap-2 text-sm text-red-800">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -495,33 +592,40 @@ export default function ClienteHome() {
                         {mensagem}
                     </div>
                 )}
-                {/* O aviso de loja fechada na ClienteHome foi movido para a seção de atendimento acima. */}
-                {/* Removido o bloco {isLojaClosed && (...) } que estava aqui */}
 
-                {produtosFiltrados.length > 0 ? (
-                    <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-5 gap-x-6 gap-y-4">
-                        {produtosFiltrados.map((produto) => (
-                            <ProdutoCard
-                                key={produto.id}
-                                produto={produto}
-                                quantidade={quantidades[produto.id] || 1}
-                                onAumentar={() => handleAumentar(produto.id)}
-                                onDiminuir={() => handleDiminuir(produto.id)}
-                                onAdicionar={() => handleAdicionar(produto)}
-                                getImagemProduto={getImagemProduto}
+                {recomendacoesFiltradas.length > 0 && !searchTerm && (
+                    <SecaoRecomendacoes
+                        titulo="Você pode gostar"
+                        produtos={recomendacoesFiltradas}
+                        slug={site}
+                        corPrimaria={corPrimaria}
+                        onAdicionar={handleAdicionar}
+                        getImagemProduto={getImagemProduto}
+                        isLojaClosed={isLojaClosed}
+                    />
+                )}
+                {Object.keys(produtosAgrupadosEFiltrados).length > 0 ? (
+                    <div>
+                        {Object.entries(produtosAgrupadosEFiltrados).map(([nomeCategoria, produtosDaCategoria]) => (
+                            <SecaoCategoria
+                                key={nomeCategoria}
+                                nomeCategoria={nomeCategoria}
+                                produtosDaCategoria={produtosDaCategoria}
                                 slug={site}
-                                cor={corPrimaria}
-                                // NOVO: Passar status de fechado da loja e indisponibilidade para o ProdutoCard
-                                // isIndisponivel será TRUE se o produto estiver indisponível OU se a loja estiver fechada
-                                isIndisponivel={produto.indisponivel_automatico || isLojaClosed} 
-                                isLojaClosed={isLojaClosed} // Passa o status da loja para o card, para estilo específico
-                                statusEstoque={produto.status_estoque}
+                                corPrimaria={corPrimaria}
+                                onAdicionar={handleAdicionar}
+                                getImagemProduto={getImagemProduto}
+                                isLojaClosed={isLojaClosed}
+                                quantidades={quantidades}
                             />
                         ))}
                     </div>
                 ) : (
                     <div className="text-center text-gray-600 mt-10 text-lg">
-                        Nenhum produto disponível no momento.
+                        {searchTerm 
+                            ? `Nenhum produto encontrado para "${searchTerm}".`
+                            : "Nenhum produto disponível no momento."
+                        }
                     </div>
                 )}
             </div>

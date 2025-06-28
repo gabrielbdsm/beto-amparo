@@ -3,6 +3,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/router';
+import toast from 'react-hot-toast'; 
 
 const UFS_BRASIL = [
   { sigla: 'AC', nome: 'Acre' },
@@ -111,7 +112,7 @@ export default function CadastroCliente() {
       if (response.ok) {
         setMensagemSucesso('Cadastro realizado com sucesso!');
         setTimeout(() => {
-          router.push('/');
+          router.push('/login');
         }, 2000);
       } else {
         const errorData = await response.json();

@@ -3,6 +3,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/router';
 import Image from 'next/image';
 import Link from 'next/link';
+import toast from 'react-hot-toast'; 
 
 // Importa os módulos do Swiper
 import { Swiper, SwiperSlide } from 'swiper/react';
@@ -135,7 +136,7 @@ export default function ProdutosDaLoja() {
       setProdutos((prevProdutos) =>
         prevProdutos.filter((p) => p.id !== productToHandle.id)
       );
-      alert('Produto inativado com sucesso!');
+      toast.success('Produto inativado com sucesso!');
       handleCloseConfirmModal();
     } catch (err) {
       console.error('Erro ao inativar produto:', err);

@@ -7,6 +7,7 @@ import Carrinho from "@/components/AdicionarCarrinho";
 import NavBar from "@/components/NavBar";
 import { Obersevacao } from "@/components/Observacao";
 import { useRouter } from 'next/router';
+import toast from 'react-hot-toast'; 
 
 export default function Produto() {
     const router = useRouter();
@@ -152,12 +153,12 @@ export default function Produto() {
         try {
             if (!produto) {
                 console.warn("DEBUG: Tentativa de adicionar ao carrinho sem produto carregado.");
-                alert("Produto não carregado. Por favor, tente novamente.");
+                toast.error("Produto não carregado. Por favor, tente novamente.");
                 return;
             }
             if (!produto.id_loja) { // Certifique-se que o objeto produto tenha id_loja
                 console.warn("DEBUG: ID da loja não disponível no objeto produto.");
-                alert("Informações da loja não disponíveis. Não é possível adicionar ao carrinho.");
+                toast.error("Informações da loja não disponíveis. Não é possível adicionar ao carrinho.");
                 return;
             }
 
@@ -188,10 +189,10 @@ export default function Produto() {
                 throw new Error(data.mensagem || 'Erro ao adicionar ao carrinho');
             }
             console.log("DEBUG: Produto adicionado ao carrinho com sucesso!");
-            alert(data.mensagem || 'Produto adicionado ao carrinho com sucesso!');
+            toast.success(data.mensagem || 'Produto adicionado ao carrinho com sucesso!');
         } catch (error) {
             console.error('DEBUG: Erro ao adicionar ao carrinho (catch):', error);
-            alert('Erro ao adicionar ao carrinho');
+            toast.error('Erro ao adicionar ao carrinho');
         }
     };
 

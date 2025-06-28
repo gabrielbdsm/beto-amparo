@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { FaTrashAlt } from 'react-icons/fa';
+import toast from 'react-hot-toast'; 
 
 
 import { createClient } from '@supabase/supabase-js';
@@ -186,9 +187,9 @@ export default function OwnerDono() {
 
         if (error) {
         console.error(error);
-        alert("Erro ao salvar configuração.");
+        toast.error("Erro ao salvar configuração.");
         } else {
-        alert("Configuração salva com sucesso!");
+        toast.success("Configuração salva com sucesso!");
         setOpen(false);
         }
         setSaving(false);
@@ -205,7 +206,7 @@ export default function OwnerDono() {
 
         if (error) {
             console.error('Erro ao buscar cupons:', error);
-            alert('Erro ao buscar cupons.');
+            toast.error('Erro ao buscar cupons.');
         } else {
             setCupons(data);
         }
@@ -215,12 +216,12 @@ export default function OwnerDono() {
 
     async function salvarCupom() {
         if (!donoData?.loja?.id) {
-            alert("Loja não encontrada.");
+            toast.error("Loja não encontrada.");
             return;
         }
 
         if (!nomeCupom.trim() || !valorCupom) {
-            alert("Preencha todos os campos.");
+            toast.error("Preencha todos os campos.");
             return;
         }
 
@@ -236,9 +237,9 @@ export default function OwnerDono() {
 
         if (error) {
             console.error(error);
-            alert("Erro ao salvar cupom.");
+            toast.error("Erro ao salvar cupom.");
         } else {
-            alert("Cupom salvo com sucesso!");
+            toast.success("Cupom salvo com sucesso!");
             setNomeCupom('');
             setValorCupom('');
             setOpenCupons(false);
@@ -259,10 +260,10 @@ export default function OwnerDono() {
 
         if (error) {
             console.error('Erro ao excluir cupom:', error);
-            alert('Erro ao excluir cupom.');
+            toast.error('Erro ao excluir cupom.');
         } else {
             setCupons(cupons.filter(c => c.id !== id));
-            alert('Cupom excluído com sucesso.');
+            toast.success('Cupom excluído com sucesso.');
         }
     }
 

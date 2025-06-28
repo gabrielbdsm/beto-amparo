@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { v4 as uuid } from "uuid";
 import { Trash2, PlusCircle } from "lucide-react";
 import OwnerSidebar from '@/components/OwnerSidebar';
+import toast from 'react-hot-toast'; 
 import { useRouter } from 'next/router';
 import Notification from '@/components/ui/Notification.js'; 
 
@@ -88,8 +89,12 @@ function LinhaIntervalo({
  
   
     if (erroLocal) {
+<<<<<<< HEAD
+        toast.error(`Não é possível dividir. Corrija o erro: ${erroLocal}`);
+=======
         
       onNotify(`Não é possível dividir. Corrija o erro: ${erroLocal}`, "error");
+>>>>>>> aa7f49603894214a45d7881a29e50f85a8829b0b
         return;
     }
     console.log( typeof intervalo.inicio) 
@@ -120,6 +125,15 @@ function LinhaIntervalo({
       if (subintervalos.length > 0) {
         onSplit(blocoId, intervalo.id, subintervalos);
       } else {
+<<<<<<< HEAD
+        toast.error("Não foi possível dividir o intervalo com a duração selecionada.");
+      }
+    } else {
+      if (!intervalo.inicio || !intervalo.fim ) toast.error("Preencha os horários de início e fim (HH:MM).");
+      else if (duracao <= 0) toast.error("Selecione uma duração válida.");
+      else if (!isMasterInterval) toast.error("Este sub-intervalo não pode ser dividido.");
+      else toast.error("Não é possível dividir com as configurações atuais.");
+=======
         
         onNotify(`Não foi possível dividir o intervalo com a duração selecionada.`, "error");
       }
@@ -128,6 +142,7 @@ function LinhaIntervalo({
       else if (duracao <= 0) onNotify("Selecione uma duração válida.");
       else if (!isMasterInterval) onNotify("Este sub-intervalo não pode ser dividido.");
       else onNotify("Não é possível dividir com as configurações atuais." , "error");
+>>>>>>> aa7f49603894214a45d7881a29e50f85a8829b0b
     }
   };
   
@@ -253,6 +268,16 @@ const { slug } = router.query;
       if (response.ok) {
       
         setBlocos(prev => prev.filter(bloco => bloco.id !== b.id));
+<<<<<<< HEAD
+        toast.success("Data excluída com sucesso!");
+      } else {
+        console.error(result);
+        toast.error("Erro ao excluir a data: " + result.error);
+      }
+    } catch (error) {
+      console.error("Erro inesperado:", error);
+      toast.error("Erro inesperado ao tentar excluir a data.");
+=======
 
         show("Data excluída com sucesso!", "success");
       } else {
@@ -264,6 +289,7 @@ const { slug } = router.query;
       console.error("Erro inesperado:", error);
       show("Erro inesperado ao tentar excluir a data.", "error");
 
+>>>>>>> aa7f49603894214a45d7881a29e50f85a8829b0b
     }
   }
   
@@ -296,15 +322,23 @@ const { slug } = router.query;
         throw new Error(erroData.message || "Erro ao salvar horários.");
       }
   
+<<<<<<< HEAD
+      toast.success("Horários salvos com sucesso!");
+=======
     
       show("Agendamento criado com sucesso!", "success");
+>>>>>>> aa7f49603894214a45d7881a29e50f85a8829b0b
 
     } catch (err) {
       console.error("Erro ao salvar horários:", err);
       show("Error: " + err.message, "error");
       setErrorGeral(err.message || "Ocorreu um erro desconhecido ao salvar.");
+<<<<<<< HEAD
+      toast.error(`Erro: ${err.message}`);
+=======
      
       
+>>>>>>> aa7f49603894214a45d7881a29e50f85a8829b0b
     }
   };
 
