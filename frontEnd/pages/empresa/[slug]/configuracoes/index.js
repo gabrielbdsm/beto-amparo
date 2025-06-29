@@ -1,4 +1,5 @@
-// pages/empresa/[slug]/configuracoes/index.js
+// frontEnd/pages/empresa/[slug]/configuracoes/index.js 
+
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -9,11 +10,9 @@ export default function ConfiguracoesPage() {
     const { slug } = router.query;
 
     return (
-        // O OwnerSidebar agora envolve todo o conteúdo da página
-        <OwnerSidebar slug={slug}> {/* Passe o slug para a OwnerSidebar */}
+        <OwnerSidebar slug={slug}>
             <div className="w-full h-full flex items-center justify-center">
                 <div className="bg-white rounded-2xl shadow-lg p-5 w-full sm:max-w-xl relative">
-                    {/* O link de voltar não precisa de <a> aninhado */}
                     <Link href={`/empresa/${slug}/donoarea`}>
                         <button className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 text-3xl font-bold p-1 leading-none">
                             &times;
@@ -42,7 +41,31 @@ export default function ConfiguracoesPage() {
                             </svg>
                         </Link>
 
-                        {/* Nova Opção: "Encerrar Conta da Loja" */}
+                        {/* NOVO: Opção "Horário de Funcionamento" */}
+                        <Link
+                            href={`/empresa/${slug}/configuracoes/horario-funcionamento`}
+                            className="flex items-center gap-4 p-4 bg-gray-50 hover:bg-gray-100 rounded-xl shadow-sm transition-colors cursor-pointer text-gray-800"
+                        >
+                            <Image src="/icons/clock_black.svg" alt="Ícone Horário" width={24} height={24} />
+                            <span className="font-medium text-lg">Horário de Funcionamento</span>
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 ml-auto">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                            </svg>
+                        </Link>
+
+                        {/* NOVO: Opção "Visibilidade de Lojas" */}
+                        <Link
+                            href={`/empresa/${slug}/configuracoes/visibilidade-lojas`}
+                            className="flex items-center gap-4 p-4 bg-gray-50 hover:bg-gray-100 rounded-xl shadow-sm transition-colors cursor-pointer text-gray-800"
+                        >
+                            <Image src="/icons/storefront_black.svg" alt="Ícone Lojas" width={24} height={24} /> {/* Escolha um ícone apropriado */}
+                            <span className="font-medium text-lg">Visibilidade de Outras Lojas</span>
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 ml-auto">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                            </svg>
+                        </Link>
+
+                        {/* Opção "Encerrar Conta da Loja" */}
                         <Link
                             href={`/empresa/${slug}/configuracoes/encerrar-conta`}
                             className="flex items-center gap-4 p-4 bg-gray-50 hover:bg-gray-100 rounded-xl shadow-sm transition-colors cursor-pointer text-red-600"

@@ -18,6 +18,194 @@ async function getEmpresaIdFromToken(req) {
   }
 }
 
+export const listarTodosPedidosDaLoja = async (req, res) => {
+  const { slugLoja } = req.params;
+
+  try {
+      const { empresaId: empresaIdDoToken, error: tokenError } = await getEmpresaIdFromToken(req);
+      if (tokenError) {
+          return res.status(401).json({ error: tokenError.message });
+      }
+
+      const { data: lojaDetalhes, error: lojaError } = await lojaModel.buscarLojaPorSlugCompleta(slugLoja);
+      if (lojaError || !lojaDetalhes) {
+          return res.status(404).json({ mensagem: 'Loja não encontrada com o identificador fornecido.' });
+      }
+
+      if (lojaDetalhes.id_empresa !== empresaIdDoToken) {
+          return res.status(403).json({ mensagem: 'Acesso negado: Você não tem permissão para acessar pedidos desta loja.' });
+      }
+
+      const lojaIdParaPedidos = lojaDetalhes.id;
+
+      const { data: pedidos, error: pedidosError } = await supabase
+        .from('pedidos')
+        .select(`
+            *,
+            cliente:id_cliente ( id, nome, email, telefone ),
+            pedido_itens:pedido_itens ( 
+                *,
+                produto:produto_id ( id, nome, preco, image, descricao ) 
+            )
+        `)
+        .eq('id_loja', lojaIdParaPedidos)
+        .order('data', { ascending: false })
+
+      if (pedidosError) {
+          console.error('Erro ao buscar pedidos no Supabase:', pedidosError.message);
+          return res.status(500).json({ mensagem: 'Erro ao carregar pedidos da loja.' });
+      }
+
+      const pedidosComDadosClienteTratados = pedidos.map(pedido => ({
+          ...pedido,
+          nome_cliente: pedido.cliente?.nome || pedido.nome || 'Cliente Desconhecido', 
+          cliente_email: pedido.cliente?.email || pedido.email || 'N/A',
+          cliente_telefone: pedido.cliente?.telefone || pedido.telefone || 'N/A'
+      }));
+
+      return res.status(200).json(pedidosComDadosClienteTratados);
+
+  } catch (error) {
+      console.error('Erro em listarTodosPedidosDaLoja:', error.name, error.message, error.stack);
+      if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
+          return res.status(401).json({ error: 'Token inválido ou expirado.' });
+      }
+      return res.status(500).json({ mensagem: 'Erro interno do servidor.', detalhes: error.message });
+  }
+};
+
+// --- NOVO: Função para atualizar o status de um pedido ---
+export const atualizarStatusPedido = async (req, res) => {
+  const { idPedido } = req.params; // ID do pedido
+  const { status } = req.body;     // Novo status (0, 1, 2, 3, 4, 5)
+
+  console.log(`DEBUG: atualizarStatusPedido - Recebido para Pedido ID: ${idPedido}, Novo Status: ${status}`);
+
+  // Validação básica
+  if (!status || !['0', '1', '2', '3', '4', '5'].includes(String(status))) {
+      return res.status(400).json({ mensagem: 'Status inválido fornecido.' });
+  }
+
+  try {
+      const { empresaId: empresaIdDoToken, error: tokenError } = await getEmpresaIdFromToken(req);
+      if (tokenError) {
+          console.warn('DEBUG: atualizarStatusPedido - Token de empresa inválido:', tokenError.message);
+          return res.status(401).json({ error: tokenError.message });
+      }
+      console.log('DEBUG: atualizarStatusPedido - Empresa ID do token:', empresaIdDoToken);
+
+      // 1. Buscar o pedido para verificar a qual loja ele pertence
+      const { data: pedidoExistente, error: pedidoError } = await supabase
+          .from('pedidos')
+          .select('id_loja')
+          .eq('id', idPedido)
+          .single();
+
+      if (pedidoError || !pedidoExistente) {
+          console.error('DEBUG: atualizarStatusPedido - Erro ao buscar pedido:', pedidoError?.message || 'Pedido não encontrado.');
+          return res.status(404).json({ mensagem: 'Pedido não encontrado.' });
+      }
+      console.log('DEBUG: atualizarStatusPedido - Pedido ID:', idPedido, 'pertence à Loja ID:', pedidoExistente.id_loja);
+
+      // 2. Buscar detalhes da loja para verificar se a empresa logada é a dona
+      const { data: lojaDetalhes, error: lojaError } = await lojaModel.buscarLojaPorId(pedidoExistente.id_loja);
+
+      if (lojaError || !lojaDetalhes) {
+          console.error('DEBUG: atualizarStatusPedido - Erro ao buscar loja para verificação de permissão:', lojaError?.message || 'Loja não encontrada.');
+          return res.status(404).json({ mensagem: 'Loja associada ao pedido não encontrada.' });
+      }
+      console.log('DEBUG: atualizarStatusPedido - Loja ID:', lojaDetalhes.id, 'Dona Empresa ID:', lojaDetalhes.id_empresa);
+
+      // 3. Autorização: Verificar se o ID da empresa do token corresponde ao dono da loja do pedido
+      if (lojaDetalhes.id_empresa !== empresaIdDoToken) {
+          console.warn('DEBUG: atualizarStatusPedido - Acesso negado. Empresa do token', empresaIdDoToken, 'não é dona da loja', lojaDetalhes.id, 'do pedido', idPedido);
+          return res.status(403).json({ mensagem: 'Acesso negado: Você não tem permissão para alterar este pedido.' });
+      }
+
+      // 4. Se o status for '4' (Finalizado), executar a lógica de estoque e missões
+      if (String(status) === '4') {
+          console.log('DEBUG: atualizarStatusPedido - Status é 4 (Finalizado). Iniciando lógica de estoque e missões.');
+          const { data: pedidoItens, error: itensError } = await supabase
+              .from('pedido_itens')
+              .select(`
+                  *,
+                  produto:produto_id ( id, nome, quantidade, controlar_estoque )
+              `)
+              .eq('pedido_id', idPedido);
+
+          if (itensError) {
+              console.error('DEBUG: atualizarStatusPedido - Erro ao buscar itens para decrementar estoque:', itensError.message);
+              return res.status(500).json({ mensagem: 'Erro ao buscar itens do pedido para finalizar.' });
+          }
+
+          let itensInvalidos = [];
+          for (const item of pedidoItens) {
+              if (item.produto.controlar_estoque && item.produto.quantidade < item.quantidade) {
+                  itensInvalidos.push({
+                      produto: item.produto.nome,
+                      disponivel: item.produto.quantidade,
+                      solicitado: item.quantidade
+                  });
+              }
+          }
+
+          if (itensInvalidos.length > 0) {
+              return res.status(400).json({
+                  erro: 'Quantidade insuficiente no estoque para finalizar o pedido.',
+                  itens: itensInvalidos,
+                  sugestao: 'Verifique o estoque dos produtos antes de finalizar.'
+              });
+          }
+
+          const decrementoPromises = pedidoItens.map(async (item) => {
+              if (item.produto.controlar_estoque) {
+                  const { success, newQuantity, error } = await decrementarEstoque(item.produto.id, item.quantidade);
+                  if (!success) {
+                      console.error(`Falha ao decrementar estoque para produto ${item.produto.id}:`, error);
+                      throw new Error(`Falha crítica ao atualizar estoque do produto ${item.produto.nome}: ${error}`);
+                  }
+                  if (newQuantity === 0) {
+                      console.log(`DEBUG_MISSAO: Produto ID ${item.produto.id} da loja ${lojaDetalhes.id} zerou o estoque. Chamando trackMissionProgress para 'product_sold_out'.`);
+                      await trackMissionProgress(lojaDetalhes.id, 'product_sold_out', 1);
+                  }
+              }
+          });
+          await Promise.all(decrementoPromises);
+
+          // Rastreamento de missão de venda (Primeira Venda, Vendedor Prata, Mestre de Vendas Diário)
+          // Se 'Mestre de Vendas Diário' tem type: 'sale', então a chamada única para 'sale' já cobre.
+          await trackMissionProgress(lojaDetalhes.id, 'sale', 1);
+          console.log('DEBUG_MISSAO: Missão "sale" (Primeira Venda, Vendedor Prata, Mestre de Vendas Diário) rastreada para LOJA:', lojaDetalhes.id);
+      }
+
+      // 5. Atualizar o status do pedido no banco de dados
+      const { data: pedidoAtualizado, error: updateError } = await supabase
+          .from('pedidos')
+          .update({
+              status: status,
+              // Se o status for '4' (Finalizado), adicione a data de finalização
+              data_finalizacao: (String(status) === '4') ? new Date().toISOString() : null // Use ISO string para Supabase
+          })
+          .eq('id', idPedido)
+          .select()
+          .single();
+
+      if (updateError) {
+          console.error('DEBUG: atualizarStatusPedido - Erro ao atualizar status no DB:', updateError);
+          return res.status(500).json({ mensagem: 'Erro ao atualizar status do pedido.' });
+      }
+
+      console.log(`DEBUG: Pedido ${idPedido} atualizado para status ${status} com sucesso.`);
+      res.status(200).json({ mensagem: 'Status do pedido atualizado com sucesso!', pedido: pedidoAtualizado });
+
+  } catch (error) {
+      console.error('DEBUG: atualizarStatusPedido - ERRO CAPTURADO NO CATCH:', error.name, error.message, error.stack);
+      if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
+          return res.status(401).json({ error: 'Token inválido ou expirado.' });
+      }
+      res.status(500).json({ mensagem: 'Erro interno do servidor ao atualizar status.', detalhes: error.message });
+  }
+};
 export const listarPedidosPorCliente = async (req, res) => {
     const { slug, clienteId } = req.params;
 
@@ -277,66 +465,57 @@ export const getPedidoPorId = async (req, res) => {
 
 export async function criarPedido(req, res) {
   try {
-    const { id_cliente, id_loja, data, total, status, observacoes, desconto } = req.body;
+      const { id_cliente, id_loja, total, observacoes, desconto } = req.body;
 
-    console.log('Dados recebidos:', { id_cliente, id_loja, data, total, observacoes, desconto });
+      if (!id_cliente || !id_loja || !total || observacoes === undefined || desconto === undefined) {
+          return res.status(400).json({ erro: 'Campos obrigatórios ausentes: id_cliente, id_loja, total, observacoes, desconto.' });
+      }
 
-    if (!id_cliente || !id_loja || !data || !total || status === undefined) {
-      return res.status(400).json({ erro: 'Campos obrigatórios ausentes' });
-    }
+      // --- MUDANÇA PRINCIPAL AQUI: Gerar a data e hora ATUAIS no backend em formato ISO (UTC) ---
+      const dataPedidoComHora = new Date().toISOString(); // Isso gera um timestamp como "2025-06-28T14:30:00.000Z"
 
-    const { data: loja, error: lojaError } = await lojaModel.buscarLojaPorId(id_loja);
+      const { data: loja, error: lojaError } = await lojaModel.buscarLojaPorId(id_loja);
+      if (lojaError) {
+          console.error('Erro ao buscar status da loja:', lojaError);
+          return res.status(500).json({ erro: 'Erro interno ao verificar status da loja.' });
+      }
+      if (!loja) {
+          return res.status(404).json({ erro: 'Loja não encontrada para o ID fornecido.' });
+      }
+      if (loja.is_closed_for_orders) {
+          return res.status(403).json({ erro: 'Esta loja está fechada para pedidos no momento.' });
+      }
+      
+      const { data: novoPedido, error } = await supabase
+          .from('pedidos')
+          .insert([
+              {
+                  id_cliente,
+                  id_loja,
+                  data: dataPedidoComHora, // <--- Usamos a data/hora gerada no backend
+                  total,
+                  status: -1, // Status -1 para "carrinho aberto / rascunho"
+                  observacoes,
+                  desconto
+              }
+          ])
+          .select()
+          .single();
 
-    if (lojaError) {
-      console.error('Erro ao buscar status da loja:', lojaError);
-      return res.status(500).json({ erro: 'Erro interno ao verificar status da loja.' });
-    }
-    if (!loja) {
-      return res.status(404).json({ erro: 'Loja não encontrada para o ID fornecido.' });
-    }
+      if (error) {
+          console.error('Erro ao criar pedido:', error);
+          return res.status(500).json({ erro: 'Erro interno ao criar pedido' });
+      }
 
-    if (loja.is_closed_for_orders) {
-      return res.status(403).json({ erro: 'Esta loja está fechada para pedidos no momento.' });
-    }
-    
-    const { data: novoPedido, error } = await supabase
-      .from('pedidos')
-      .insert([
-        {
-          id_cliente,
-          id_loja,
-          data,
-          total,
-          status,
-          observacoes,
-          desconto
-        }
-      ])
-      .select()
-      .single();
+      // As chamadas para trackMissionProgress (e seus console.log de DEBUG_MISSAO)
+      // devem ocorrer na função 'finalizarPedido', quando a compra é de fato concluída.
 
-    if (error) {
-      console.error('Erro ao criar pedido:', error);
-      return res.status(500).json({ erro: 'Erro interno ao criar pedido' });
-    }
-
-    const ownerId = loja.id_empresa;
-    // Chamada para missões de venda (Primeira Venda, Vendedor Prata, Mestre de Vendas Diário)
-    if (ownerId) {
-        await trackMissionProgress(ownerId, 'sale', 1); // Rastreia uma venda
-        console.log('DEBUG_MISSAO: Missão "sale" (Primeira Venda, Vendedor Prata) rastreada para LOJA:', id_loja);
-        await trackMissionProgress(id_loja, 'daily_sales', 1); // Rastreia para Mestre de Vendas Diário
-        console.log('DEBUG_MISSAO: Missão "daily_sales" (Mestre de Vendas Diário) rastreada para LOJA:', id_loja);
-    } else {
-        console.warn('criarPedido: Não foi possível rastrear missão de venda: ID da empresa (dono) não encontrado para a loja.');
-    }
-
-    res.status(201).json(novoPedido);
+      res.status(201).json(novoPedido); // Retorna o pedido criado (rascunho)
 
   } catch (error) {
-    console.error('Erro ao criar pedido:', error);
-    res.status(500).json({ erro: 'Erro interno ao criar pedido' });
-   }
+      console.error('Erro ao criar pedido:', error);
+      res.status(500).json({ erro: 'Erro interno ao criar pedido', detalhes: error.message });
+  }
 }
 
 export async function adicionarItemPedido(req, res) {
@@ -412,212 +591,151 @@ export async function obterPedidoPorId(req, res) {
 }
 
 export async function finalizarPedido(req, res) {
-            console.log('--- DEBUG: FINALIZAR PEDIDO INICIADO NO CONTROLLER ---');
-            console.log('DEBUG: finalizarPedido - req.params:', req.params);
-            console.log('DEBUG: finalizarPedido - req.body:', req.body);
+  console.log('--- FINALIZAR PEDIDO INICIADO NO CONTROLLER ---'); // Mantido para depuração
+  console.log('finalizarPedido - req.params:', req.params);
+  console.log('finalizarPedido - req.body:', req.body);
 
-            const { slug } = req.params;
-            const { metodoPagamento, enderecoEntrega, clienteId, itens } = req.body;
-            console.log("BODY recebido em finalizarPedido:", req.body);
-            console.log("slug:", slug);
+  const { slug } = req.params;
+  const { metodoPagamento, enderecoEntrega, clienteId, itens } = req.body;
+  console.log("BODY recebido em finalizarPedido:", req.body);
+  console.log("slug:", slug);
 
-            // Validação reforçada
-            if (!slug || !metodoPagamento || !enderecoEntrega || !clienteId || !Array.isArray(itens)) {
-              return res.status(400).json({
-                erro: 'Dados incompletos',
-                campos_necessarios: {
-                  slug: !slug,
-                  metodoPagamento: !metodoPagamento,
-                  enderecoEntrega: !enderecoEntrega,
-                  clienteId: !clienteId,
-                  itens: !itens,
-                }
+  if (!slug || !metodoPagamento || !enderecoEntrega || !clienteId || !Array.isArray(itens)) {
+      return res.status(400).json({
+          erro: 'Dados incompletos para finalizar pedido.'
+      });
+  }
+
+  const pedidoId = itens?.[0]?.pedido_id;
+  if (!pedidoId) {
+      return res.status(400).json({
+          erro: 'ID do pedido não fornecido nos itens.'
+      });
+  }
+
+  try {
+      const { data: loja, error: lojaError } = await supabase
+          .from('loja')
+          .select('id, id_empresa')
+          .eq('slug_loja', slug)
+          .single();
+
+      if (lojaError || !loja) {
+          console.error('Erro Supabase ao buscar loja:', lojaError);
+          return res.status(404).json({ erro: 'Loja não encontrada.' });
+      }
+
+      const { data: pedido, error: pedidoError } = await supabase
+          .from('pedidos')
+          .select('*')
+          .eq('id', pedidoId)
+          .eq('id_cliente', clienteId)
+          .eq('id_loja', loja.id)
+          .eq('status', -1) // Garante que só finaliza rascunhos
+          .single();
+
+      if (pedidoError || !pedido) {
+          console.error("Erro ao buscar pedido para finalizar:", pedidoError);
+          return res.status(400).json({
+              erro: 'Pedido não encontrado ou já foi processado/finalizado.',
+              detalhes: { pedidoId, clienteId, lojaId: loja.id }
+          });
+      }
+      
+      const { data: pedido_itens, error: itensError } = await supabase
+          .from('pedido_itens')
+          .select(`
+              *,
+              produto:produto_id ( id, nome, preco, quantidade, controlar_estoque )
+          `)
+          .eq('pedido_id', pedidoId);
+
+      if (itensError) {
+          return res.status(500).json({ erro: 'Erro ao buscar itens do pedido para estoque.' });
+      }
+      pedido.pedido_itens = pedido_itens || [];
+
+      let itensInvalidos = [];
+      let subtotal = 0;
+      for (const item of pedido.pedido_itens) {
+          subtotal += item.quantidade * item.produto.preco;
+          if (item.produto.controlar_estoque && item.produto.quantidade < item.quantidade) {
+              itensInvalidos.push({
+                  produto: item.produto.nome,
+                  disponivel: item.produto.quantidade,
+                  solicitado: item.quantidade
               });
-            }
-
-            const pedidoId = itens?.[0]?.pedido_id;
-
-            if (!pedidoId) {
-              return res.status(400).json({
-                erro: 'ID do pedido não fornecido',
-                sugestao: 'Verifique se os itens possuem pedido_id válido'
-              });
-            }
-
-            try {
-              // 1. Validação da loja
-              const { data: loja, error: lojaError } = await supabase
-                .from('loja')
-                .select('id, id_empresa') // id_empresa ainda é útil para outras missões se houver
-                .eq('slug_loja', slug)
-                .single();
-
-              if (lojaError) {
-                console.error('Erro Supabase:', lojaError);
-                return res.status(500).json({ erro: 'Erro ao buscar loja' });
-              }
-              if (!loja) {
-                return res.status(404).json({
-                  erro: 'Loja não encontrada',
-                  slug_procurado: slug,
-                  sugestao: 'Verifique o slug da loja'
-                });
-              }
-
-              // 2. Buscar e validar pedido aberto
-              const { data: pedido, error: pedidoError } = await supabase
-                .from('pedidos')
-                .select('*')
-                .eq('id', pedidoId)
-                .eq('id_cliente', clienteId)
-                .eq('id_loja', loja.id)
-                .eq('status', 0)
-                .single();
-
-              if (pedidoError || !pedido) {
-                console.error("Erro ao buscar pedido:", pedidoError);
-                return res.status(404).json({
-                  erro: 'Nenhum pedido aberto encontrado',
-                  detalhes: {
-                    pedidoId,
-                    clienteId,
-                    lojaId: loja.id
-                  }
-                });
-              }
-
-              if (pedido.status === 4) {
-                return res.status(400).json({
-                  erro: 'Pedido já finalizado',
-                  detalhes: {
-                    data_finalizacao: pedido.data_finalizacao,
-                    status_atual: pedido.status
-                  },
-                  sugestao: 'Verifique seu histórico de pedidos'
-                });
-              }
-
-              // Buscar os itens do pedido com os dados do produto necessários para o estoque
-              const { data: pedido_itens, error: itensError } = await supabase
-                .from('pedido_itens')
-                .select(`
-                  *,
-                  produto:produto_id ( id, nome, preco, quantidade, controlar_estoque )
-                `)
-                .eq('pedido_id', pedidoId);
-
-              if (itensError) {
-                return res.status(500).json({ erro: 'Erro ao buscar itens do pedido' });
-              }
-
-              pedido.pedido_itens = pedido_itens || [];
-
-              let itensInvalidos = [];
-              let subtotal = 0;
-
-              for (const item of pedido.pedido_itens) {
-                subtotal += item.quantidade * item.produto.preco;
-
-                if (item.produto.controlar_estoque && item.produto.quantidade < item.quantidade) {
-                  itensInvalidos.push({
-                    produto: item.produto.nome,
-                    disponivel: item.produto.quantidade,
-                    solicitado: item.quantidade
-                  });
-                }
-              }
-
-              if (itensInvalidos.length > 0) {
-                return res.status(400).json({
-                  erro: 'quantidade insuficiente',
-                  itens: itensInvalidos,
-                  sugestao: '/carrinho'
-                });
-              }
-
-              // --- NOVO: Decrementar estoque para cada item E RASTREAR PRODUTO ZERADO ---
-              const decrementoPromises = pedido.pedido_itens.map(async (item) => {
-                  if (item.produto.controlar_estoque) {
-                    const { success, newQuantity, error } = await decrementarEstoque(item.produto.id, item.quantidade); // Usar ProdutoModel.decrementarEstoque
-                      if (!success) {
-                          console.error(`Falha ao decrementar estoque para produto ${item.produto.id}:`, error);
-                          throw new Error(`Falha crítica ao atualizar estoque do produto ${item.produto.nome}: ${error}`);
-                      }
-                      // Rastrear Missão "Produto com Estoque Zerado"
-                      if (newQuantity === 0) {
-                          console.log(`DEBUG_MISSAO: Produto ID ${item.produto.id} da loja ${loja.id} zerou o estoque. Chamando trackMissionProgress para 'product_sold_out'.`);
-                          await trackMissionProgress(loja.id, 'product_sold_out', 1);
-                      }
-                  }
-              });
-
-              await Promise.all(decrementoPromises); // Aguarda todos os decrementos concluírem
-              // --- FIM NOVO DECREMENTO E RASTREAMENTO PRODUTO ZERADO ---
-
-              const desconto = 0; // Se o desconto vier do body, use-o aqui
-              const totalFinal = subtotal - desconto;
-
-              const { data: pedidoAtualizado, error: updateError } = await supabase
-                .from('pedidos')
-                .update({
-                  status: 4, // Status de finalizado
-                  metodo_pagamento: metodoPagamento,
-                  endereco_entrega: enderecoEntrega,
-                  desconto: desconto,
-                  total: totalFinal,
-                  data_finalizacao: new Date()
-                })
-                .eq('id', pedido.id)
-                .eq('id_cliente', clienteId)
-                .select()
-                .single();
-
-              if (updateError) {
-                console.error('Erro ao atualizar pedido:', updateError);
-                return res.status(500).json({ erro: 'Erro ao atualizar pedido' });
-              }
-
-              // Rastreamento de missão de venda (Primeira Venda, Vendedor Prata, Mestre de Vendas Diário)
-              const lojaIdParaMissao = loja.id;
-              if (lojaIdParaMissao) {
-                  // 'sale' cobre as missões 'Primeira Venda' e 'Vendedor Prata' (seus types são 'sale')
-                  await trackMissionProgress(lojaIdParaMissao, 'sale', 1); 
-                  console.log('DEBUG_MISSAO: Missão "sale" (Primeira Venda, Vendedor Prata) rastreada para LOJA:', lojaIdParaMissao);
-
-                  // 'daily_sales' cobre a missão 'Mestre de Vendas Diário' (se o type for 'daily_sales' no DB)
-                  // OU, se 'Mestre de Vendas Diário' tiver type 'sale' e for apenas repetível diário, a chamada 'sale' acima já cobriria.
-                  // Para clareza, se Mestre de Vendas Diário tem type 'daily_sales', então o seguinte seria necessário:
-                  // Se sua missão 'Mestre de Vendas Diário' tem type: 'daily_sales', use a linha abaixo:
-                  // await trackMissionProgress(lojaIdParaMissao, 'daily_sales', 1);
-                  // console.log('DEBUG_MISSAO: Missão "daily_sales" (Mestre de Vendas Diário) rastreada para LOJA:', lojaIdParaMissao);
-                  // Se 'Mestre de Vendas Diário' tem type: 'sale', a linha acima já o rastreia.
-                  // Pela sua imagem anterior, 'Mestre de Vendas Diário' tem type: 'sale'. Então, uma única chamada para 'sale' basta.
-                  // Não precisa de uma segunda chamada aqui para 'daily_sales' se o tipo da missão for 'sale'.
-                  // O missionTrackerService.js se encarregará de verificar se a missão com type 'sale' é repetível diária.
-              } else {
-                  console.warn('finalizarPedido: Não foi possível rastrear missões de venda: ID da loja não encontrado.');
-              }
-
-              res.status(200).json({
-                sucesso: true,
-                pedido: {
-                  ...pedidoAtualizado,
-                  itens: pedido.pedido_itens
-                },
-                resumo: {
-                  subtotal,
-                  desconto,
-                  total: totalFinal
-                },
-                mensagem: 'Pedido finalizado com sucesso'
-              });
-
-            } catch (error) {
-              console.error('Erro detalhado em finalizarPedido (catch geral):', error);
-              res.status(500).json({
-                erro: 'Erro interno',
-                detalhes: error.message,
-                stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-              });
-            }
           }
+      }
+      if (itensInvalidos.length > 0) {
+          return res.status(400).json({
+              erro: 'Quantidade insuficiente no estoque para finalizar o pedido.',
+              itens: itensInvalidos
+          });
+      }
+
+      const decrementoPromises = pedido.pedido_itens.map(async (item) => {
+          if (item.produto.controlar_estoque) {
+              const { success, newQuantity, error } = await decrementarEstoque(item.produto.id, item.quantidade);
+              if (!success) {
+                  console.error(`Falha ao decrementar estoque para produto ${item.produto.id}:`, error);
+                  throw new Error(`Falha crítica ao atualizar estoque do produto ${item.produto.nome}: ${error}`);
+              }
+              if (newQuantity === 0) {
+                  await trackMissionProgress(loja.id, 'product_sold_out', 1);
+              }
+          }
+      });
+      await Promise.all(decrementoPromises);
+
+      const desconto = 0;
+      const totalFinal = subtotal - desconto;
+
+      const { data: pedidoAtualizado, error: updateError } = await supabase
+          .from('pedidos')
+          .update({
+              status: 0, // O pedido agora vai para "Aguardando confirmação" (status 0)
+              metodo_pagamento: metodoPagamento,
+              endereco_entrega: enderecoEntrega,
+              desconto: desconto,
+              total: totalFinal,
+          })
+          .eq('id', pedido.id)
+          .eq('id_cliente', clienteId)
+          .select()
+          .single();
+
+      if (updateError) {
+          console.error('Erro ao atualizar pedido ao finalizar:', updateError);
+          return res.status(500).json({ erro: 'Erro ao atualizar pedido' });
+      }
+
+      // CHAMADAS PARA trackMissionProgress SÃO MOVIDAS PARA AQUI
+      const lojaIdParaMissao = loja.id;
+      if (lojaIdParaMissao) {
+          await trackMissionProgress(lojaIdParaMissao, 'sale', 1);
+          console.log('DEBUG_MISSAO: Missão "sale" rastreada para LOJA:', lojaIdParaMissao); // Log simplificado
+          // Se 'daily_sales' ainda estiver em uso, adicione aqui:
+          await trackMissionProgress(lojaIdParaMissao, 'daily_sales', 1);
+          console.log('DEBUG_MISSAO: Missão "daily_sales" rastreada para LOJA:', lojaIdParaMissao); // Log simplificado
+      } else {
+          console.warn('finalizarPedido: Não foi possível rastrear missões de venda: ID da loja não encontrado.');
+      }
+      // FIM DAS CHAMADAS trackMissionProgress
+
+      res.status(200).json({
+          sucesso: true,
+          pedido: { ...pedidoAtualizado, itens: pedido.pedido_itens },
+          resumo: { subtotal, desconto, total: totalFinal },
+          mensagem: 'Pedido finalizado pelo cliente e aguardando confirmação da loja.'
+      });
+
+  } catch (error) {
+      console.error('Erro detalhado em finalizarPedido (catch geral):', error);
+      res.status(500).json({
+          erro: 'Erro interno no servidor ao finalizar pedido.',
+          detalhes: error.message,
+          stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      });
+  }
+}

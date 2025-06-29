@@ -1,5 +1,3 @@
-// frontEnd/pages/client/ClienteHome.js
-
 import { useEffect, useState, useCallback } from "react";
 import Image from "next/image";
 import NavBar from "@/components/NavBar";
@@ -7,24 +5,37 @@ import ProdutoCard from "@/components/ProdutoCard";
 import { useRouter } from 'next/router';
 import { createClient } from '@supabase/supabase-js';
 import { Menu } from '@headlessui/react';
+import Link from 'next/link';
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_KEY);
 
-
 export default function ClienteHome() {
     const router = useRouter();
-    const { site } = router.query; // 'site' é o slug da loja
+    const { site } = router.query;
     const [clienteLogado, setClienteLogado] = useState(false);
     const [cliente, setCliente] = useState(null);
 
     const [lojaId, setLojaId] = useState(null);
     const [nomeFantasia, setNomeFantasia] = useState("Carregando...");
-    const [isLojaClosed, setIsLojaClosed] = useState(false); // Estado para o status da loja
+    const [sloganLoja, setSloganLoja] = useState('');
+    const [isLojaClosed, setIsLojaClosed] = useState(false);
+
+    const [horariosLoja, setHorariosLoja] = useState(null);
+    const [horarioExibicao, setHorarioExibicao] = useState("Verificando...");
 
     const [produtos, setProdutos] = useState([]);
     const [searchTerm, setSearchTerm] = useState("");
     const [bannerLoja, setBannerLoja] = useState(null);
     const [ativarFidelidade, setAtivarFidelidade] = useState(false);
+
+    const [fotoLoja, setFotoLoja] = useState(null);
+    const [corPrimaria, setCorPrimaria] = useState("#3B82F6");
+    const [corSecundaria, setCorSecundaria] = useState("#F3F4F6");
+
+    const [outrasLojas, setOutrasLojas] = useState([]);
+    const [idEmpresaAtual, setIdEmpresaAtual] = useState(null);
+    // NOVO ESTADO: para controlar a visibilidade de outras lojas com base na configuração do backend
+    const [mostrarOutrasLojasNoCliente, setMostrarOutrasLojasNoCliente] = useState(false);
 
     const removeAccents = (str) => {
         return str
@@ -32,8 +43,6 @@ export default function ClienteHome() {
             .replace(/[\u0300-\u036f]/g, "");
     };
 
-    // A filtragem agora deve ser feita APÓS o carregamento dos produtos,
-    // e deve considerar também a disponibilidade para o cliente.
     const produtosFiltrados = produtos.filter((produto) => {
         const matchesSearch = removeAccents(produto.nome.toLowerCase()).includes(
             removeAccents(searchTerm.toLowerCase())
@@ -41,7 +50,6 @@ export default function ClienteHome() {
         
         const isActuallyAvailableToClient = !produto.indisponivel_automatico;
 
-        console.log(`DEBUG: ClienteHome - Filtrando produto ${produto.nome}: matchesSearch=${matchesSearch}, isActuallyAvailableToClient=${isActuallyAvailableToClient}`);
         return matchesSearch && isActuallyAvailableToClient;
     });
 
@@ -49,9 +57,6 @@ export default function ClienteHome() {
     const [mensagem, setMensagem] = useState('');
     const [corMensagem, setCorMensagem] = useState('');
     const [showSearch, setShowSearch] = useState(false);
-    const [fotoLoja, setFotoLoja] = useState(null);
-    const [corPrimaria, setCorPrimaria] = useState("#3B82F6");
-    const [corSecundaria, setCorSecundaria] = useState("#F3F4F6");
 
     const verificarLoginCliente = useCallback(async () => {
         try {
@@ -81,13 +86,11 @@ export default function ClienteHome() {
     }, [verificarLoginCliente]);
 
     useEffect(() => {
-        console.log('DEBUG: ClienteHome - useEffect para fetchEmpresa disparado. Site:', site);
         if (!site) return;
 
         async function fetchEmpresa() {
             try {
                 const url = `${process.env.NEXT_PUBLIC_EMPRESA_API}/loja/slug/${site}`;
-                console.log('DEBUG: ClienteHome - Buscando dados da empresa:', url);
                 const response = await fetch(url);
 
                 if (!response.ok) {
@@ -106,15 +109,19 @@ export default function ClienteHome() {
                 }
 
                 const data = await response.json();
-                console.log('DEBUG: ClienteHome - Dados da empresa recebidos:', data);
                 setLojaId(data.id);
                 setNomeFantasia(data.nome_fantasia || "Sem nome fantasia");
                 setFotoLoja(data.foto_loja || null);
                 setCorPrimaria(data.cor_primaria || "#3B82F6");
                 setCorSecundaria(data.cor_secundaria || "#F3F4F6");
+                setSloganLoja(data.slogan || '');
                 setBannerLoja(data.banner || null);
-                setIsLojaClosed(data.is_closed_for_orders || false); // NOVO: Define o status de fechado/aberto
+                setIsLojaClosed(data.is_closed_for_orders || false); 
                 setAtivarFidelidade(data.ativarFidelidade || false);
+                setHorariosLoja(data.horarios_funcionamento || null); 
+                setIdEmpresaAtual(data.id_empresa);
+                // CAPTURAR O NOVO CAMPO 'mostrar_outras_lojas' AQUI
+                setMostrarOutrasLojasNoCliente(data.mostrar_outras_lojas || false); // Garante que o valor padrão seja false
             } catch (error) {
                 console.error("DEBUG: ClienteHome - Erro na requisição ao buscar empresa:", error.message || error);
                 setNomeFantasia("Erro ao carregar");
@@ -124,15 +131,45 @@ export default function ClienteHome() {
         fetchEmpresa();
     }, [site]);
 
+    useEffect(() => {
+        // A seção de "outras lojas" só deve ser buscada se mostrarOutrasLojasNoCliente for true
+        // E se tivermos o idEmpresaAtual e o site (slug da loja)
+        if (!idEmpresaAtual || !site || !mostrarOutrasLojasNoCliente) return;
+
+        async function fetchOutrasLojas() {
+            try {
+                // CHAMA O ENDPOINT AGORA NO /api/loja/outras-da-empresa
+                const url = `${process.env.NEXT_PUBLIC_EMPRESA_API}/loja/outras-da-empresa?idEmpresa=${idEmpresaAtual}&currentLojaSlug=${site}`;
+                const response = await fetch(url);
+
+                if (!response.ok) {
+                    console.error("DEBUG: ClienteHome - Erro ao buscar outras lojas:", response.statusText);
+                    setOutrasLojas([]);
+                    return;
+                }
+
+                const data = await response.json();
+                if (data && Array.isArray(data.lojas)) {
+                    setOutrasLojas(data.lojas);
+                } else {
+                    setOutrasLojas([]);
+                }
+
+            } catch (error) {
+                console.error("DEBUG: ClienteHome - Erro ao buscar outras lojas:", error.message);
+                setOutrasLojas([]);
+            }
+        }
+
+        fetchOutrasLojas();
+    }, [idEmpresaAtual, site, mostrarOutrasLojasNoCliente]); // Adicione mostrarOutrasLojasNoCliente como dependência
 
     useEffect(() => {
-        console.log('DEBUG: ClienteHome - useEffect para fetchProdutos disparado. Site:', site);
         if (!site) return;
 
         async function fetchProdutos() {
             try {
                 const url = `${process.env.NEXT_PUBLIC_EMPRESA_API}/produtos/loja/${site}`;
-                console.log('DEBUG: ClienteHome - Buscando produtos da loja:', url);
                 const response = await fetch(url);
 
                 if (!response.ok) {
@@ -142,7 +179,6 @@ export default function ClienteHome() {
                 }
 
                 const data = await response.json();
-                console.log('DEBUG: ClienteHome - Produtos brutos recebidos da API:', data);
                 
                 if (Array.isArray(data)) {
                     setProdutos(data);
@@ -154,7 +190,6 @@ export default function ClienteHome() {
                     console.warn("DEBUG: ClienteHome - API de produtos retornou dados em formato inesperado:", data);
                     setProdutos([]);
                 }
-                console.log('DEBUG: ClienteHome - Produtos processados e definidos no estado:', data);
 
             } catch (error) {
                 console.error("DEBUG: ClienteHome - Erro ao buscar produtos:", error.message);
@@ -165,15 +200,80 @@ export default function ClienteHome() {
         fetchProdutos();
     }, [site]);
 
+    useEffect(() => {
+        const now = new Date();
+        const diaSemanaNum = now.getDay(); 
+        
+        const diasSemanaMap = {
+            0: 'domingo',
+            1: 'segunda',
+            2: 'terca',
+            3: 'quarta',
+            4: 'quinta',
+            5: 'sexta',
+            6: 'sabado',
+        };
+        const diaAtualKey = diasSemanaMap[diaSemanaNum];
+
+        let lojaEstaAbertaAgoraCalculo = false;
+        let mensagemHorarioTemporaria = 'Horário não configurado.';
+
+        if (horariosLoja && horariosLoja[diaAtualKey]) {
+            const horarioDoDia = horariosLoja[diaAtualKey];
+
+            if (horarioDoDia.aberto) {
+                const [startHour, startMinute] = horarioDoDia.inicio.split(':').map(Number);
+                const [endHour, endMinute] = horarioDoDia.fim.split(':').map(Number);
+
+                const nowHours = now.getHours();
+                const nowMinutes = now.getMinutes();
+
+                const startDateTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), startHour, startMinute);
+                let endDateTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), endHour, endMinute);
+
+                if (endDateTime.getTime() < startDateTime.getTime()) {
+                    endDateTime.setDate(endDateTime.getDate() + 1);
+                }
+
+                const currentDateTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), nowHours, nowMinutes);
+
+                if (endDateTime.getTime() < startDateTime.getTime() && currentDateTime.getTime() < startDateTime.getTime()) {
+                    const prevDayStartDateTime = new Date(startDateTime);
+                    prevDayStartDateTime.setDate(prevDayStartDateTime.getDate() - 1);
+
+                    if (currentDateTime.getTime() >= prevDayStartDateTime.getTime() || currentDateTime.getTime() < endDateTime.getTime()) {
+                        lojaEstaAbertaAgoraCalculo = true;
+                    }
+                } else if (currentDateTime.getTime() >= startDateTime.getTime() && currentDateTime.getTime() < endDateTime.getTime()) {
+                    lojaEstaAbertaAgoraCalculo = true;
+                }
+
+                mensagemHorarioTemporaria = `${horarioDoDia.inicio} às ${horarioDoDia.fim}`;
+                if (lojaEstaAbertaAgoraCalculo) {
+                    mensagemHorarioTemporaria = `Aberto agora! Fecha às ${horarioDoDia.fim}`;
+                } else {
+                    mensagemHorarioTemporaria = `Fechado. Abre às ${horarioDoDia.inicio}`;
+                }
+
+            } else {
+                mensagemHorarioTemporaria = 'Fechado hoje.';
+            }
+        } else {
+            mensagemHorarioTemporaria = 'Horário não disponível.'; 
+        }
+        
+        setIsLojaClosed(prevIsLojaClosed => prevIsLojaClosed || !lojaEstaAbertaAgoraCalculo); 
+        setHorarioExibicao(mensagemHorarioTemporaria); 
+
+    }, [horariosLoja]);
+
     const handleShareClick = async () => {
-        console.log('DEBUG: ClienteHome - Tentando compartilhar link.');
         if (navigator.share) {
             try {
                 await navigator.share({
                     title: "Compartilhe este link",
                     url: window.location.href,
                 });
-                console.log('DEBUG: ClienteHome - Compartilhamento nativo bem-sucedido.');
             } catch (error) {
                 console.error("DEBUG: ClienteHome - Erro ao compartilhar nativamente:", error);
             }
@@ -181,20 +281,17 @@ export default function ClienteHome() {
             const url = window.location.href;
             const text = encodeURIComponent("Confira esse conteúdo:");
             const shareUrl = `https://api.whatsapp.com/send?text=${text}%20${url}`;
-            console.log('DEBUG: ClienteHome - Abrindo janela de compartilhamento no WhatsApp:', shareUrl);
             window.open(shareUrl, "_blank");
         }
     };
 
     const getImagemProduto = (caminhoImagem) => {
         if (!caminhoImagem) {
-            console.warn('DEBUG: ClienteHome - Caminho de imagem nulo/vazio. Retornando fallback.');
             return "/fallback.png";
         }
         if (caminhoImagem.startsWith('http')) return caminhoImagem;
-        const baseUrl = 'https://cufzswdymzevdeonjgan.supabase.co/storage/v1/object/public'; // Hardcoded base URL
+        const baseUrl = 'https://cufzswdymzevdeonjgan.supabase.co/storage/v1/object/public';
         const fullUrl = `${baseUrl}/imagens/clientes/${encodeURIComponent(caminhoImagem)}`;
-        console.log('DEBUG: ClienteHome - URL da imagem generada:', fullUrl);
         return fullUrl;
     };
 
@@ -205,7 +302,6 @@ export default function ClienteHome() {
     }, [showSearch]);
 
     const handleAumentar = (id) => {
-        console.log('DEBUG: ClienteHome - Aumentar quantidade para produto ID:', id);
         setQuantidades((prev) => ({
             ...prev,
             [id]: (prev[id] || 1) + 1,
@@ -213,7 +309,6 @@ export default function ClienteHome() {
     };
 
     const handleDiminuir = (id) => {
-        console.log('DEBUG: ClienteHome - Diminuir quantidade para produto ID:', id);
         setQuantidades((prev) => ({
             ...prev,
             [id]: Math.max(1, (prev[id] || 1) - 1),
@@ -221,17 +316,13 @@ export default function ClienteHome() {
     };
 
     const handleAdicionar = async (produto) => {
-        console.log('DEBUG: ClienteHome - Tentando adicionar produto ao carrinho:', produto.nome);
-        
-        // Impedir adição ao carrinho e mostrar aviso suave se a loja estiver fechada
         if (isLojaClosed) {
             setMensagem('Desculpe, a loja está fechada para pedidos no momento.');
             setCorMensagem('text-red-600');
-            setTimeout(() => setMensagem(''), 5000); // Mensagem por 5 segundos
-            return; // Impede a continuação da função
+            setTimeout(() => setMensagem(''), 5000);
+            return;
         }
 
-        // Impedir adição ao carrinho se o produto estiver indisponível automaticamente (esgotado)
         if (produto.indisponivel_automatico) {
             setMensagem('Produto indisponível no momento.');
             setCorMensagem('text-red-600');
@@ -268,7 +359,6 @@ export default function ClienteHome() {
                     console.error('DEBUG: ClienteHome - Erro de estoque ao adicionar ao carrinho:', data.erro);
                     throw new Error(data.erro);
                 }
-                // Adicional: Lidar com erro 403 (loja fechada) caso o backend também retorne
                 if (response.status === 403 && data.erro && data.erro.includes('fechada para pedidos')) {
                     console.error('DEBUG: ClienteHome - Loja fechada para pedidos (backend):', data.erro);
                     throw new Error(data.erro);
@@ -300,6 +390,20 @@ export default function ClienteHome() {
         }
     };
 
+    const getTextColorForBackground = (bgColor) => {
+        const hexToRgb = (hex) => {
+            const bigint = parseInt(hex.slice(1), 16);
+            const r = (bigint >> 16) & 255;
+            const g = (bigint >> 8) & 255;
+            const b = bigint & 255;
+            return [r, g, b];
+        };
+
+        const rgb = hexToRgb(bgColor);
+        const luminance = (0.299 * rgb[0] + 0.587 * rgb[1] + 0.114 * rgb[2]) / 255;
+        return luminance > 0.5 ? '#000000' : '#FFFFFF';
+    };
+
     return (
         <div className="flex flex-col min-h-screen bg-gray-100">
             <header
@@ -317,7 +421,14 @@ export default function ClienteHome() {
                                 className="object-cover w-full h-full"
                             />
                         </div>
-                        <h1 className="text-lg font-bold">{nomeFantasia}</h1>
+                        <div className="flex flex-col">
+                            <h1 className="text-lg font-bold">{nomeFantasia}</h1>
+                            {sloganLoja && (
+                                <p className="text-xs" style={{ color: getTextColorForBackground(corPrimaria) }}>
+                                    {sloganLoja}
+                                </p>
+                            )}
+                        </div>
                     </div>
                 )}
                 {showSearch && (
@@ -454,7 +565,8 @@ export default function ClienteHome() {
                 >
                     <div className="text-white z-10">
                         <h2 className="text-2xl font-bold">Seja Bem-Vindo (a)!</h2>
-                        <p className="text-sm mt-1">Explore nosso catálogo e faça seu pedido online</p>
+                        {sloganLoja && <p className="text-sm mt-1">{sloganLoja}</p>}
+                        {!sloganLoja && <p className="text-sm mt-1">Explore nosso catálogo e faça seu pedido online</p>}
                     </div>
                     <div className="h-full flex items-center z-10">
                         <Image
@@ -478,21 +590,24 @@ export default function ClienteHome() {
                 </div>
 
             )}
-
-            {/* AQUI: Mudei a seção de Atendimento para exibir "Loja fechada no momento" */}
+            
             {isLojaClosed ? (
                 <div className="bg-red-50 border border-red-200 rounded-md mx-4 my-4 mt-3 px-3 py-2 flex items-center gap-2 text-sm text-red-800">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L12 12m-6.364-6.364l12.728 12.728" />
                     </svg>
-                    <span className="font-bold">Loja fechada no momento.</span>
+                    <span className="font-bold">Loja fechada no momento.</span> {horarioExibicao && `(${horarioExibicao})`}
                 </div>
             ) : (
-                <div className="bg-blue-50 border border-blue-200 rounded-md mx-4 my-4 mt-3 px-3 py-2 flex items-center gap-2 text-sm text-blue-800">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div className="bg-blue-50 border border-blue-200 rounded-md mx-4 my-4 mt-3 px-3 py-2 flex items-center gap-2 text-sm text-blue-800"
+                    style={{ backgroundColor: corSecundaria }}
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                        style={{ color: getTextColorForBackground(corSecundaria) }}
+                    >
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    Atendimento: <strong>Segunda a Sexta, das 08h às 18h</strong>
+                    <span style={{ color: getTextColorForBackground(corSecundaria) }}>Atendimento: <strong>{horarioExibicao}</strong></span>
                 </div>
             )}
 
@@ -502,8 +617,6 @@ export default function ClienteHome() {
                         {mensagem}
                     </div>
                 )}
-                {/* O aviso de loja fechada na ClienteHome foi movido para a seção de atendimento acima. */}
-                {/* Removido o bloco {isLojaClosed && (...) } que estava aqui */}
 
                 {produtosFiltrados.length > 0 ? (
                     <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-5 gap-x-6 gap-y-4">
@@ -518,10 +631,8 @@ export default function ClienteHome() {
                                 getImagemProduto={getImagemProduto}
                                 slug={site}
                                 cor={corPrimaria}
-                                // NOVO: Passar status de fechado da loja e indisponibilidade para o ProdutoCard
-                                // isIndisponivel será TRUE se o produto estiver indisponível OU se a loja estiver fechada
                                 isIndisponivel={produto.indisponivel_automatico || isLojaClosed} 
-                                isLojaClosed={isLojaClosed} // Passa o status da loja para o card, para estilo específico
+                                isLojaClosed={isLojaClosed} 
                                 statusEstoque={produto.status_estoque}
                             />
                         ))}
@@ -529,6 +640,35 @@ export default function ClienteHome() {
                 ) : (
                     <div className="text-center text-gray-600 mt-10 text-lg">
                         Nenhum produto disponível no momento.
+                    </div>
+                )}
+
+                {outrasLojas.length > 0 && (
+                    <div className="mt-8 mb-4">
+                        <h2 className="text-xl font-bold text-gray-800 mb-4 text-center">
+                            Veja também estas lojas da mesma empresa:
+                        </h2>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                            {outrasLojas.map((loja) => (
+                                <Link key={loja.slug_loja} href={`/loja/${loja.slug_loja}`} passHref>
+                                    <div className="bg-white rounded-lg shadow-md p-4 flex items-center space-x-4 cursor-pointer hover:shadow-lg transition-shadow">
+                                        <div className="w-16 h-16 rounded-full overflow-hidden flex-shrink-0">
+                                            <Image
+                                                src={loja.foto_loja ? getImagemProduto(loja.foto_loja) : "/fallback.png"}
+                                                alt={loja.nome_fantasia || "Loja"}
+                                                width={64}
+                                                height={64}
+                                                className="object-cover w-full h-full"
+                                            />
+                                        </div>
+                                        <div>
+                                            <h3 className="font-semibold text-lg text-gray-900">{loja.nome_fantasia}</h3>
+                                            <p className="text-sm text-gray-600">Ir para a loja</p>
+                                        </div>
+                                    </div>
+                                </Link>
+                            ))}
+                        </div>
                     </div>
                 )}
             </div>
@@ -566,12 +706,12 @@ function PontosFidelidade({ clienteId }) {
             .update({ total_pontos: pontos - pontosParaResgatar })
             .eq('id', clienteId);
 
-        if (!error) fetchCliente(); // Atualiza os pontos e nome após resgate
+        if (!error) fetchCliente(); 
     }
 
     return (
         <div className="p-4 border rounded-lg bg-white shadow mb-4">
-             <div className="text-black">Olá, <strong>{nomeCliente}</strong></div>
+            <div className="text-black">Olá, <strong>{nomeCliente}</strong></div>
             <div className="text-black">Você tem <strong>{pontos}</strong> ponto{pontos === 1 ? '' : 's'}</div>
         </div>
     );

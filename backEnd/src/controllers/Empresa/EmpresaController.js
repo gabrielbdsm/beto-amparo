@@ -60,7 +60,7 @@ export async function getLojaBySlug(req, res) { // Ou a função que sua OwnerSi
   try {
       const { data: lojaData, error: lojaError } = await supabase
           .from('loja')
-          .select('id, nome_fantasia, foto_loja, is_closed_for_orders, slug_loja, id_empresa') // Inclua id_empresa
+          .select('id, nome_fantasia, foto_loja, is_closed_for_orders, slogan, cor_primaria, cor_secundaria, banner, horarios_funcionamento, ativarFidelidade, slug_loja, id_empresa, mostrar_outras_lojas') 
           .eq('slug_loja', slug)
           .single();
 
@@ -71,7 +71,7 @@ export async function getLojaBySlug(req, res) { // Ou a função que sua OwnerSi
 
       // Buscar o level_tier da tabela 'empresas' usando o id_empresa da loja
       const { data: empresaData, error: empresaError } = await supabase
-          .from('empresas')
+          .from('loja')
           .select('level_tier') // Seleciona a nova coluna
           .eq('id', lojaData.id_empresa) // Usa o id_empresa da loja encontrada
           .single();

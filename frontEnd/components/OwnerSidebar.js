@@ -4,25 +4,12 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useState, useEffect } from 'react';
 
-// Helper component para os itens de navegação
 function NavItem({ icon, label, path, currentSlug, onClick, className }) {
     const router = useRouter();
-    // Constrói o caminho completo para o Link
-    // Se o path já inclui o slug (como para '/empresa/slug/configuracoes'), não adicione novamente
     const fullPath = path.startsWith('/empresa/') ? path : (currentSlug ? `/empresa/${currentSlug}${path}` : path);
-
-    // Determina se o item é o ativo/selecionado de forma mais robusta para SSR/CSR
-    // Verifica se a rota atual é exatamente a fullPath ou se começa com a fullPath
-    // (útil para sub-rotas, ex: /produtos/editar ou /configuracoes/minhas-categorias)
     const isActive = router.asPath === fullPath || router.asPath.startsWith(`${fullPath}/`);
-
-    // Classe base para os itens de navegação
     const baseClasses = "flex items-center gap-2 p-2 w-full text-left cursor-pointer rounded transition-all duration-200";
-
-    // Estilos para o hover com sombra azul (assumindo que 'hover-shadow-blue' está no seu CSS global)
     const hoverShadowClasses = 'hover-shadow-blue';
-
-    // Estilo para o item ativo: texto mais forte e branco quando ativo
     const activeTextClass = isActive ? 'font-bold text-white' : 'font-normal text-white';
 
     if (onClick) {
@@ -48,7 +35,6 @@ function NavItem({ icon, label, path, currentSlug, onClick, className }) {
     );
 }
 
-// Componente para exibir a medalha (agora menor para o widget)
 function LevelMedal({ level }) {
     let medalImage = null;
     let altText = "";
@@ -59,7 +45,7 @@ function LevelMedal({ level }) {
             altText = 'Medalha de Bronze';
             break;
         case 'Prata':
-            medalImage = '/icons/medal_silver.png'; // Caminho para a medalha de Prata
+            medalImage = '/icons/medal_silver.png';
             altText = 'Medalha de Prata';
             break;
         case 'Ouro':
@@ -78,16 +64,12 @@ function LevelMedal({ level }) {
 }
 
 export default function OwnerSidebar({ children, slug }) {
-    console.log("OwnerSidebar -> slug recebido:", slug);
     const router = useRouter();
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [slugEmpresa, setSlugEmpresa] = useState('');
-
-    // Estados para o bloco do link da loja
     const [lojaData, setLojaData] = useState(null);
     const [loadingLoja, setLoadingLoja] = useState(true);
     const [errorLoja, setErrorLoja] = useState(null);
-
     const [isClient, setIsClient] = useState(false);
     const [showLinkBlock, setShowLinkBlock] = useState(true);
     const [copied, setCopied] = useState(false);
@@ -105,7 +87,6 @@ export default function OwnerSidebar({ children, slug }) {
         }
 
         if (!slug) {
-            console.warn("OwnerSidebar: Slug não disponível ainda na prop, pulando fetch inicial.");
             setLoadingLoja(false);
             return;
         }
@@ -125,18 +106,15 @@ export default function OwnerSidebar({ children, slug }) {
                     setSlugEmpresa(data?.slug_loja || '');
                     setIsLojaClosed(data?.is_closed_for_orders || false);
                     setShopLevel(data?.level_tier || 'Nenhum');
-                    console.log("OwnerSidebar: Dados da loja obtidos com sucesso:", data);
                 } else {
                     const errorData = await response.json();
-                    console.error('OwnerSidebar: Falha ao obter dados da loja:', errorData.message || response.statusText);
-                    setErrorLoja(errorData.message || `Erro ${response.status}: ${response.statusText}`);
+                    setErrorLoja(errorData.message || response.statusText);
                     setLojaData(null);
                     setSlugEmpresa('');
                     setIsLojaClosed(false);
                     setShopLevel('Nenhum');
                 }
             } catch (error) {
-                console.error('OwnerSidebar: Erro ao buscar dados da loja:', error);
                 setErrorLoja("Erro de conexão ao buscar dados da loja.");
                 setLojaData(null);
                 setSlugEmpresa('');
@@ -211,7 +189,6 @@ export default function OwnerSidebar({ children, slug }) {
 
     return (
         <div className="min-h-screen flex flex-col md:flex-row">
-            {/* Header Mobile */}
             <div className="bg-[#3681B6] text-white flex items-center justify-between p-4 md:hidden">
                 <div className="flex items-center gap-2">
                     <Image src="/logo.png" alt="Logo" width={32} height={32} />
@@ -224,7 +201,6 @@ export default function OwnerSidebar({ children, slug }) {
                 </button>
             </div>
 
-            {/* Sidebar */}
             <aside className={`
                 fixed md:static z-40 bg-[#3681B6] text-white w-64 min-h-screen p-4 flex flex-col justify-between
                 transition-transform duration-300
@@ -239,10 +215,7 @@ export default function OwnerSidebar({ children, slug }) {
                         </div>
                     </div>
 
-                    {/* Container Flex para espaçamento */}
                     <div className="flex flex-col gap-4">
-
-                        {/* Widget de Medalha e Nível (compacto) */}
                         {lojaData && shopLevel && shopLevel !== 'Nenhum' && (
                             <div className="p-2 rounded-md bg-blue-700 text-white flex items-center justify-between shadow-md">
                                 <div className="flex items-center gap-2">
@@ -253,7 +226,6 @@ export default function OwnerSidebar({ children, slug }) {
                             </div>
                         )}
 
-                        {/* Bloco do link da loja - Renderizado condicionalmente apenas no cliente após hidratação */}
                         {isClient && showLinkBlock && (loadingLoja || errorLoja || lojaData) && (
                             <div className="mb-4 p-2 bg-white rounded-md text-[#3681B6] relative">
                                 <div className="flex justify-between items-center mb-1">
@@ -286,7 +258,6 @@ export default function OwnerSidebar({ children, slug }) {
                                 )}
                             </div>
                         )}
-                        {/* Botão para re-exibir o bloco do link, se ele estiver escondido - Renderizado condicionalmente apenas no cliente após hidratação */}
                         {isClient && !showLinkBlock && (
                             <div className="flex justify-center mt-2">
                                 <button
@@ -299,7 +270,6 @@ export default function OwnerSidebar({ children, slug }) {
                             </div>
                         )}
 
-                        {/* TOGGLE: Switch de alternar o status da loja - Cor de fundo condicional */}
                         {lojaData && (
                             <div className={`mt-4 p-2 rounded-md text-white flex items-center justify-between ${isLojaClosed ? 'bg-gray-500' : 'bg-blue-700'}`}>
                                 <span>Loja: {isLojaClosed ? 'Fechada' : 'Aberta'} para Pedidos</span>
@@ -322,7 +292,6 @@ export default function OwnerSidebar({ children, slug }) {
                             <span className="font-semibold text-lg">Área do dono</span>
                         </Link>
 
-                        {/* NavItems ATUALIZADOS com lógica condicional para ícones de "prata" */}
                         <NavItem
                             icon={router.asPath === `/empresa/${currentActiveSlug}/dashboard` && shopLevel === 'Prata'
                                 ? "/icons/dashboard_white.svg"
@@ -348,11 +317,10 @@ export default function OwnerSidebar({ children, slug }) {
 
                         <NavItem icon="/icons/help_white.svg" label="Suporte" path="/suporte" currentSlug={currentActiveSlug} className="sidebar-suporte-item" />
 
-                        {/* NOVO: Item de Configurações */}
                         <NavItem 
-                            icon="/icons/settings_white.svg" // Assumindo que você tem um ícone de configurações branco
+                            icon="/icons/settings_white.svg"
                             label="Configurações" 
-                            path="/configuracoes/" // Aponta para a página de configurações principal
+                            path="/configuracoes/"
                             currentSlug={currentActiveSlug} 
                             className="sidebar-configuracoes-item" 
                         />

@@ -1,10 +1,11 @@
 // backend/controllers/Empresa/AchievementController.js
 
 import supabase from '../../config/SupaBase.js';
-import * as LojaModel from '../../models/Loja.js'; // Importação do LojaModel
+import * as LojaModel from '../../models/Loja.js';
 import jwt from 'jsonwebtoken';
 
-// Função auxiliar getEmpresaIdFromToken (mantida por segurança se precisar dela em outros pontos)
+// getEmpresaIdFromToken não é mais usado se você usa o middleware, pode remover ou manter para debug.
+/*
 async function getEmpresaIdFromToken(req) {
     const token = req.cookies?.token_empresa;
     if (!token) return { error: { message: 'Token não fornecido no cookie' } };
@@ -15,35 +16,31 @@ async function getEmpresaIdFromToken(req) {
         return { error: { message: 'Token inválido ou expirado' } };
     }
 }
+*/
 
 export const getOwnerAchievements = async (req, res) => {
     try {
-        const ownerId = req.Id; // ID da empresa logada (do middleware routePrivate)
+        const ownerId = req.idEmpresa; // <--- CORREÇÃO AQUI para ser consistente com o middleware
         if (!ownerId) {
             return res.status(401).json({ error: 'ID da empresa não disponível. Autenticação falhou.' });
         }
-
-        const { slugLoja } = req.params; // Obter slugLoja dos parâmetros da URL
+        const { slugLoja } = req.params;
         if (!slugLoja) {
             return res.status(400).json({ mensagem: 'Slug da loja é obrigatório para buscar conquistas.' });
         }
 
-        // BUSCAR LOJA ESPECÍFICA PELO SLUG (para obter o ID da loja)
         const { data: lojaDoContexto, error: lojaError } = await LojaModel.buscarLojaPorSlugCompleta(slugLoja);
 
         if (lojaError || !lojaDoContexto) {
             return res.status(404).json({ mensagem: 'Loja não encontrada para o slug fornecido.' });
         }
         
-        // Verificação de Autorização Adicional: A loja do slug deve pertencer ao dono logado
         if (lojaDoContexto.id_empresa !== ownerId) {
             return res.status(403).json({ mensagem: 'Acesso negado. A loja não pertence à sua conta.' });
         }
 
-        // CORREÇÃO AQUI: Removido o 'Do' duplicado
         const lojaId = lojaDoContexto.id; 
 
-        // FETCH ACHIEVEMENTS (DEFINIÇÕES DAS MISSÕES)
         const { data: allAchievements, error: achievementsError } = await supabase
             .from('achievements')
             .select('*');
@@ -51,22 +48,24 @@ export const getOwnerAchievements = async (req, res) => {
         if (achievementsError) {
             throw new Error('Erro ao buscar conquistas do banco de dados.');
         }
-        if (!allAchievements) allAchievements = [];
+        // Se allAchievements pode ser null, considere: if (!allAchievements) allAchievements = [];
+        const finalAllAchievements = allAchievements || [];
 
-        // FETCH OWNER'S PROGRESS (PROGRESSO DA LOJA NAS MISSÕES)
+
         const { data: ownerProgress, error: progressError } = await supabase
             .from('owner_achievements')
             .select('*')
-            .eq('loja_id', lojaId); // USANDO O ID DA LOJA DO CONTEXTO AQUI
+            .eq('loja_id', lojaId);
 
         if (progressError) {
             throw new Error('Erro ao buscar progresso das conquistas.');
         }
-        if (!ownerProgress) ownerProgress = [];
+        // Se ownerProgress pode ser null, considere: if (!ownerProgress) ownerProgress = [];
+        const finalOwnerProgress = ownerProgress || [];
 
-        // COMBINAR DADOS
-        const combinedData = allAchievements.map(mission => {
-            const progress = ownerProgress.find(p => p.achievement_id === mission.id);
+
+        const combinedData = finalAllAchievements.map(mission => {
+            const progress = finalOwnerProgress.find(p => p.achievement_id === mission.id);
             return {
                 ...mission,
                 current_progress: progress ? progress.current_progress : 0,
@@ -78,7 +77,6 @@ export const getOwnerAchievements = async (req, res) => {
         return res.status(200).json(combinedData);
 
     } catch (error) {
-        // Manteve o retorno de erro 500, mas sem o console.error de debug
         return res.status(500).json({ mensagem: 'Erro interno ao buscar conquistas.', detalhes: error.message });
     }
 };

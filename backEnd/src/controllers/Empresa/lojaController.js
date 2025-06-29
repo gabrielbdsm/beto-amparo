@@ -1,14 +1,10 @@
-import { buscarLojaPorSlugCompleta, toggleLojaStatus  } from '../../models/Loja.js';
+import { buscarLojaPorSlugCompleta, toggleLojaStatus, updateHorariosLoja  } from '../../models/Loja.js';
 import supabase from '../../config/SupaBase.js';
 import bcrypt from 'bcryptjs';
-export const getLojaBySlugAndEmpresaController = async (req, res) => {
-    // O ID da empresa vem do middleware `empresaPrivate`
-    const empresaId = req.IdEmpresa; // Confere com o que você já está usando
 
-    // O slug da loja virá dos parâmetros da URL, como definido na rota
-    // Ex: /empresa/loja/:slugLoja -> req.params.slugLoja
-    // Certifique-se de que sua rota captura isso corretamente!
-    const slugLoja = req.params.slugLoja; // Use o nome do parâmetro definido na rota, por exemplo, :slugLoja
+export const getLojaBySlugAndEmpresaController = async (req, res) => {
+    const empresaId = req.idEmpresa; 
+    const slugLoja = req.params.slugLoja;
 
     console.log("DEBUG: ID da empresa:", empresaId);
     console.log("DEBUG: Slug da loja:", slugLoja);
@@ -18,11 +14,9 @@ export const getLojaBySlugAndEmpresaController = async (req, res) => {
     }
 
     try {
-        // Usamos a função do modelo que busca a loja pelo slug e depois validamos o ID da empresa
         const { data: loja, error } = await buscarLojaPorSlugCompleta(slugLoja);
 
         if (error) {
-            // Lidar com erros específicos retornados pelo modelo
             if (error.code === 'NOT_FOUND') {
                 return res.status(404).json({ message: error.message });
             }
@@ -31,16 +25,14 @@ export const getLojaBySlugAndEmpresaController = async (req, res) => {
         }
 
         if (!loja) {
-            // Este caso já deveria ser tratado pelo 'NOT_FOUND' acima, mas é uma segurança
             return res.status(404).json({ message: "Loja não encontrada para o slug fornecido." });
         }
 
-        // Importante: Verifique se a loja encontrada realmente pertence à empresa logada
         if (loja.id_empresa !== empresaId) {
             return res.status(403).json({ message: "Acesso negado: A loja não pertence à empresa autenticada." });
         }
 
-        // Se tudo estiver certo, retorne os dados da loja
+        // Retorna os dados da loja, que agora incluirão 'horarios_funcionamento'
         return res.status(200).json(loja);
 
     } catch (err) {
@@ -48,6 +40,52 @@ export const getLojaBySlugAndEmpresaController = async (req, res) => {
         return res.status(500).json({ message: "Erro inesperado do servidor." });
     }
 };
+export const updateHorariosFuncionamentoController = async (req, res) => {
+    const { slugLoja } = req.params;
+    const { horarios } = req.body;
+    const empresaId = req.IdEmpresa;
+
+    console.log('DEBUG: Backend - updateHorariosFuncionamentoController foi chamado.');
+    console.log('DEBUG: Backend - req.params.slugLoja:', slugLoja);
+    console.log('DEBUG: Backend - req.body:', req.body); // VEJA O OBJETO COMPLETO QUE CHEGOU
+    console.log('DEBUG: Backend - req.body.horarios:', horarios); // VEJA O OBJETO HORARIOS ESPECIFICAMENTE
+
+    if (!empresaId) {
+        return res.status(403).json({ message: "Acesso negado: Empresa não autenticada." });
+    }
+
+    // Validação básica dos dados de horários
+    // Você pode adicionar validações mais robustas aqui se necessário
+    if (!horarios || typeof horarios !== 'object' || Object.keys(horarios).length === 0) {
+        return res.status(400).json({ message: 'Dados de horários inválidos ou ausentes.' });
+    }
+
+    try {
+        // Opcional, mas recomendado: verificar se a loja existe e pertence à empresa logada.
+        // A função `updateHorariosLoja` no modelo não faz essa checagem de propriedade.
+        const { data: lojaExistente, error: fetchError } = await buscarLojaPorSlugCompleta(slugLoja);
+
+        if (fetchError || !lojaExistente || lojaExistente.id_empresa !== empresaId) {
+            console.error('Erro ou loja não encontrada/não pertence à empresa:', fetchError?.message || 'Loja não encontrada ou acesso não autorizado.');
+            return res.status(404).json({ message: 'Loja não encontrada ou você não tem permissão para editar os horários desta loja.' });
+        }
+
+        // Chama a função do modelo para atualizar os horários no banco de dados
+        const { data, error } = await updateHorariosLoja(slugLoja, horarios);
+
+        if (error) {
+            console.error("Erro ao atualizar horários via modelo:", error);
+            return res.status(500).json({ message: "Erro ao salvar os horários de funcionamento.", error: error });
+        }
+
+        return res.status(200).json({ message: "Horários de funcionamento atualizados com sucesso!", horarios: data.horarios_funcionamento });
+
+    } catch (err) {
+        console.error("Erro inesperado no controller ao atualizar horários:", err);
+        return res.status(500).json({ message: "Erro inesperado do servidor ao salvar os horários." });
+    }
+};
+
 export const toggleLojaStatusController = async (req, res) => {
     const { slugLoja } = req.params; // Assume que o slug vem da URL, ex: /loja/ben-burguer/toggle-status
     const { isClosed } = req.body;   // Assume que o novo status (true/false) vem do corpo da requisição
@@ -178,3 +216,76 @@ export const deletarLoja = async (req, res) => {
         return res.status(500).json({ mensagem: 'Erro interno do servidor ao encerrar a conta da loja.', erro: err.message });
     }
 };
+export const getOutrasLojasDaMesmaEmpresa = async (req, res) => {
+    const { idEmpresa, currentLojaSlug } = req.query; // Recebe o ID da empresa e o slug da loja atual
+
+    if (!idEmpresa) {
+        return res.status(400).json({ mensagem: 'ID da empresa não fornecido.' });
+    }
+
+    try {
+        const { data, error } = await supabase
+            .from('loja')
+            .select('nome_fantasia, slug_loja, foto_loja') // Selecione apenas os campos necessários
+            .eq('id_empresa', idEmpresa) // Filtra pelo ID da empresa
+            .neq('slug_loja', currentLojaSlug); // Exclui a loja atual
+
+        if (error) {
+            console.error('Erro ao buscar outras lojas da mesma empresa:', error.message);
+            return res.status(500).json({ mensagem: 'Erro ao buscar outras lojas.', erro: error.message });
+        }
+
+        if (!data || data.length === 0) {
+            return res.status(200).json({ mensagem: 'Nenhuma outra loja encontrada para esta empresa.', lojas: [] });
+        }
+
+        return res.status(200).json({ lojas: data });
+
+    } catch (err) {
+        console.error('Erro inesperado em getOutrasLojasDaMesmaEmpresa:', err.message);
+        return res.status(500).json({ mensagem: 'Erro interno do servidor.' });
+    }
+};
+export const updateVisibilidadeOutrasLojasController = async (req, res) => {
+    const { slugLoja } = req.params;
+    const { mostrar_outras_lojas } = req.body;
+    const empresaId = req.IdEmpresa; // Assegure-se de que o middleware empresaPrivate esteja rodando
+
+    if (typeof mostrar_outras_lojas !== 'boolean') {
+        return res.status(400).json({ mensagem: 'O valor de "mostrar_outras_lojas" deve ser booleano.' });
+    }
+
+    try {
+        // Primeiro, verifique se a loja existe e pertence à empresa logada
+        const { data: lojaExistente, error: fetchError } = await supabase
+            .from('loja')
+            .select('id_empresa')
+            .eq('slug_loja', slugLoja)
+            .single();
+
+        if (fetchError || !lojaExistente || lojaExistente.id_empresa !== empresaId) {
+            console.error('Erro ou loja não encontrada/não pertence à empresa:', fetchError?.message || 'Loja não encontrada ou acesso não autorizado.');
+            return res.status(404).json({ mensagem: 'Loja não encontrada ou você não tem permissão para editar esta loja.' });
+        }
+
+        // Atualiza a coluna no Supabase
+        const { data, error } = await supabase
+            .from('loja')
+            .update({ mostrar_outras_lojas: mostrar_outras_lojas })
+            .eq('slug_loja', slugLoja)
+            .select() // Retorna os dados atualizados
+            .single();
+
+        if (error) {
+            console.error('Erro ao atualizar visibilidade de outras lojas:', error.message);
+            return res.status(500).json({ mensagem: 'Erro ao salvar a configuração de visibilidade.', erro: error.message });
+        }
+
+        return res.status(200).json({ mensagem: 'Configuração de visibilidade atualizada com sucesso!', data });
+
+    } catch (err) {
+        console.error('Erro inesperado em updateVisibilidadeOutrasLojasController:', err.message);
+        return res.status(500).json({ mensagem: 'Erro interno do servidor.' });
+    }
+};
+
