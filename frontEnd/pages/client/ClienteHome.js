@@ -534,16 +534,18 @@ export default function ClienteHome() {
                 )}
             </header>
             {bannerLoja ? (
-                <div className="w-full h-48 relative">
-                    <Image
-                        src={`${getImagemProduto(bannerLoja)}?v=${new Date().getTime()}`}
-                        alt="Banner da loja"
-                        fill
-                        unoptimized
-                        style={{ objectFit: 'cover' }}
-                        className="rounded-none"
-                    />
-                </div>
+            <div className="w-full h-48 relative rounded-t-lg overflow-hidden mb-2">
+            {bannerLoja && (
+                <Image
+                src={`${getImagemProduto(bannerLoja)}?v=${new Date().getTime()}`}
+                alt="Banner da loja"
+                fill
+                unoptimized
+                style={{ objectFit: 'cover' }}
+                className="rounded-t-lg"
+                />
+            )}
+            </div>
             ) : (
                 <div
                     className="w-full h-48 flex items-center justify-between px-6 relative overflow-hidden"
