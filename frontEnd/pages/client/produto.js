@@ -165,90 +165,149 @@ export default function Produto() {
         }
     };
 
-    if (loading) return <div className="p-4 text-center">Carregando...</div>;
-    if (error) return <div className="p-4 text-center text-red-600">Erro: {error}</div>;
-    if (!produto) return <div className="p-4 text-center">Produto não disponível.</div>;
+    if (loading) return (
+        <div className="min-h-screen flex items-center justify-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        </div>
+    );
+
+    if (error) return (
+        <div className="min-h-screen flex items-center justify-center">
+            <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 max-w-md w-full">
+                <p className="font-bold">Erro</p>
+                <p>{error}</p>
+            </div>
+        </div>
+    );
+
+    if (!produto) return (
+        <div className="min-h-screen flex items-center justify-center">
+            <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 max-w-md w-full">
+                <p className="font-bold">Aviso</p>
+                <p>Produto não disponível.</p>
+            </div>
+        </div>
+    );
 
     return (
-        <div className="min-h-screen bg-gray-50 flex flex-col justify-center items-center px-4 py-6">
-            <div className="w-full max-w-5xl bg-white rounded-2xl shadow-xl flex flex-col md:flex-row overflow-hidden">
-                <div className="flex-1 p-6 space-y-6 text-gray-800">
-                    <ExibirProduto produto={produto} corPrimaria={corPrimaria} />
+        <div className="min-h-screen bg-gray-50">
+            <div className="container mx-auto px-4 py-8 max-w-6xl">
+                {/* Main Product Container */}
+                <div className="bg-white rounded-xl shadow-md overflow-hidden">
+                    <div className="md:flex">
+                        {/* Left Column - Product Image and Info */}
+                        <div className="md:w-1/2 p-6">
+                            <div className="mb-6">
+                                <ExibirProduto produto={produto} corPrimaria={corPrimaria} />
+                            </div>
 
-                    <QuantidadeControl
-                        produto={produto}
-                        quantidade={quantidade}
-                        setQuantidade={setQuantidade}
-                        corPrimaria={corPrimaria}
-                    />
+                            <div className="mb-6">
+                                <QuantidadeControl
+                                    produto={produto}
+                                    quantidade={quantidade}
+                                    setQuantidade={setQuantidade}
+                                    corPrimaria={corPrimaria}
+                                />
+                            </div>
 
-                    <Obersevacao produto={produto} />
+                            <div className="mb-6">
+                                <Obersevacao produto={produto} />
+                            </div>
+                        </div>
 
-                    {/* Avaliação Formulário */}
-                    <div className="pt-4 border-t border-gray-200">
-                        <h3 className="text-lg font-semibold text-gray-800 mb-2">Avalie este produto</h3>
+                        {/* Right Column - Extras, Reviews and Cart */}
+                        <div className="md:w-1/2 p-6 bg-gray-50 border-l border-gray-200">
+                            <div className="mb-6">
+                                <Adicionais
+                                    adicionais={adicionais}
+                                    selecionados={selecionados}
+                                    toggleAdicional={toggleAdicional}
+                                    corPrimaria={corPrimaria}
+                                />
+                            </div>
 
-                        <input
-                            type="text"
-                            value={nomeAvaliador}
-                            onChange={(e) => setNomeAvaliador(e.target.value)}
-                            placeholder="Seu nome"
-                            className="w-full p-2 mb-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
+                            {/* Cart */}
+                            <div className="sticky bottom-0 bg-white p-4 rounded-lg shadow-md border border-gray-200">
+                                <Carrinho
+                                    subtotal={subtotal}
+                                    handleAddToCart={handleAddToCart}
+                                    corPrimaria={corPrimaria}
+                                />
+                            </div>
 
-                        <Rating editable rating={nota} onRatingChange={setNota} />
+                            {/* Rating Form */}
+                            <div className="mb-6 p-4 bg-white rounded-lg shadow-sm">
+                                <h3 className="text-lg font-semibold text-gray-800 mb-3">Avalie este produto</h3>
 
-                        <textarea
-                            value={comentario}
-                            onChange={(e) => setComentario(e.target.value)}
-                            placeholder="Escreva seu comentário (opcional)"
-                            rows={3}
-                            className="w-full p-2 mt-2 border rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-
-                        <button
-                            onClick={handleEnviarAvaliacao}
-                            className="mt-3 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
-                        >
-                            Enviar Avaliação
-                        </button>
-                    </div>
-
-                    {/* Avaliações exibidas */}
-                    <div className="pt-6 border-t border-gray-200">
-                        <h4 className="text-md font-semibold text-gray-700 mb-2">Avaliações de outros clientes:</h4>
-                        {avaliacoes.length === 0 && <p className="text-sm text-gray-500">Nenhuma avaliação ainda.</p>}
-                        <ul className="space-y-4">
-                            {avaliacoes.map((av) => (
-                                <li key={av.id} className="border p-3 rounded-md bg-gray-50">
-                                    <div className="flex justify-between items-center mb-1">
-                                        <span className="font-semibold">{av.nome}</span>
-                                        <span className="text-sm text-gray-400">{new Date(av.data).toLocaleDateString()}</span>
+                                <div className="space-y-3">
+                                    <div>
+                                        <input
+                                            type="text"
+                                            value={nomeAvaliador}
+                                            onChange={(e) => setNomeAvaliador(e.target.value)}
+                                            placeholder="Seu nome"
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                        />
                                     </div>
-                                    <Rating rating={av.rating} />
-                                    {av.comentario && (
-                                        <p className="text-sm text-gray-700 mt-1">{av.comentario}</p>
-                                    )}
-                                </li>
-                            ))}
-                        </ul>
+
+                                    <div className="flex items-center">
+                                        <span className="mr-2 text-sm text-gray-700">Nota:</span>
+                                        <Rating editable rating={nota} onRatingChange={setNota} />
+                                    </div>
+
+                                    <div>
+                                        <textarea
+                                            value={comentario}
+                                            onChange={(e) => setComentario(e.target.value)}
+                                            placeholder="Comentário (opcional)"
+                                            rows={2}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                        />
+                                    </div>
+
+                                    <button
+                                        onClick={handleEnviarAvaliacao}
+                                        className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition"
+                                        style={{ backgroundColor: corPrimaria }}
+                                    >
+                                        Enviar Avaliação
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Customer Reviews */}
+                            <div className="mb-6">
+                                <h4 className="text-lg font-semibold text-gray-800 mb-3">Avaliações</h4>
+
+                                {avaliacoes.length === 0 ? (
+                                    <p className="text-gray-500 text-sm">Nenhuma avaliação ainda.</p>
+                                ) : (
+                                    <div className="space-y-3">
+                                        {avaliacoes.map((av) => (
+                                            <div key={av.id} className="p-3 bg-white rounded-lg shadow-sm">
+                                                <div className="flex justify-between items-start mb-1">
+                                                    <span className="font-medium">{av.nome}</span>
+                                                    <span className="text-xs text-gray-500">
+                                                        {new Date(av.data).toLocaleDateString('pt-BR')}
+                                                    </span>
+                                                </div>
+                                                <Rating rating={av.rating} />
+                                                {av.comentario && (
+                                                    <p className="text-sm text-gray-700 mt-1">{av.comentario}</p>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <div className="flex-1 bg-gray-100 text-gray-800 p-6 space-y-6 border-t md:border-t-0 md:border-l border-gray-200">
-                    <Adicionais
-                        adicionais={adicionais}
-                        selecionados={selecionados}
-                        toggleAdicional={toggleAdicional}
-                        corPrimaria={corPrimaria}
-                    />
-
-                    <Carrinho subtotal={subtotal} handleAddToCart={handleAddToCart} />
+                {/* Navigation */}
+                <div className="mt-6">
+                    <NavBar site={site} corPrimaria={corPrimaria} />
                 </div>
-            </div>
-
-            <div className="w-full max-w-5xl mt-6">
-                <NavBar site={site} corPrimaria={corPrimaria} />
             </div>
         </div>
     );
