@@ -6,13 +6,13 @@ import Image from 'next/image';
 
 export default function LoginPage() {
   const router = useRouter();
-    const [redirectUrl, setRedirectUrl] = useState('/');
+  const [redirectUrl, setRedirectUrl] = useState('/');
 
   const [formData, setFormData] = useState({
     email: '',
     senha: ''
   });
-  const [erros, setErros] = useState([]);
+  const [erros, setErros] = useState({}); // objeto, não array
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -33,7 +33,7 @@ export default function LoginPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
-    setErros([]);
+    setErros({}); // limpa erros
 
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/login`, {
@@ -47,25 +47,25 @@ export default function LoginPage() {
 
       const data = await res.json();
 
-
       if (!res.ok) {
         const mensagem = data?.error || data?.mensagem || 'Erro desconhecido.';
-        setErrors({ geral: mensagem });
+        setErros({ geral: mensagem }); // erro geral
+        setIsSubmitting(false);
         return;
       }
 
       router.push(redirectUrl).then(() => window.location.reload());
+
     } catch (err) {
       console.error(err);
-      setErrors({ geral: 'Erro ao fazer login. Tente novamente mais tarde.' });
+      setErros({ geral: 'Erro ao fazer login. Tente novamente mais tarde.' });
+      setIsSubmitting(false);
     }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-blue-50 bg-opacity-60 backdrop-blur-sm">
-      {/* Container principal */}
       <div className="flex max-w-4xl w-full bg-white rounded-xl shadow-lg overflow-hidden">
-        {/* Lado esquerdo - Imagem ilustrativa */}
         <div className="hidden md:block md:w-1/2 bg-blue-600 relative">
           <Image
             src="/pexels-markusspiske-6502328.jpg"
@@ -81,7 +81,6 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* Lado direito - Formulário de login */}
         <div className="w-full md:w-1/2 p-8">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-gray-800">Faça seu login</h1>
@@ -90,13 +89,9 @@ export default function LoginPage() {
             </p>
           </div>
 
-          {erros.length > 0 && (
+          {erros.geral && (
             <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-700">
-              <ul className="list-disc pl-5">
-                {erros.map((erro, index) => (
-                  <li key={index}>{erro}</li>
-                ))}
-              </ul>
+              {erros.geral}
             </div>
           )}
 
@@ -168,9 +163,7 @@ export default function LoginPage() {
             <p className="text-sm text-gray-600">
               Não tem uma conta?{' '}
               <Link href="/cadastro" className="font-medium text-blue-600 hover:text-blue-500">
-
                 Cadastre-se
-
               </Link>
             </p>
           </div>
