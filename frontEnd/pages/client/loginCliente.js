@@ -147,11 +147,10 @@ export default function LoginPage() {
                 </label>
               </div>
 
-              <div className="text-sm">
-                <Link href="/recuperar-senha" className="font-medium text-blue-600 hover:text-blue-500">
-                  Esqueceu sua senha?
-                </Link>
-              </div>
+              <Link href={`/recuperar-senha?redirect=${encodeURIComponent(redirectUrl)}`} className="text-blue-600 hover:underline">
+                Esqueci minha senha
+              </Link>
+
             </div>
 
             <div>

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect  } from 'react';
 import { useRouter } from 'next/router';
 
 export default function RecuperarSenha() {
@@ -7,6 +7,17 @@ export default function RecuperarSenha() {
     const [mensagem, setMensagem] = useState(null);
     const [erro, setErro] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
+    const [linkLogin, setLinkLogin] = useState('/empresa/LoginEmpresa');
+
+    useEffect(() => {
+        if (!router.isReady) return;
+
+        const redirect = router.query.redirect;
+        if (redirect) {
+            setLinkLogin(`/login?redirect=${encodeURIComponent(redirect)}`);
+        }
+    }, [router.isReady, router.query.redirect]);
+
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -76,7 +87,7 @@ export default function RecuperarSenha() {
                     </button>
 
                     <div className="text-sm text-center mt-2">
-                        <a href="/empresa/LoginEmpresa" className="text-blue-600 hover:underline">
+                        <a href={linkLogin} className="text-blue-600 hover:underline">
                             Voltar para o login
                         </a>
                     </div>
