@@ -221,7 +221,7 @@ export const buscarAvaliacoesPorProduto = async (produto_id) => {
     try {
         const { data, error } = await supabase
             .from('avaliacoes')
-            .select('*')
+            .select(`*`)
             .eq('produto_id', produto_id)
             .order('data', { ascending: false });
 
@@ -232,7 +232,7 @@ export const buscarAvaliacoesPorProduto = async (produto_id) => {
 
         return { data, error: null };
     } catch (err) {
-        console.error('ProdutoModel: Erro inesperado em listarAvaliacoesPorProduto:', err.message);
+        console.error('ProdutoModel: Erro inesperado em buscarAvaliacoesPorProduto:', err.message);
         return { data: null, error: err.message };
     }
 };

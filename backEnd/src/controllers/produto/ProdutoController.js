@@ -815,6 +815,7 @@ export const ajustarEstoqueProduto = async (req, res) => {
 };
 
 export const inserirAvaliacao = async (req, res) => {
+    console.log('DEBUG req.params:', req.params);
     const produto_id = parseInt(req.params.id);
     const { nome, rating, comentario } = req.body;
 
@@ -836,6 +837,7 @@ export const inserirAvaliacao = async (req, res) => {
     res.status(201).json({ mensagem: 'Avaliação registrada com sucesso!', avaliacao: data });
 };
 
+
 export const listarAvaliacoesPorProduto = async (req, res) => {
     console.log('DEBUG: Entrou em listarAvaliacoesPorProduto');
     console.log('DEBUG: req.params:', req.params);
@@ -845,6 +847,7 @@ export const listarAvaliacoesPorProduto = async (req, res) => {
         return res.status(400).json({ error: 'ID do produto inválido.' });
     }
 
+    // Chama a função do model que já traz as avaliações com o nome do usuário
     const { data, error } = await produtoModel.buscarAvaliacoesPorProduto(produto_id);
 
     if (error) {

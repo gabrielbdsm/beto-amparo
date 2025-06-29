@@ -78,7 +78,16 @@ export default function Produto() {
             try {
                 const response = await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/produto/${id}/avaliacoes`);
                 const data = await response.json();
-                setAvaliacoes(data);
+                console.log("Avaliações recebidas:", data);
+
+                if (Array.isArray(data)) {
+                    setAvaliacoes(data);
+                } else if (Array.isArray(data.avaliacoes)) {
+                    setAvaliacoes(data.avaliacoes);
+                } else {
+                    setAvaliacoes([]);
+                    console.warn("Formato inesperado de avaliações:", data);
+                }
             } catch (err) {
                 console.error("Erro ao buscar avaliações:", err);
             }
