@@ -1,81 +1,95 @@
-// Controller
-
 import supabase from '../../config/SupaBase.js';
 import jwt from 'jsonwebtoken';
 
 class DonoController {
+
+  /**
+   * Obtém todos os dados do painel de uma loja específica para o dono autenticado.
+   * Requer um slug de loja nos parâmetros da URL e um token JWT de empresa nos cookies.
+   */
   async getDonoData(req, res) {
     try {
-      // ... (Passos 1, 2 e 3 de verificação e busca da loja continuam iguais)
+      // --- PASSO 1: AUTENTICAÇÃO E VALIDAÇÃO INICIAL ---
       const token = req.cookies?.token_empresa;
       if (!token) {
         return res.status(401).json({ error: 'Acesso não autorizado. Faça o login.' });
       }
-      let loggedInEmpresaId;
+
+      let empresaId;
       try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        loggedInEmpresaId = decoded.id;
+        empresaId = decoded.id;
       } catch (err) {
         return res.status(401).json({ error: 'Token inválido ou expirado.' });
       }
+
       const { slug } = req.params;
       if (!slug) {
-        return res.status(400).json({ error: 'Slug não fornecido' });
-      }
-      const { data: loja, error: lojaError } = await supabase
-        .from('loja')
-        .select('*, empresas(*)')
-        .eq('slug_loja', slug)
-        .single();
-      if (lojaError || !loja) {
-        return res.status(404).json({ error: 'Loja não encontrada' });
-      }
-      if (loja.id_empresa !== loggedInEmpresaId) {
-        return res.status(403).json({ error: 'Acesso negado.' });
+        return res.status(400).json({ error: 'O slug da loja não foi fornecido.' });
       }
 
-      // --- PASSO 4: BUSCAR DADOS DO PAINEL EM PARALELO ---
+      // --- PASSO 2: BUSCAR A LOJA E VALIDAR A PROPRIEDADE ---
+      const { data: loja, error: lojaError } = await supabase
+        .from('loja')
+        .select('*, empresas(*)') // Busca a loja e a empresa relacionada
+        .eq('slug_loja', slug)
+        .single();
+
+      if (lojaError || !loja) {
+        return res.status(404).json({ error: 'Loja não encontrada.' });
+      }
+
+      // Validação de segurança: A loja buscada pertence à empresa do token?
+      if (loja.empresas?.id !== empresaId) {
+        return res.status(403).json({
+          status: 'forbidden',
+          title: 'Acesso negado',
+          detail: 'Você não tem permissão para acessar os dados desta loja.',
+        });
+      }
+
+      // --- PASSO 3: BUSCAR DADOS DO PAINEL EM PARALELO ---
       const { empresas: empresa, ...lojaData } = loja;
 
       const [
-        produtosResult, 
-        novosPedidosResult, 
+        produtosResult,
+        novosPedidosResult,
         pedidosFinalizadosResult,
-        produtosAtivosResult // <-- NOVA CONSULTA ADICIONADA
+        produtosAtivosResult
       ] = await Promise.all([
-        // Busca a lista completa de produtos (pode ser útil para outras partes do front-end)
+        // Busca a lista completa de produtos da loja
         supabase.from('produto').select('*').eq('id_loja', lojaData.id),
-        
-        // Conta os pedidos com status 1 (Novos Pedidos)
+
+        // Conta os pedidos com status 'Novo' (ex: status = 1)
         supabase.from('pedidos').select('id', { count: 'exact', head: true }).eq('id_loja', lojaData.id).eq('status', 1),
-        
-        // Conta os pedidos com status 4 (Pedidos Finalizados)
+
+        // Conta os pedidos com status 'Finalizado' (ex: status = 4)
         supabase.from('pedidos').select('id', { count: 'exact', head: true }).eq('id_loja', lojaData.id).eq('status', 4),
 
-        // ▼▼▼ CONTA APENAS OS PRODUTOS COM status 'ativo' = true ▼▼▼
+        // Conta os produtos com status 'ativo'
         supabase.from('produto').select('id', { count: 'exact', head: true }).eq('id_loja', lojaData.id).eq('ativo', true)
       ]);
 
-      // Extrai os dados e os erros de cada consulta
+      // Extrai os dados e os erros de cada consulta paralela
       const { data: produtos, error: produtosError } = produtosResult;
       const { count: novosPedidosCount, error: novosPedidosError } = novosPedidosResult;
       const { count: pedidosFinalizadosCount, error: pedidosFinalizadosError } = pedidosFinalizadosResult;
-      const { count: produtosAtivosCount, error: produtosAtivosError } = produtosAtivosResult; // <-- NOVO DADO
+      const { count: produtosAtivosCount, error: produtosAtivosError } = produtosAtivosResult;
 
       // Verifica se houve erro em qualquer uma das consultas
       if (produtosError || novosPedidosError || pedidosFinalizadosError || produtosAtivosError) {
-        console.error('Erro ao buscar dados do dashboard:', produtosError || novosPedidosError || pedidosFinalizadosError || produtosAtivosError);
-        return res.status(500).json({ error: 'Erro ao buscar dados do dashboard.' });
+        console.error('Erro ao buscar dados do painel:', produtosError || novosPedidosError || pedidosFinalizadosError || produtosAtivosError);
+        return res.status(500).json({ error: 'Erro ao buscar os dados do painel.' });
       }
 
-      // --- PASSO 5: RETORNAR TODOS OS DADOS JUNTOS ---
+      // --- PASSO 4: RETORNAR A RESPOSTA COMPLETA ---
       return res.status(200).json({
         empresa,
         loja: lojaData,
         produtos: produtos ?? [],
         novosPedidos: novosPedidosCount ?? 0,
         pedidosFinalizados: pedidosFinalizadosCount ?? 0,
-        produtosAtivos: produtosAtivosCount ?? 0, // <-- NOVO CAMPO NA RESPOSTA
+        produtosAtivos: produtosAtivosCount ?? 0,
       });
 
     } catch (error) {
@@ -84,7 +98,50 @@ class DonoController {
     }
   }
 
-  // (o resto do seu controller continua igual)
+  /**
+   * (CONFLITO RESOLVIDO) Busca todas as lojas associadas a uma empresa pelo nome da empresa.
+   * Este método é útil para páginas públicas ou de listagem.
+   */
+  async getLojaPorNomeEmpresa(req, res) {
+    try {
+      const { nomeEmpresa } = req.params;
+
+      // Buscar a empresa pelo nome (ignora maiúsculas/minúsculas)
+      const { data: empresa, error: empresaError } = await supabase
+        .from('empresas')
+        .select('id, nome') // Seleciona apenas os campos necessários
+        .ilike('nome', nomeEmpresa)
+        .single();
+
+      if (empresaError || !empresa) {
+        return res.status(404).json({ error: 'Empresa não encontrada' });
+      }
+
+      // Buscar todas as lojas associadas ao id da empresa
+      const { data: lojas, error: lojaError } = await supabase
+        .from('loja')
+        .select('*')
+        .eq('id_empresa', empresa.id);
+
+      if (lojaError) {
+        return res.status(500).json({ error: 'Erro ao buscar lojas' });
+      }
+
+      return res.status(200).json({
+        empresa,
+        lojas: lojas ?? [],
+      });
+
+    } catch (err) {
+      console.error('Erro inesperado em getLojaPorNomeEmpresa:', err);
+      return res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+  }
+
+  /**
+   * Endpoint auxiliar para obter o ID da empresa a partir do token.
+   * Útil para o frontend verificar o ID logado antes de fazer outras requisições.
+   */
   async getEmpresaIdFromTokenEndpoint(req, res) {
     console.log('DEBUG: DonoController: Chamando getEmpresaIdFromTokenEndpoint!');
     const token = req.cookies?.token_empresa;
@@ -98,56 +155,12 @@ class DonoController {
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       console.log('DEBUG: DonoController: Token decodificado para empresa-id. ID:', decoded.id);
-      return res.status(200).json({ empresaId: decoded.id }); // Retorna o ID da empresa
+      return res.status(200).json({ empresaId: decoded.id });
     } catch (err) {
       console.error('DEBUG: DonoController: Erro ao verificar token para /dono/empresa-id:', err.message);
       return res.status(401).json({ error: 'Token inválido ou expirado' });
     }
   }
-
-  async getMinhasLojas(req, res) {
-        try {
-            // 1. Obter o ID da empresa a partir do token
-            const token = req.cookies?.token_empresa;
-            if (!token) {
-                return res.status(401).json({ error: 'Acesso não autorizado.' });
-            }
-
-            let loggedInEmpresaId;
-            try {
-                const decoded = jwt.verify(token, process.env.JWT_SECRET);
-                loggedInEmpresaId = decoded.id;
-            } catch (err) {
-                return res.status(401).json({ error: 'Token inválido ou expirado.' });
-            }
-
-            // 2. Buscar os dados da empresa E as lojas em paralelo para otimizar
-            const [empresaResult, lojasResult] = await Promise.all([
-                supabase.from('empresas').select('nome').eq('id', loggedInEmpresaId).single(),
-                supabase.from('loja').select('*').eq('id_empresa', loggedInEmpresaId)
-            ]);
-
-            const { data: empresaData, error: empresaError } = empresaResult;
-            const { data: lojas, error: lojasError } = lojasResult;
-
-            if (empresaError || lojasError) {
-                console.error('Erro ao buscar dados:', empresaError || lojasError);
-                return res.status(500).json({ error: 'Erro ao buscar os dados no banco de dados.' });
-            }
-            
-            // 3. Retornar um objeto com os dados da empresa e a lista de lojas
-            return res.status(200).json({
-                empresa: empresaData,
-                lojas: lojas
-            });
-
-        } catch (error) {
-            console.error('Erro inesperado em getMinhasLojas:', error);
-            return res.status(500).json({ error: 'Erro interno do servidor.' });
-        }
-    }
 }
-
-
 
 export default new DonoController();

@@ -16,6 +16,7 @@ export const loginEmpresa = async (req, res) => {
 
     try {
         const { error: loginError, data: empresaData } = await empresas.LoginEmpresa(email, senha);
+    
 
         if (loginError || !empresaData) {
             return res.status(401).json({ error: loginError || 'Email ou senha inválidos' });
@@ -51,6 +52,7 @@ export const loginEmpresa = async (req, res) => {
             sameSite: process.env.NODE_ENV === 'production' ? "none" : "Lax",
             maxAge: 24 * 60 * 60 * 1000,
             path: "/",
+            domain: process.env.COOKIE_DOMAIN || 'localhost'
         });
 
         console.log("Backend AuthController: Cookie 'token_empresa' setado com:", {
@@ -67,6 +69,7 @@ export const loginEmpresa = async (req, res) => {
             primeiroLoginFeito: empresaData.primeiro_login_feito,
             slugLoja: slugDaLoja,
             nomeFantasia: nomeFantasiaLoja,
+            nomeEmpresa: empresaData.nome,
         });
 
     } catch (error) {

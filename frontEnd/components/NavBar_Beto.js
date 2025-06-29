@@ -64,10 +64,6 @@ export default function Navbar() {
             <Image src="/icons/info.svg" alt="Sobre" width={20} height={20} />
             Sobre
           </Link>
-          <Link href="/empresa/minhas-lojas" className="hover:underline flex items-center gap-2">
-            <Image src="/icons/store_1.svg" alt="Lojas" width={20} height={20} />
-            Minhas Lojas
-          </Link>
           <Link href="/suporte" className="hover:underline flex items-center gap-2">
             <Image src="/icons/help.svg" alt="Suporte" width={20} height={20} />
             Suporte
@@ -113,10 +109,6 @@ export default function Navbar() {
             <Link href="/sobre" className="flex items-center gap-2 hover:underline">
               <Image src="/icons/info.svg" alt="Sobre" width={20} height={20} />
               Sobre
-            </Link>
-            <Link href="/empresa/minhas-lojas" className="flex items-center gap-2 hover:underline">
-              <Image src="/icons/store_1.svg" alt="Lojas" width={20} height={20} />
-              Minhas Lojas
             </Link>
             <Link href="/suporte" className="flex items-center gap-2 hover:underline">
               <Image src="/icons/help.svg" alt="Suporte" width={20} height={20} />

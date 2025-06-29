@@ -124,23 +124,41 @@ export default function OwnerDono() {
     const [runDonoAreaTour, setRunDonoAreaTour] = useState(false); // Novo estado para o tour da Área do Dono
 
     useEffect(() => {
-        if (!router.isReady) return;
+        // Não rode o fetch até que o router esteja pronto e tenha os parâmetros
+        if (!router.isReady) {
+            return;
+        }
 
         const { slug } = router.query;
+        // Se não houver slug na URL, não faça nada.
+        if (!slug) {
+            setLoading(false); // Para de carregar se não houver slug
+            setError("Não foi possível identificar a loja. O slug não está presente na URL.");
+            return;
+        }
 
         async function fetchDonoArea() {
+            // Reinicie o estado de erro a cada nova tentativa
+            setError(null); 
+            // Embora setLoading(true) já seja o inicial, é uma boa prática garantir em refetches.
+            setLoading(true);
+
             try {
                 const res = await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/dono/${slug}`, {
                     credentials: 'include',
                 });
 
                 if (!res.ok) {
-                    if (res.status === 401 || res.status === 403) {
-                        router.push('/loginEmpresa');
-                        return;
-                    }
                     const errorData = await res.json();
-                    throw new Error(errorData.error || 'Erro ao carregar dados do dashboard');
+                    if (res.status === 401) {
+                        toast.error(errorData.error || 'Sessão expirada. Faça o login novamente.');
+                        router.push('/loginEmpresa');
+                        return; // Retorna para não continuar a execução
+                    }
+                    if (res.status === 403) {
+                        throw new Error(errorData.detail || 'Você não tem permissão para acessar esta página.');
+                    }
+                    throw new Error(errorData.error || errorData.message || 'Ocorreu um erro ao carregar os dados.');
                 }
 
                 const data = await res.json();
@@ -151,26 +169,28 @@ export default function OwnerDono() {
                     notificacoes: data?.notificacoes ?? 0,
                 });
 
-                // Verifica se o tour da Área do Dono deve ser iniciado
-                const shouldStartDonoAreaTour = localStorage.getItem('startDonoAreaTour'); // Agora usa 'startDonoAreaTour'
+                const shouldStartDonoAreaTour = localStorage.getItem('startDonoAreaTour');
                 if (shouldStartDonoAreaTour === 'true') {
-                    localStorage.removeItem('startDonoAreaTour'); // Limpa a flag
-                    const hasSeenDonoAreaTour = localStorage.getItem('hasSeenDonoAreaTour'); // Verifica se já viu o tour da Área do Dono
-                    if (!hasSeenDonoAreaTour) { // Só inicia se não viu
-                      setRunDonoAreaTour(true); // Inicia o tour da Área do Dono
+                    localStorage.removeItem('startDonoAreaTour');
+                    const hasSeenDonoAreaTour = localStorage.getItem('hasSeenDonoAreaTour');
+                    if (!hasSeenDonoAreaTour) {
+                        setRunDonoAreaTour(true);
                     }
                 }
-
             } catch (err) {
                 console.error("Erro na requisição fetchDonoArea:", err);
                 setError(err.message);
             } finally {
+                // Este bloco será executado sempre, garantindo que o loading termine.
                 setLoading(false);
             }
         }
 
         fetchDonoArea();
-    }, [router.isReady, router.query.slug, router]);
+
+    // --- CORREÇÃO APLICADA AQUI ---
+    // Remova `router` da lista, deixando apenas as propriedades que você realmente usa.
+    }, [router.isReady, router.query.slug]);
 
 
     async function salvarConfiguracao() {
@@ -278,8 +298,17 @@ export default function OwnerDono() {
 
     if (error) {
         return (
-            <div className="flex justify-center items-center min-h-screen">
-                <p className="text-red-600 text-lg">{error}</p>
+            <div className="flex flex-col justify-center items-center min-h-screen bg-gray-50">
+                <div className="text-center p-8 bg-white rounded-lg shadow-md">
+                    <h2 className="text-2xl font-bold text-red-600 mb-2">Acesso Negado</h2>
+                    <p className="text-gray-700 text-lg">{error}</p>
+                    <button
+                        onClick={() => router.push('/')} // Botão para voltar para a home ou outra página
+                        className="mt-6 bg-blue-600 text-white font-bold py-2 px-4 rounded hover:bg-blue-700 transition"
+                    >
+                        Voltar para a Home
+                    </button>
+                </div>
             </div>
         );
     }
@@ -338,26 +367,9 @@ export default function OwnerDono() {
                     <ActionCard icon="/icons/store_gray.svg" label="Ver Loja" path={`${window.location.origin}/loja/${donoData.loja.slug_loja}`} className="view-store-action-card" />
                 </div>
                 <div className="bg-white rounded shadow p-4 flex flex-col gap-4">
-                    <div className="text-sm font-semibold text-gray-600 border-b pb-1">Promoções</div>
-                    <ActionCard icon="/icons/pontos.svg" label="Configurar Fidelidade" onClick={() => setOpen(true)} className="loyalty-config-action-card" />
-                    <ActionCard icon="/icons/pontos.svg" label="Meus Cupons" onClick={() =>{setOpenCupons(true); buscarCupons();}} className="loyalty-config-action-card" />
-                </div>
-            </div>
-            <div className="w-full max-w-3xl mx-auto mt-8">
-                <div
-                    onClick={() => router.push('/empresa/minhas-lojas')}
-                    className="group block w-full p-6 bg-gradient-to-r from-[#3681B6] to-blue-700 text-white rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 cursor-pointer"
-                >
-                    <div className="flex justify-between items-center">
-                        <div className="flex items-center gap-4">
-                            <FaBuilding size={28} />
-                            <div>
-                                <h3 className="text-xl font-bold">Gerenciar Minhas Lojas</h3>
-                                <p className="text-sm opacity-80 mt-1">Visualize e navegue entre todas as suas lojas.</p>
-                            </div>
-                        </div>
-                        <FaArrowRight className="group-hover:translate-x-1 transition-transform duration-300" size={24} />
-                    </div>
+                    <div className="text-sm font-semibold text-gray-600 border-b pb-1">Benefícios para Clientes</div>
+                    <ActionCard icon="/icons/loyalty.svg" label="Configurar Fidelidade" onClick={() => setOpen(true)} className="loyalty-config-action-card" />
+                    <ActionCard icon="/icons/coupon.svg" label="Meus Cupons" onClick={() =>{setOpenCupons(true); buscarCupons();}} className="loyalty-config-action-card" />
                 </div>
             </div>
             
