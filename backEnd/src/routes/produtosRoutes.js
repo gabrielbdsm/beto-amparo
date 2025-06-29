@@ -42,11 +42,20 @@ router.put('/produtos/inativar/:id', routePrivate, produto.inativarProduto);
 router.put('/produtos/ativar/:id', routePrivate, produto.ativarProduto);
 
 // Listar produtos por loja (para clientes e para a dashboard)
-// O controlador 'listarProdutosPorLoja' agora deve filtrar por 'ativo=true' por padrão
-router.get('/produtos/loja/:slug', produto.listarProdutosPorLoja); // Rota original com slug
+router.get('/produtos/loja/:slug', produto.listarProdutosPorLoja);
 router.get('/produto/:id', produto.buscarProdutoPorId);
-// Listar produtos por empresa (privado, se houver necessidade de listar todos os produtos da empresa, ativos e inativos)
+
+// Listar produtos por empresa (privado)
 router.get('/produtos/empresa/:empresaId', routePrivate, produto.listarProdutosPorEmpresa);
+
+// Deletar produto
 router.delete('/produtos/excluir/:id', produto.deleteProduto);
+
+// Ajustar estoque
 router.put('/produtos/estoque/:id', produto.ajustarEstoqueProduto);
-export default router
+
+// --- AVALIAÇÕES (NOVO) ---
+router.post('/produto/:id/avaliacao', produto.inserirAvaliacao);
+router.get('/produto/:id/avaliacoes', produto.listarAvaliacoesPorProduto);
+
+export default router;
