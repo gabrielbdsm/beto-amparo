@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import toast from 'react-hot-toast';
 import { User, Lock, Mail, ArrowLeft } from 'lucide-react';
-import Navbar from '@/components/NavBar_Beto';
 import { Button } from "@/components/ui/button"; 
 import {
   Dialog,

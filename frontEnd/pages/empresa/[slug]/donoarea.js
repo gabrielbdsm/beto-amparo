@@ -101,6 +101,7 @@ export default function OwnerDono() {
     const [donoData, setDonoData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [baseUrl, setBaseUrl] = useState('');
     const [metrics, setMetrics] = useState({
         novosPedidos: null,
         pedidosFinalizados: null,
@@ -124,23 +125,19 @@ export default function OwnerDono() {
     const [runDonoAreaTour, setRunDonoAreaTour] = useState(false); // Novo estado para o tour da Área do Dono
 
     useEffect(() => {
-        // Não rode o fetch até que o router esteja pronto e tenha os parâmetros
+        setBaseUrl(window.location.origin);
         if (!router.isReady) {
             return;
         }
 
         const { slug } = router.query;
-        // Se não houver slug na URL, não faça nada.
         if (!slug) {
-            setLoading(false); // Para de carregar se não houver slug
+            setLoading(false); 
             setError("Não foi possível identificar a loja. O slug não está presente na URL.");
             return;
         }
-
         async function fetchDonoArea() {
-            // Reinicie o estado de erro a cada nova tentativa
             setError(null); 
-            // Embora setLoading(true) já seja o inicial, é uma boa prática garantir em refetches.
             setLoading(true);
 
             try {
@@ -188,8 +185,6 @@ export default function OwnerDono() {
 
         fetchDonoArea();
 
-    // --- CORREÇÃO APLICADA AQUI ---
-    // Remova `router` da lista, deixando apenas as propriedades que você realmente usa.
     }, [router.isReady, router.query.slug]);
 
 
@@ -335,12 +330,15 @@ export default function OwnerDono() {
                     <input
                     type="text"
                     readOnly
-                    value={`${window.location.origin}/loja/${donoData.loja.slug_loja}`}
+                    value={baseUrl ? `${baseUrl}/loja/${donoData.loja.slug_loja}` : 'Carregando link...'}
                     className="flex-1 outline-none bg-transparent text-sm text-gray-600"
                     />
                     <button
                     onClick={() => {
-                        navigator.clipboard.writeText(`${window.location.origin}/loja/${donoData.loja.slug_loja}`);
+                        if (baseUrl) {
+                            // Abre o link em uma nova aba
+                            window.open(`${baseUrl}/loja/${donoData.loja.slug_loja}`, '_blank');
+                        }
                     }}
                     className="ml-2 bg-blue-600 hover:bg-blue-700 text-white text-sm px-3 py-1 rounded copy-link-button"
                     >
