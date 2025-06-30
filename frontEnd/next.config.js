@@ -1,28 +1,44 @@
 /** @type {import('next').NextConfig} */
 
-
 const withPWA = require('next-pwa')({
   dest: 'public',
   register: true,
   skipWaiting: true,
+  scope: "/empresa/",
 });
-const nextConfig = {
+
+const nextConfig = withPWA({
   reactStrictMode: true,
 
   eslint: {
     ignoreDuringBuilds: true,
   },
+
   images: {
+
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'cufzswdymzevdeonjgan.supabase.co',
+        pathname: '/storage/v1/object/public/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'qkiyyvnyvjqsjnobfyqn.supabase.co',
+        pathname: '/storage/v1/object/public/**',
+      },
+    ],
+  },
+/*
       remotePatterns: [
         {
           protocol: 'https',
-          hostname: 'cufzswdymzevdeonjgan.supabase.co',
+          hostname: 'qkiyyvnyvjqsjnobfyqn.supabase.co',
           pathname: '/storage/v1/object/public/**',
         },
       ],
     },
-
-
+*/
 
   async rewrites() {
     return [
@@ -45,6 +61,10 @@ const nextConfig = {
       {
         source: '/loja/:slug/carrinho',
         destination: '/client/carrinho',
+      },
+      {
+        source: '/loja/:slug/minha-conta',
+        destination: '/client/minha-conta',
       },
       {
         source: '/loja/:slug/ajuda',
@@ -78,6 +98,7 @@ const nextConfig = {
         source: '/loginEmpresa',
         destination: '/empresa/LoginEmpresa',
       },
+      
       {
         source: '/cadastroEmpresa',
         destination: '/empresa/CadastroEmpresa',
@@ -96,10 +117,10 @@ const nextConfig = {
       },
       {
         source: '/api/:path*',
-        destination: 'https://beto-amparo.onrender.com/:path*', 
+        destination: 'https://beto-amparo.onrender.com/:path*',
       },
     ];
   },
-};
+});
 
 module.exports = nextConfig;

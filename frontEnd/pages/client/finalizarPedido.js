@@ -3,6 +3,8 @@ import Image from "next/image";
 import { FiEdit, FiTrash2, FiChevronDown, FiChevronUp } from "react-icons/fi";
 import { useRouter } from "next/router";
 import NavBar from "@/components/NavBar";
+import toast from 'react-hot-toast'; 
+import ConfirmModal from "@/components/ConfirmModal";
 
 const getImagemProduto = (caminhoImagem) => {
     if (!caminhoImagem) return null;
@@ -128,13 +130,19 @@ export default function FinalizarPedido() {
 
     const handleSalvarEndereco = async () => {
     if (!validarEndereco()) {
-        alert("Preencha todos os campos obrigatórios do endereço!");
+        toast.error("Preencha todos os campos obrigatórios do endereço!");
         return;
     }
+    const [modal, setModal] = useState({
+        isOpen: false,
+        title: '',
+        message: '',
+        onConfirm: () => {},
+    });
 
     try {
         if (!clienteId) {
-            alert("Erro: ID do cliente não encontrado.");
+            toast.error("Erro: ID do cliente não encontrado.");
             router.push(`/login?redirect=${encodeURIComponent(router.asPath)}`);
             return;
         }
@@ -158,7 +166,7 @@ export default function FinalizarPedido() {
             complemento: ''
         });
 
-        alert("Endereço salvo com sucesso!");
+        toast.error("Endereço salvo com sucesso!");
 
         const enderecoResponse = await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/clientes/${clienteId}/endereco`, {
             credentials: 'include'
@@ -176,7 +184,7 @@ export default function FinalizarPedido() {
         }
     } catch (error) {
         console.error("Erro ao salvar endereço:", error);
-        alert("Erro ao salvar endereço: " + error.message);
+        toast.error("Erro ao salvar endereço: " + error.message);
     }
     };
 
@@ -239,7 +247,7 @@ export default function FinalizarPedido() {
 
             } catch (error) {
                 console.error("Erro ao carregar dados na FinalizarPedido:", error);
-                alert("Não foi possível carregar as informações do pedido. Tente novamente.");
+                toast.error("Não foi possível carregar as informações do pedido. Tente novamente.");
             } finally {
                 setLoading(false);
             }
@@ -304,7 +312,7 @@ export default function FinalizarPedido() {
                 throw new Error(errorData.message || "Erro ao deletar endereço");
             }
 
-            alert("Endereço deletado com sucesso!");
+            toast.error("Endereço deletado com sucesso!");
 
             // Atualiza a lista de endereços após deletar
             const enderecoResponse = await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/clientes/${clienteId}/endereco`, {
@@ -323,7 +331,7 @@ export default function FinalizarPedido() {
 
         } catch (error) {
             console.error("Erro ao deletar endereço:", error);
-            alert("Erro ao deletar endereço: " + error.message);
+            toast.error("Erro ao deletar endereço: " + error.message);
         }
     };
 
@@ -346,7 +354,7 @@ export default function FinalizarPedido() {
 
     const handleFinalizarPedido = async () => {
         if (!aceiteTermos) {
-            alert("Você precisa aceitar os termos e condições!");
+            toast.error("Você precisa aceitar os termos e condições!");
             return;
         }
 
@@ -385,15 +393,15 @@ export default function FinalizarPedido() {
             const data = await response.json();
 
             if (response.ok) {
-                alert("Pedido finalizado com sucesso!");
+                toast.success("Pedido finalizado com sucesso! Você será redirecionado.");
                 router.push(`/loja/${slug}/pedidos`);
             } else {
                 console.error("Erro na resposta:", data);
-                alert(data.erro || "Erro ao finalizar pedido.");
+                toast.error(data.erro || "Erro ao finalizar pedido.");
             }
         } catch (error) {
             console.error("Erro ao finalizar pedido:", error);
-            alert(error.message.includes('Estoque insuficiente')
+            toast.error(error.message.includes('Estoque insuficiente')
                 ? error.message
                 : "Erro ao processar pedido. Tente novamente."
             );

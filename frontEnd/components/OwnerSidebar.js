@@ -2,16 +2,13 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useState, useEffect } from 'react';
-
+import {verificarTipoDeLoja} from '../hooks/verificarTipoLoja'
 // Helper component para os itens de navegação
 function NavItem({ icon, label, path, currentSlug, onClick, className }) {
   const router = useRouter();
-  // Constrói o caminho completo para o Link
+
   const fullPath = currentSlug ? `/empresa/${currentSlug}${path}` : path;
 
-  // Determina se o item é o ativo/selecionado de forma mais robusta para SSR/CSR
-  // Verifica se a rota atual é exatamente a fullPath ou se começa com a fullPath
-  // (útil para sub-rotas, ex: /produtos/editar)
   const isActive = router.asPath === fullPath || router.asPath.startsWith(`${fullPath}/`);
 
   // Classe base para os itens de navegação
@@ -51,8 +48,19 @@ function NavItem({ icon, label, path, currentSlug, onClick, className }) {
 export default function OwnerSidebar({ children, slug }) {
   console.log("OwnerSidebar -> slug recebido:", slug);
   const router = useRouter();
+
+  // Extrai nomeEmpresa do caminho da URL (mais confiável que router.query)
+  const pathParts = router.asPath.split('/');
+  const nomeEmpresa = pathParts[1]; // Pega o primeiro segmento após a raiz
+
+  console.log('Nome da empresa extraído da URL:', nomeEmpresa); // Para debug
+
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [slugEmpresa, setSlugEmpresa] = useState('');
+  
+  const [empresaSlugParaOutrasLojas, setEmpresaSlugParaOutrasLojas] = useState('');
+  
+
 
   // Estados para o bloco do link da loja
   const [lojaData, setLojaData] = useState(null);
@@ -65,22 +73,26 @@ export default function OwnerSidebar({ children, slug }) {
 
   // Inicializa o estado de visibilidade do link block com um valor padrão para SSR (true).
   // O valor real do localStorage será carregado no useEffect após a hidratação.
-  const [showLinkBlock, setShowLinkBlock] = useState(true); 
+  const [showLinkBlock, setShowLinkBlock] = useState(true);
 
   const [copied, setCopied] = useState(false);
 
   // Estado para o status de "loja fechada para pedidos"
   const [isLojaClosed, setIsLojaClosed] = useState(false);
+  const [tipoLoja , setTipoLoja] = useState("")
+  const [baseUrl ,setBaseUrl] = useState("")
+
 
   useEffect(() => {
     // Define que o código está rodando no cliente após a primeira renderização.
-    setIsClient(true); 
+    setIsClient(true);
 
     // Carrega a visibilidade do localStorage APENAS no cliente, após a primeira renderização.
     // Isso resolve o problema de hidratação, pois o servidor e o cliente terão o mesmo estado inicial (true),
     // e o estado será ajustado para o valor salvo no localStorage somente no cliente.
     if (typeof window !== 'undefined') {
       const savedVisibility = localStorage.getItem('linkBlockVisibility');
+       setBaseUrl(`${window.location.protocol}//${window.location.host}`)
       if (savedVisibility !== null) {
         setShowLinkBlock(JSON.parse(savedVisibility));
       }
@@ -91,42 +103,52 @@ export default function OwnerSidebar({ children, slug }) {
       setLoadingLoja(false);
       return;
     }
-
+  
+   
     const getLojaDetails = async () => {
       setLoadingLoja(true);
       setErrorLoja(null);
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/empresa/loja/${slug}`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/loja/slug-completo/${slug}`, {
           method: 'GET',
           credentials: 'include',
         });
+        
+        setTipoLoja( await verificarTipoDeLoja(slug))
 
         if (response.ok) {
           const data = await response.json();
-          setLojaData(data);
-          // Acessa slug_loja e is_closed_for_orders com segurança usando encadeamento opcional
-          // e fornece um fallback para evitar 'undefined'
-          setSlugEmpresa(data?.slug_loja || '');
-          setIsLojaClosed(data?.is_closed_for_orders || false); 
-          console.log("OwnerSidebar: Dados da loja obtidos com sucesso:", data);
+          const { loja, empresa } = data;
+
+          setLojaData(loja);
+          setSlugEmpresa(loja?.slug_loja || '');
+          setIsLojaClosed(loja?.is_closed_for_orders || false);
+
+          // Aqui armazenamos o slug da empresa para uso no link de "Outras Lojas"
+          setEmpresaSlugParaOutrasLojas(empresa?.site || empresa?.slug || '');
+
+          console.log("OwnerSidebar: Dados da loja e empresa obtidos com sucesso:", data);
         } else {
           const errorData = await response.json();
           console.error('OwnerSidebar: Falha ao obter dados da loja:', errorData.message || response.statusText);
           setErrorLoja(errorData.message || `Erro ${response.status}: ${response.statusText}`);
           setLojaData(null);
           setSlugEmpresa('');
-          setIsLojaClosed(false); // Assume aberta em caso de erro na requisição
+          setIsLojaClosed(false);
+          setEmpresaSlugParaOutrasLojas('');
         }
       } catch (error) {
         console.error('OwnerSidebar: Erro ao buscar dados da loja:', error);
         setErrorLoja("Erro de conexão ao buscar dados da loja.");
         setLojaData(null);
         setSlugEmpresa('');
-        setIsLojaClosed(false); // Assume aberta em caso de erro de conexão
+        setIsLojaClosed(false);
+        setEmpresaSlugParaOutrasLojas('');
       } finally {
         setLoadingLoja(false);
       }
     };
+
 
     getLojaDetails();
   }, [slug]); // 'slug' é uma dependência do useEffect para re-executar quando ele muda.
@@ -141,7 +163,7 @@ export default function OwnerSidebar({ children, slug }) {
 
 
   const currentActiveSlug = slug || slugEmpresa;
- 
+
 
   const handleLogout = async () => {
     try {
@@ -246,11 +268,13 @@ export default function OwnerSidebar({ children, slug }) {
                 {errorLoja && <p className="text-xs text-red-500">{errorLoja}</p>}
                 {lojaData && (
                   <>
-                    <p className="text-xs break-all text-[#3681B6]">
-                      http://localhost:3000/loja/{lojaData.slug_loja}
-                    </p>
+                    <a href={`${baseUrl+"/loja/" + lojaData.slug_loja}`}
+                     target="_blank" className="text-xs break-all text-[#3681B6]">
+                      
+                      {`${baseUrl+"/loja/" + lojaData.slug_loja}`}
+                    </a>
                     <button
-                      onClick={() => handleCopyClick(`http://localhost:3000/loja/${lojaData.slug_loja}`)}
+                      onClick={() => handleCopyClick(`${baseUrl}/loja/${lojaData.slug_loja}`)}
                       className="mt-2 text-xs bg-blue-500 hover:bg-blue-600 px-2 py-1 rounded text-white cursor-pointer"
                     >
                       {copied ? 'Copiado!' : 'Copiar'}
@@ -295,14 +319,25 @@ export default function OwnerSidebar({ children, slug }) {
               <Image src="/icons/store_white.svg" alt="Área do dono" width={40} height={40} />
               <span className="font-semibold text-lg">Área do dono</span>
             </Link>
-
+           
             {/* NavItems */}
             <NavItem icon="/icons/dashboard_white.svg" label="Dashboard" path="/dashboard" currentSlug={currentActiveSlug} className="sidebar-dashboard-item" />
-            <NavItem icon="/icons/add_white.svg" label="Meus Produtos" path="/produtos" currentSlug={currentActiveSlug} className="sidebar-produtos-item" />
+           {tipoLoja !== "atendimento" &&  <NavItem icon="/icons/add_white.svg" label="Meus Produtos" path="/produtos" currentSlug={currentActiveSlug} className="sidebar-produtos-item" />}
             <NavItem icon="/icons/paint_white.svg" label="Personalizar Loja" path="/personalizacao" currentSlug={currentActiveSlug} className="sidebar-personalizar-item" />
             <NavItem icon="/icons/clock_white.svg" label="Horarios" path="/horarioEmpresa" currentSlug={currentActiveSlug} className="sidebar-horarios-item" />
-            <NavItem icon="/icons/notes.png" label="Meus agendamentos" path="/meusAgendamentos" currentSlug={currentActiveSlug} className="sidebar-agendamentos-item" />
+          { 
+            tipoLoja === "atendimento" && <NavItem icon="/icons/notes.png" label="Meus agendamentos" path="/meusAgendamentos" currentSlug={currentActiveSlug} className="sidebar-agendamentos-item" />
+          }
+           <NavItem icon="/icons/help_white.svg" label="Suporte" path="/suporte" currentSlug={currentActiveSlug} className="sidebar-suporte-item" />
+            <Link
+              href={`/${empresaSlugParaOutrasLojas}/lojas`}
+              className="flex items-center gap-2 p-2 w-full text-left cursor-pointer rounded transition-all duration-200 font-normal text-white hover-shadow-blue"
+            >
+              <Image src="/icons/loja.png" alt="Outras Lojas" width={20} height={20} className="flex-shrink-0" />
+              <span>Outras Lojas </span>
+            </Link>
             <NavItem icon="/icons/help_white.svg" label="Suporte" path="/suporte" currentSlug={currentActiveSlug} className="sidebar-suporte-item" />
+            
           </div>
         </div>
 
@@ -310,6 +345,7 @@ export default function OwnerSidebar({ children, slug }) {
           onClick={handleLogout}
           className="bg-orange-400 hover:bg-orange-500 p-2 rounded text-white mt-4 w-full sidebar-logout-button"
         >
+       
           SAIR
         </button>
       </aside>

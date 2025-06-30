@@ -5,6 +5,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/router';
 import Image from 'next/image';
 import Link from 'next/link';
+import toast from 'react-hot-toast'; 
 
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Pagination } from 'swiper/modules';
@@ -64,7 +65,7 @@ export default function ProdutosInativosPage() {
       }
 
       setProdutosInativos(prevProdutos => prevProdutos.filter(p => p.id !== productToHandle.id));
-      alert('Produto ativado com sucesso!');
+      toast.success('Produto ativado com sucesso!');
       handleCloseConfirmModal();
 
     } catch (err) {
@@ -111,7 +112,7 @@ export default function ProdutosInativosPage() {
 
       // Se a exclusão foi bem-sucedida (status 200, 204), remove o produto da lista inativos
       setProdutosInativos(prevProdutos => prevProdutos.filter(p => p.id !== productToHandle.id));
-      alert('Produto excluído permanentemente com sucesso!');
+      toast.success('Produto excluído permanentemente com sucesso!');
       handleCloseConfirmModal();
 
     } catch (err) {

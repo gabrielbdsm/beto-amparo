@@ -1,4 +1,4 @@
-import { buscarLojaPorSlugCompleta, toggleLojaStatus  } from '../../models/Loja.js';
+import { buscarLojaPorSlugCompleta, toggleLojaStatus , buscarTipoLoja  } from '../../models/Loja.js';
 
 export const getLojaBySlugAndEmpresaController = async (req, res) => {
     // O ID da empresa vem do middleware `empresaPrivate`
@@ -77,3 +77,25 @@ export const toggleLojaStatusController = async (req, res) => {
         return res.status(500).json({ message: 'Erro interno do servidor ao alternar status da loja.' });
     }
 };
+
+export const tipoLoja = async (req, res) => {
+    try {
+      const slug = req.params.slug;
+  
+      if (!slug) {
+        return res.status(400).json({ message: 'Slug não enviado.' });
+      }
+  
+      const tipo = await buscarTipoLoja(slug);
+  
+      if (!tipo) {
+        return res.status(404).json({ message: 'Tipo de loja não encontrado para o slug informado.' });
+      }
+  
+      return res.status(200).json(tipo[0]);
+    } catch (error) {
+      console.error('Erro ao buscar tipo da loja:', error);
+      return res.status(500).json({ message: 'Erro interno ao buscar o tipo da loja.' });
+    }
+  };
+  
