@@ -59,8 +59,10 @@ const Index = ({ slug }) => {
   const fetchData = () => {
     const query = getDateRangeQuery();
     const apiUrl = process.env.NEXT_PUBLIC_EMPRESA_API;
-
-    fetch(`${apiUrl}/empresa/insights/${slugLoja}${query}`)
+  
+    fetch(`${apiUrl}/empresa/insights/${slugLoja}${query}`, {
+      credentials: 'include' 
+    })
       .then(res => res.json())
       .then(data => {
         setOriginalData(data);

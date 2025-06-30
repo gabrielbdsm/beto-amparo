@@ -11,7 +11,6 @@ import { Menu } from '@headlessui/react';
 import SecaoRecomendacoes from "@/components/SecaoRecomendacoes";
 import SecaoCategoria from "@/components/SecaoCategoria";
 import { verificarTipoDeLoja } from '../../hooks/verificarTipoLoja'; // Caminho para o hook
-
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_KEY);
 
 const diasSemanaMap = {
@@ -882,41 +881,43 @@ export default function ClienteHome() {
 }
 
 function PontosFidelidade({ clienteId }) {
-    const [pontos, setPontos] = useState(0);
-    const [nomeCliente, setNomeCliente] = useState('');
+    const [pontos, setPontos] = useState(0);
+    const [nomeCliente, setNomeCliente] = useState('');
 
-    useEffect(() => {
-        fetchCliente();
-    }, [clienteId]);
+    useEffect(() => {
+        fetchCliente();
+    }, [clienteId]);
 
-    async function fetchCliente() {
-        const { data, error } = await supabase
-            .from('clientes')
-            .select('nome, total_pontos')
-            .eq('id', clienteId)
-            .single();
+    async function fetchCliente() {
+        const { data, error } = await supabase
+            .from('clientes')
+            .select('nome, total_pontos')
+            .eq('id', clienteId)
+            .single();
 
-        if (!error && data) {
-            setPontos(data.total_pontos || 0);
-            setNomeCliente(data.nome || 'Cliente');
-        }
-    }
+        if (!error && data) {
+            setPontos(data.total_pontos || 0);
+            setNomeCliente(data.nome || 'Cliente');
+        }
+    }
 
-    async function resgatarPontos(pontosParaResgatar) {
-        if (pontos < pontosParaResgatar) return;
+    async function resgatarPontos(pontosParaResgatar) {
+        if (pontos < pontosParaResgatar) return;
 
-        const { error } = await supabase
-            .from('clientes')
-            .update({ total_pontos: pontos - pontosParaResgatar })
-            .eq('id', clienteId);
+        const { error } = await supabase
+            .from('clientes')
+            .update({ total_pontos: pontos - pontosParaResgatar })
+            .eq('id', clienteId);
 
-        if (!error) fetchCliente();
-    }
+        if (!error) fetchCliente();
+    }
 
-    return (
-        <div className="p-4 border rounded-lg bg-white shadow mb-4">
-            <div className="text-black">Olá, <strong>{nomeCliente}</strong></div>
-            <div className="text-black">Você tem <strong>{pontos}</strong> ponto{pontos === 1 ? '' : 's'}</div>
-        </div>
-    );
+    return (
+        <div className="p-4 border rounded-lg bg-white shadow mb-4">
+            {/* Adicionando text-sm para o tamanho da fonte */}
+            <div className="text-black text-sm">Olá, <strong>{nomeCliente}</strong></div> 
+            {/* Adicionando text-sm para o tamanho da fonte */}
+            <div className="text-black text-sm">Você tem <strong>{pontos}</strong> ponto{pontos === 1 ? '' : 's'}</div>
+        </div>
+    )
 }

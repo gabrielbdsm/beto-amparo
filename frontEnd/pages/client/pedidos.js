@@ -60,10 +60,14 @@ export default function Pedidos() {
         }
     };
 
-    const irParaFinalizar = (idCliente) => {
+    const irParaFinalizar = (idCliente, pedidoId) => {
         router.push({
-            pathname: `/loja/ben-burguer/finalizarPedido`,
-            query: { clienteId: idCliente }
+            pathname: `/client/finalizarPedido`, // <--- CORRIGIDO AQUI
+            query: {
+                slug: slug,       // slug da loja vindo da URL
+                clienteId: idCliente,
+                pedidoId: pedidoId    // ID do pedido em andamento
+            }
         });
     };
 
@@ -379,9 +383,9 @@ export default function Pedidos() {
                                                     
                                                     {String(pedido.status) === '-1' ? (
                                                         <button
-                                                            onClick={() => irParaFinalizar(cliente.id)}
-                                                            className="px-4 py-2 rounded-md text-sm font-medium text-white transition-colors flex-1 cursor-pointer"
-                                                            style={{ backgroundColor: corPrimaria, color: getContrastColor(corPrimaria) }}
+                                                            onClick={() => irParaFinalizar(cliente.id, pedido.id)}
+                                                                className="px-4 py-2 rounded-md text-sm font-medium text-white transition-colors flex-1 cursor-pointer"
+                                                                style={{ backgroundColor: corPrimaria, color: getContrastColor(corPrimaria) }}
                                                         >
                                                             Finalizar Pedido
                                                         </button>
