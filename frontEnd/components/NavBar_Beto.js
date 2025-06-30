@@ -57,20 +57,6 @@ export default function NavBar() {
 
     return (
         <>
-            <h1 style={{
-              backgroundColor: 'red',
-              color: 'white',
-              padding: '20px',
-              textAlign: 'center',
-              fontSize: '24px',
-              position: 'fixed',
-              top: 0,
-              left: 0,
-              width: '100%',
-              zIndex: 9999
-            }}>
-              ESTOU EDITANDO ESTE ARQUIVO
-            </h1>
             <header className="flex justify-between items-center p-4 lg:px-12 lg:py-4">
                 {/* Logo e Nome */}
                 <div className="flex items-center gap-2 lg:gap-4">
