@@ -1,10 +1,17 @@
 import bcrypt from 'bcrypt';
 import {
-  buscarTokenRecuperacao,
-  deletarTokenRecuperacao,
+  buscarTokenRecuperacao as buscarTokenRecuperacaoEmpresa,
+  deletarTokenRecuperacao as deletarTokenRecuperacaoEmpresa,
   buscarEmpresaPorId,
   atualizarSenhaEmpresa
 } from '../models/EmpresaModel.js';
+
+import {
+  buscarTokenRecuperacaoCliente,
+  deletarTokenRecuperacaoCliente,
+  buscarClientePorEmail,
+  atualizarSenhaCliente
+} from '../models/ClientModel.js';
 
 export const definirNovaSenha = async (req, res) => {
   const { token, senha } = req.body;
@@ -14,32 +21,61 @@ export const definirNovaSenha = async (req, res) => {
   }
 
   try {
-    const tokenData = await buscarTokenRecuperacao(token);
-    console.log('TokenData:', tokenData);
+    let usuario = null;
+    let tipo = null;
 
-    if (!tokenData) {
-      return res.status(400).json({ mensagem: 'Token inválido ou expirado.' });
+    // Tenta encontrar o token na tabela de empresas
+    const tokenEmpresa = await buscarTokenRecuperacaoEmpresa(token);
+    if (tokenEmpresa) {
+      if (new Date() > new Date(tokenEmpresa.token_expira_em)) {
+        return res.status(400).json({ mensagem: 'Token expirado.' });
+      }
+
+      const empresaResult = await buscarEmpresaPorId(tokenEmpresa.id);
+      if (!empresaResult?.data) {
+        return res.status(404).json({ mensagem: 'Empresa não encontrada.' });
+      }
+
+      usuario = empresaResult.data;
+      tipo = 'empresa';
+    } else {
+      // Se não encontrou na empresa, tenta buscar como cliente
+      const tokenCliente = await buscarTokenRecuperacaoCliente(token);
+      if (!tokenCliente) {
+        return res.status(400).json({ mensagem: 'Token inválido ou expirado.' });
+      }
+
+      if (new Date() > new Date(tokenCliente.token_expira_em)) {
+        return res.status(400).json({ mensagem: 'Token expirado.' });
+      }
+
+      const clienteResult = await buscarClientePorEmail(tokenCliente.email);
+      if (!clienteResult?.data) {
+        return res.status(404).json({ mensagem: 'Cliente não encontrado.' });
+      }
+
+      usuario = clienteResult.data;
+      tipo = 'cliente';
     }
 
-    if (new Date() > new Date(tokenData.token_expira_em)) {
-      return res.status(400).json({ mensagem: 'Token expirado.' });
-    }
-
-    const empresaResult = await buscarEmpresaPorId(tokenData.id); 
-    if (!empresaResult.data) {
-      return res.status(404).json({ mensagem: 'Empresa não encontrada.' });
-    }
-
-    const empresa = empresaResult.data;
-
+    // Atualiza senha
     const senhaHash = await bcrypt.hash(senha, 10);
-    await atualizarSenhaEmpresa(empresa.id, senhaHash);
 
-    await deletarTokenRecuperacao(token);
+    if (tipo === 'empresa') {
+      await atualizarSenhaEmpresa(usuario.id, senhaHash);
+      await deletarTokenRecuperacaoEmpresa(token);
+    } else {
+      await atualizarSenhaCliente(usuario.id, senhaHash);
+      await deletarTokenRecuperacaoCliente(token);
+    }
+    console.log('Token:', token);
+    console.log('Tipo:', tipo);
+    console.log('Usuário encontrado:', usuario?.email || usuario?.id);
 
     return res.status(200).json({ mensagem: 'Senha redefinida com sucesso.' });
   } catch (error) {
     console.error('Erro ao redefinir a senha:', error);
     return res.status(500).json({ mensagem: 'Erro interno no servidor.' });
   }
+  
 };

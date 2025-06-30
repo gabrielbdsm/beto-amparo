@@ -7,14 +7,8 @@ import {verificarTipoDeLoja} from '..//hooks/verificarTipoLoja'
 function NavItem({ icon, label, path, currentSlug, onClick, className }) {
   const router = useRouter();
 
-  //const { nomeEmpresa } = router.query;
-
-  // Constrói o caminho completo para o Link
   const fullPath = currentSlug ? `/empresa/${currentSlug}${path}` : path;
 
-  // Determina se o item é o ativo/selecionado de forma mais robusta para SSR/CSR
-  // Verifica se a rota atual é exatamente a fullPath ou se começa com a fullPath
-  // (útil para sub-rotas, ex: /produtos/editar)
   const isActive = router.asPath === fullPath || router.asPath.startsWith(`${fullPath}/`);
 
   // Classe base para os itens de navegação
@@ -337,6 +331,8 @@ export default function OwnerSidebar({ children, slug }) {
               <Image src="/icons/loja.png" alt="Outras Lojas" width={20} height={20} className="flex-shrink-0" />
               <span>Outras Lojas {tipoLoja}</span>
             </Link>
+            <NavItem icon="/icons/help_white.svg" label="Suporte" path="/suporte" currentSlug={currentActiveSlug} className="sidebar-suporte-item" />
+            
           </div>
         </div>
 

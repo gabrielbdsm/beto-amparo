@@ -45,7 +45,8 @@ router.get('/me', clientePrivate, async (req, res) => {
 router.post('/login', AuthClinteController.login); 
 router.post('/clientes', AuthClinteController.cadastrar); 
 router.get('/clientLogout', AuthClinteController.logout);
-
+router.get('/cliente/me', clientePrivate, clienteController.getMeuPerfil);
+router.put('/cliente/me', clientePrivate, clienteController.atualizarMeuPerfil);
 router.get('/:slug/Horarios',clientePrivate, AgendamentoController.getHoraririosAgendamentoController);
 router.post('/:slug/agendamento', clientePrivate , AgendamentoController.postAgendamentoController);
 router.get('/cliente/viewAgendamentos/:slug', clientePrivate , AgendamentoController.getAgendamentoByIdController);
