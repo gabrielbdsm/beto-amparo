@@ -357,6 +357,7 @@ export default function ClienteHome() {
 
             const response = await fetch(url, {
                 method: 'POST',
+                credentials: 'include',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     produtoId: produto.id,
