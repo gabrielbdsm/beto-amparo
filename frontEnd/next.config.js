@@ -62,6 +62,10 @@ const nextConfig = withPWA({
         destination: '/client/carrinho',
       },
       {
+        source: '/loja/:slug/minha-conta',
+        destination: '/client/minha-conta',
+      },
+      {
         source: '/loja/:slug/ajuda',
         destination: '/client/faq_suporte',
       },

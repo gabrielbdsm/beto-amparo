@@ -3,18 +3,11 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useState, useEffect } from 'react';
 
-// Helper component para os itens de navegação
 function NavItem({ icon, label, path, currentSlug, onClick, className }) {
   const router = useRouter();
 
-  //const { nomeEmpresa } = router.query;
-
-  // Constrói o caminho completo para o Link
   const fullPath = currentSlug ? `/empresa/${currentSlug}${path}` : path;
 
-  // Determina se o item é o ativo/selecionado de forma mais robusta para SSR/CSR
-  // Verifica se a rota atual é exatamente a fullPath ou se começa com a fullPath
-  // (útil para sub-rotas, ex: /produtos/editar)
   const isActive = router.asPath === fullPath || router.asPath.startsWith(`${fullPath}/`);
 
   // Classe base para os itens de navegação
@@ -322,7 +315,6 @@ export default function OwnerSidebar({ children, slug }) {
             <NavItem icon="/icons/paint_white.svg" label="Personalizar Loja" path="/personalizacao" currentSlug={currentActiveSlug} className="sidebar-personalizar-item" />
             <NavItem icon="/icons/clock_white.svg" label="Horarios" path="/horarioEmpresa" currentSlug={currentActiveSlug} className="sidebar-horarios-item" />
             <NavItem icon="/icons/notes.png" label="Meus agendamentos" path="/meusAgendamentos" currentSlug={currentActiveSlug} className="sidebar-agendamentos-item" />
-            <NavItem icon="/icons/help_white.svg" label="Suporte" path="/suporte" currentSlug={currentActiveSlug} className="sidebar-suporte-item" />
             <Link
               href={`/${empresaSlugParaOutrasLojas}/lojas`}
               className="flex items-center gap-2 p-2 w-full text-left cursor-pointer rounded transition-all duration-200 font-normal text-white hover-shadow-blue"
@@ -330,6 +322,8 @@ export default function OwnerSidebar({ children, slug }) {
               <Image src="/icons/loja.png" alt="Outras Lojas" width={20} height={20} className="flex-shrink-0" />
               <span>Outras Lojas</span>
             </Link>
+            <NavItem icon="/icons/help_white.svg" label="Suporte" path="/suporte" currentSlug={currentActiveSlug} className="sidebar-suporte-item" />
+            
           </div>
         </div>
 
