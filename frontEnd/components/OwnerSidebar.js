@@ -2,7 +2,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useState, useEffect } from 'react';
-
+import {verificarTipoDeLoja} from '..//hooks/verificarTipoLoja'
 // Helper component para os itens de navegação
 function NavItem({ icon, label, path, currentSlug, onClick, className }) {
   const router = useRouter();
@@ -65,6 +65,7 @@ export default function OwnerSidebar({ children, slug }) {
   const [slugEmpresa, setSlugEmpresa] = useState('');
   
   const [empresaSlugParaOutrasLojas, setEmpresaSlugParaOutrasLojas] = useState('');
+  
 
 
   // Estados para o bloco do link da loja
@@ -84,6 +85,8 @@ export default function OwnerSidebar({ children, slug }) {
 
   // Estado para o status de "loja fechada para pedidos"
   const [isLojaClosed, setIsLojaClosed] = useState(false);
+  const [tipoLoja , setTipoLoja] = useState("")
+
 
   useEffect(() => {
     // Define que o código está rodando no cliente após a primeira renderização.
@@ -104,7 +107,8 @@ export default function OwnerSidebar({ children, slug }) {
       setLoadingLoja(false);
       return;
     }
-
+  
+   
     const getLojaDetails = async () => {
       setLoadingLoja(true);
       setErrorLoja(null);
@@ -113,6 +117,7 @@ export default function OwnerSidebar({ children, slug }) {
           method: 'GET',
           credentials: 'include',
         });
+        setTipoLoja( await verificarTipoDeLoja(slug))
 
         if (response.ok) {
           const data = await response.json();
@@ -315,20 +320,22 @@ export default function OwnerSidebar({ children, slug }) {
               <Image src="/icons/store_white.svg" alt="Área do dono" width={40} height={40} />
               <span className="font-semibold text-lg">Área do dono</span>
             </Link>
-
+           
             {/* NavItems */}
             <NavItem icon="/icons/dashboard_white.svg" label="Dashboard" path="/dashboard" currentSlug={currentActiveSlug} className="sidebar-dashboard-item" />
             <NavItem icon="/icons/add_white.svg" label="Meus Produtos" path="/produtos" currentSlug={currentActiveSlug} className="sidebar-produtos-item" />
             <NavItem icon="/icons/paint_white.svg" label="Personalizar Loja" path="/personalizacao" currentSlug={currentActiveSlug} className="sidebar-personalizar-item" />
             <NavItem icon="/icons/clock_white.svg" label="Horarios" path="/horarioEmpresa" currentSlug={currentActiveSlug} className="sidebar-horarios-item" />
-            <NavItem icon="/icons/notes.png" label="Meus agendamentos" path="/meusAgendamentos" currentSlug={currentActiveSlug} className="sidebar-agendamentos-item" />
-            <NavItem icon="/icons/help_white.svg" label="Suporte" path="/suporte" currentSlug={currentActiveSlug} className="sidebar-suporte-item" />
+          { 
+            tipoLoja === "atendimento" && <NavItem icon="/icons/notes.png" label="Meus agendamentos" path="/meusAgendamentos" currentSlug={currentActiveSlug} className="sidebar-agendamentos-item" />
+          }
+           <NavItem icon="/icons/help_white.svg" label="Suporte" path="/suporte" currentSlug={currentActiveSlug} className="sidebar-suporte-item" />
             <Link
               href={`/${empresaSlugParaOutrasLojas}/lojas`}
               className="flex items-center gap-2 p-2 w-full text-left cursor-pointer rounded transition-all duration-200 font-normal text-white hover-shadow-blue"
             >
               <Image src="/icons/loja.png" alt="Outras Lojas" width={20} height={20} className="flex-shrink-0" />
-              <span>Outras Lojas</span>
+              <span>Outras Lojas {tipoLoja}</span>
             </Link>
           </div>
         </div>
@@ -337,6 +344,7 @@ export default function OwnerSidebar({ children, slug }) {
           onClick={handleLogout}
           className="bg-orange-400 hover:bg-orange-500 p-2 rounded text-white mt-4 w-full sidebar-logout-button"
         >
+       
           SAIR
         </button>
       </aside>

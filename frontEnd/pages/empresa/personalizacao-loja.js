@@ -28,6 +28,13 @@ const PersonalizacaoLoja = () => {
   const [step, setStep] = useState(1);
   const [slugError, setSlugError] = useState('');
   const [isCheckingSlug, setIsCheckingSlug] = useState(false);
+  const [tipo, setTipo] = useState('');
+
+  const selecionarTipo = (novoTipo) => {
+    setTipo(novoTipo);
+    setFormData(prev => ({ ...prev, tipoLoja: novoTipo }));
+  };
+  
 
   // URL base para o link do cliente
   const clientBaseUrl = 'localhost:3000/loja/'; // Você pode substituir por seu domínio quando em produção
@@ -125,6 +132,11 @@ const PersonalizacaoLoja = () => {
 
         imageUrl = publicUrlData.publicUrl;
       }
+      if (!tipo) {
+        toast.error('Selecione o tipo da loja.');
+        return;
+      }
+      
 
       const payload = {
         nomeFantasia: formData.nomeFantasia,
@@ -134,6 +146,7 @@ const PersonalizacaoLoja = () => {
         fotoLoja: imageUrl, // URL da imagem salva no Supabase Storage
         slugLoja: formData.slugLoja,
         idEmpresa: formData.idEmpresa,
+        tipoLoja: formData.tipoLoja
       };
 
       const saveResponse = await axios.post(`${process.env.NEXT_PUBLIC_EMPRESA_API}/personalizacao`, payload, {
@@ -211,6 +224,25 @@ const PersonalizacaoLoja = () => {
                     required
                   />
                 </div>
+                   {/* tipo de loja */}
+           <div className="flex gap-4">
+        <button
+          className={`px-4 py-2 rounded-md border ${
+            tipo === 'produtos' ? 'bg-blue-600 text-white' : 'bg-gray-100'
+          }`}
+          onClick={() => selecionarTipo('produtos')}
+        >
+          Loja de Produtos
+        </button>
+        <button
+          className={`px-4 py-2 rounded-md border ${
+            tipo === 'atendimento' ? 'bg-green-600 text-white' : 'bg-gray-100'
+          }`}
+          onClick={() => selecionarTipo('atendimento')}
+        >
+          Atendimento
+        </button>
+      </div>
 
                 <div>
                   <label htmlFor="fotoLoja" className="block text-sm font-medium text-gray-700 mb-1">Foto da Loja</label>

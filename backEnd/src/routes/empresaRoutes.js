@@ -22,7 +22,7 @@ router.post('/recuperar-senha', enviarEmailRecuperacao);
 router.post('/nova-senha', definirNovaSenha);
 
 router.put('/empresa/personalizacao/:slug', atualizarPersonalizacao);
-router.post('/empresa/personalizacao', criarPersonalizacao);
+router.post('/empresa/personalizacao',empresaPrivate, criarPersonalizacao);
 router.get('/empresa/personalizacao/:slug', getLojaBySlug);
 router.get('/empresa/verificar-slug', verificarSlug);
 
