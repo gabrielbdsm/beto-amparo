@@ -222,7 +222,7 @@ export default function ListaLojasEmpresa() {
                                                 className="text-blue-600 hover:text-blue-800 text-sm font-medium"
                                                 onClick={(e) => {
                                                     e.stopPropagation();
-                                                    router.push(`/empresa/${loja.slug_loja}/produtos`);
+                                                    router.push(`/empresa/${loja.slug_loja}/donoarea`);
                                                 }}
                                             >
                                                 Ver detalhes →

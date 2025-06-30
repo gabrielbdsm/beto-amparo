@@ -206,6 +206,103 @@ class ClienteController {
       return res.status(500).json({ error: 'Erro ao calcular pontos.' });
     }
   }
+  async getMeuPerfil(req, res) {
+    try {
+      // O middleware 'clientePrivate' já fez a validação.
+      // Os dados do usuário estão em req.user.
+      const clienteId = req.user.id;
+
+      // Buscamos os dados mais recentes, caso algo tenha mudado.
+      const { data: cliente, error } = await supabase
+        .from('clientes')
+        .select('id, nome, email, telefone') // Seleciona apenas campos seguros
+        .eq('id', clienteId)
+        .single();
+
+      if (error) throw error;
+      if (!cliente) return res.status(404).json({ error: 'Cliente não encontrado.' });
+
+      return res.status(200).json(cliente);
+
+    } catch (error) {
+      console.error('Erro ao buscar perfil do cliente:', error);
+      return res.status(500).json({ error: 'Erro ao buscar perfil do cliente.' });
+    }
+  }
+
+  async atualizarMeuPerfil(req, res) {
+    try {
+      const clienteId = req.user.id;
+      const emailAtual = req.user.email;
+
+      const { email, senhaAtual, novaSenha } = req.body;
+      const dadosParaAtualizar = {};
+
+      const querMudarEmail = email && email !== emailAtual;
+      const querMudarSenha = novaSenha;
+
+      // Se o usuário não quer mudar nada, apenas retorna.
+      if (!querMudarEmail && !querMudarSenha) {
+        return res.status(200).json({ message: 'Nenhum dado para atualizar.' });
+      }
+
+      // --- VALIDAÇÃO DE SENHA (AGORA É OBRIGATÓRIA PARA QUALQUER ALTERAÇÃO) ---
+      if (!senhaAtual) {
+        return res.status(400).json({ error: 'Sua senha atual é necessária para confirmar as alterações.' });
+      }
+
+      const { data: clienteDB, error: erroBusca } = await supabase
+        .from('clientes')
+        .select('senha')
+        .eq('id', clienteId)
+        .single();
+
+      if (erroBusca || !clienteDB) {
+          throw new Error('Cliente não encontrado.');
+      }
+
+      const senhaValida = await bcrypt.compare(senhaAtual, clienteDB.senha);
+      if (!senhaValida) {
+        return res.status(403).json({ error: 'A senha atual está incorreta.' });
+      }
+
+      // --- Se a senha atual foi validada, prossiga com as atualizações ---
+      
+      // Prepara a atualização de senha, se houver
+      if (querMudarSenha) {
+        dadosParaAtualizar.senha = await bcrypt.hash(novaSenha, 10);
+      }
+
+      // Prepara a atualização de email, se houver
+      if (querMudarEmail) {
+        // Verifica se o novo email já existe
+        const { data: emailExistente } = await supabase.from('clientes').select('id').eq('email', email).single();
+        if (emailExistente && emailExistente.id !== clienteId) {
+             return res.status(409).json({ error: 'Este e-mail já está em uso por outra conta.' });
+        }
+        dadosParaAtualizar.email = email;
+      }
+      
+      // Atualiza os dados no banco
+      const { data, error } = await supabase
+        .from('clientes')
+        .update(dadosParaAtualizar)
+        .eq('id', clienteId)
+        .select('id, nome, email');
+
+      if (error) throw error;
+
+      return res.status(200).json({
+        success: true,
+        message: 'Dados atualizados com sucesso!',
+        cliente: data[0],
+      });
+
+    } catch (error) {
+      console.error('Erro ao atualizar perfil:', error);
+      return res.status(500).json({ error: error.message || 'Erro interno do servidor.' });
+    }
+  }
 
 }
 

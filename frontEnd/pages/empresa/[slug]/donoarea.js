@@ -3,13 +3,13 @@ import { useRouter } from 'next/router';
 import Image from 'next/image';
 import OwnerSidebar from '@/components/OwnerSidebar';
 import ProductTour from '@/components/ProductTour'; // Importe o componente ProductTour
+import { FaTrashAlt, FaBuilding, FaArrowRight } from 'react-icons/fa';
 
 import FloatingNotificationsTop from '@/components/notification'; 
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { FaTrashAlt } from 'react-icons/fa';
 import toast from 'react-hot-toast'; 
 
 
@@ -101,6 +101,7 @@ export default function OwnerDono() {
     const [donoData, setDonoData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [baseUrl, setBaseUrl] = useState('');
     const [metrics, setMetrics] = useState({
         novosPedidos: null,
         pedidosFinalizados: null,
@@ -124,23 +125,37 @@ export default function OwnerDono() {
     const [runDonoAreaTour, setRunDonoAreaTour] = useState(false); // Novo estado para o tour da Área do Dono
 
     useEffect(() => {
-        if (!router.isReady) return;
+        setBaseUrl(window.location.origin);
+        if (!router.isReady) {
+            return;
+        }
 
         const { slug } = router.query;
-
+        if (!slug) {
+            setLoading(false); 
+            setError("Não foi possível identificar a loja. O slug não está presente na URL.");
+            return;
+        }
         async function fetchDonoArea() {
+            setError(null); 
+            setLoading(true);
+
             try {
                 const res = await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/dono/${slug}`, {
                     credentials: 'include',
                 });
 
                 if (!res.ok) {
-                    if (res.status === 401 || res.status === 403) {
-                        router.push('/loginEmpresa');
-                        return;
-                    }
                     const errorData = await res.json();
-                    throw new Error(errorData.error || 'Erro ao carregar dados do dashboard');
+                    if (res.status === 401) {
+                        toast.error(errorData.error || 'Sessão expirada. Faça o login novamente.');
+                        router.push('/loginEmpresa');
+                        return; // Retorna para não continuar a execução
+                    }
+                    if (res.status === 403) {
+                        throw new Error(errorData.detail || 'Você não tem permissão para acessar esta página.');
+                    }
+                    throw new Error(errorData.error || errorData.message || 'Ocorreu um erro ao carregar os dados.');
                 }
 
                 const data = await res.json();
@@ -151,26 +166,26 @@ export default function OwnerDono() {
                     notificacoes: data?.notificacoes ?? 0,
                 });
 
-                // Verifica se o tour da Área do Dono deve ser iniciado
-                const shouldStartDonoAreaTour = localStorage.getItem('startDonoAreaTour'); // Agora usa 'startDonoAreaTour'
+                const shouldStartDonoAreaTour = localStorage.getItem('startDonoAreaTour');
                 if (shouldStartDonoAreaTour === 'true') {
-                    localStorage.removeItem('startDonoAreaTour'); // Limpa a flag
-                    const hasSeenDonoAreaTour = localStorage.getItem('hasSeenDonoAreaTour'); // Verifica se já viu o tour da Área do Dono
-                    if (!hasSeenDonoAreaTour) { // Só inicia se não viu
-                      setRunDonoAreaTour(true); // Inicia o tour da Área do Dono
+                    localStorage.removeItem('startDonoAreaTour');
+                    const hasSeenDonoAreaTour = localStorage.getItem('hasSeenDonoAreaTour');
+                    if (!hasSeenDonoAreaTour) {
+                        setRunDonoAreaTour(true);
                     }
                 }
-
             } catch (err) {
                 console.error("Erro na requisição fetchDonoArea:", err);
                 setError(err.message);
             } finally {
+                // Este bloco será executado sempre, garantindo que o loading termine.
                 setLoading(false);
             }
         }
 
         fetchDonoArea();
-    }, [router.isReady, router.query.slug, router]);
+
+    }, [router.isReady, router.query.slug]);
 
 
     async function salvarConfiguracao() {
@@ -278,8 +293,17 @@ export default function OwnerDono() {
 
     if (error) {
         return (
-            <div className="flex justify-center items-center min-h-screen">
-                <p className="text-red-600 text-lg">{error}</p>
+            <div className="flex flex-col justify-center items-center min-h-screen bg-gray-50">
+                <div className="text-center p-8 bg-white rounded-lg shadow-md">
+                    <h2 className="text-2xl font-bold text-red-600 mb-2">Acesso Negado</h2>
+                    <p className="text-gray-700 text-lg">{error}</p>
+                    <button
+                        onClick={() => router.push('/')} // Botão para voltar para a home ou outra página
+                        className="mt-6 bg-blue-600 text-white font-bold py-2 px-4 rounded hover:bg-blue-700 transition"
+                    >
+                        Voltar para a Home
+                    </button>
+                </div>
             </div>
         );
     }
@@ -306,12 +330,15 @@ export default function OwnerDono() {
                     <input
                     type="text"
                     readOnly
-                    value={`${window.location.origin}/loja/${donoData.loja.slug_loja}`}
+                    value={baseUrl ? `${baseUrl}/loja/${donoData.loja.slug_loja}` : 'Carregando link...'}
                     className="flex-1 outline-none bg-transparent text-sm text-gray-600"
                     />
                     <button
                     onClick={() => {
-                        navigator.clipboard.writeText(`${window.location.origin}/loja/${donoData.loja.slug_loja}`);
+                        if (baseUrl) {
+                            // Abre o link em uma nova aba
+                            window.open(`${baseUrl}/loja/${donoData.loja.slug_loja}`, '_blank');
+                        }
                     }}
                     className="ml-2 bg-blue-600 hover:bg-blue-700 text-white text-sm px-3 py-1 rounded copy-link-button"
                     >
@@ -324,7 +351,7 @@ export default function OwnerDono() {
                 <div className="col-span-2 md:col-span-4">
                     <h2 className="text-lg font-semibold text-gray-600 mb-1">Resumo geral:</h2>
                 </div>
-                <InfoCard value={donoData.produtos ? donoData.produtos.length : 0} sub="produtos ativos" />
+                <InfoCard value={donoData.produtosAtivos} sub="produtos ativos" />
                 <InfoCard value={metrics.novosPedidos} sub="novos pedidos" />
                 <InfoCard value={metrics.pedidosFinalizados} sub="pedidos finalizados" />
                 <InfoCard value="3" sub="notificações" />
@@ -336,13 +363,11 @@ export default function OwnerDono() {
                     <ActionCard icon="/icons/notification.svg" label="Notificações" path={`/empresa/${donoData.loja.slug_loja}/notificacoes`} className="notifications-action-card" />
                     <ActionCard icon="/icons/paint_gray.svg" label="Personalizar Loja" path={`/empresa/${donoData.loja.slug_loja}/personalizacao`} className="personalize-store-action-card" />
                     <ActionCard icon="/icons/store_gray.svg" label="Ver Loja" path={`${window.location.origin}/loja/${donoData.loja.slug_loja}`} className="view-store-action-card" />
-                    <ActionCard icon="/icons/pontos.svg" label="Configurar Fidelidade" onClick={() => setOpen(true)} className="loyalty-config-action-card" />
-                    <ActionCard icon="/icons/pontos.svg" label="Meus Cupons" onClick={() =>{setOpenCupons(true); buscarCupons();}} className="loyalty-config-action-card" />
                 </div>
                 <div className="bg-white rounded shadow p-4 flex flex-col gap-4">
-                    <div className="text-sm font-semibold text-gray-600 border-b pb-1">Promoções</div>
-                    <ActionCard icon="/icons/sale.svg" label="Adicionar Promoção" noBg className="add-promo-action-card" />
-                    <ActionCard icon="/icons/check.svg" label="Promoções Ativas" noBg className="active-promos-action-card" />
+                    <div className="text-sm font-semibold text-gray-600 border-b pb-1">Benefícios para Clientes</div>
+                    <ActionCard icon="/icons/loyalty.svg" label="Configurar Fidelidade" onClick={() => setOpen(true)} className="loyalty-config-action-card" />
+                    <ActionCard icon="/icons/coupon.svg" label="Meus Cupons" onClick={() =>{setOpenCupons(true); buscarCupons();}} className="loyalty-config-action-card" />
                 </div>
             </div>
             
