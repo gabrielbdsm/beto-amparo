@@ -1,6 +1,8 @@
 // C:\Users\Dallyla\OneDrive\Área de Trabalho\beto-amparo\beto-amparo\backend\routes\carrinhoRoutes.js
 import express from 'express';
 import supabase from '../config/SupaBase.js'; // Certifique-se de que o caminho está correto
+import { clientePrivate } from '../middleware/protectRouterClient.js';
+
 const router = express.Router();
 
 // Middleware para buscar o ID da loja a partir do slug
@@ -8,7 +10,7 @@ async function getLojaIdBySlug(req, res, next) {
     const { slug } = req.params;
     console.log("DEBUG: Middleware 'getLojaIdBySlug' acionado.");
     console.log("DEBUG: Slug recebido:", slug);
-
+    
     if (!slug) {
         console.log("DEBUG: Slug não fornecido.");
         return res.status(400).json({ erro: 'Slug da loja é obrigatório.' });
@@ -44,9 +46,10 @@ async function getLojaIdBySlug(req, res, next) {
 }
 
 // Rota para adicionar produto ao carrinho (ou atualizar se já existe)
-router.post('/:slug/carrinho', getLojaIdBySlug, async (req, res) => {
-    const { produtoId, quantidade, id_cliente } = req.body;
-    const lojaId = req.lojaId;
+router.post('/:slug/carrinho',clientePrivate, async (req, res) => {
+    const { produtoId, quantidade  , lojaId} = req.body;
+   
+    const id_cliente = req.ClientId
 
     if (!produtoId || !quantidade || !id_cliente || !lojaId) {
         return res.status(400).json({ erro: 'Produto ID, quantidade, Cliente Id e ID da loja são obrigatórios.' });

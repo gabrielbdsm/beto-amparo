@@ -233,3 +233,13 @@ export async function updateHorariosLoja(slug, horarios) {
         return { data: null, error: err.message };
     }
 }
+
+export const buscarTipoLoja = async(slug)=>{
+    
+    const { data, error } = await supabase
+    .from('loja')
+    .select("tipoLoja")
+    .eq("slug_loja" , slug)
+    if (error) throw new Error(error.message);
+    return data;
+}

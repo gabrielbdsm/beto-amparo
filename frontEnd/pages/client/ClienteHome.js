@@ -3,7 +3,6 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import Image from "next/image";
 import NavBar from "@/components/NavBar";
-// import ProdutoCard from "@/components/ProdutoCard"; // ProdutoCard pode ser removido se SecaoCategoria o substituir
 import { useRouter } from 'next/router';
 import { createClient } from '@supabase/supabase-js';
 import Link from 'next/link';
@@ -11,6 +10,7 @@ import { QuestionMarkCircleIcon } from '@heroicons/react/24/outline';
 import { Menu } from '@headlessui/react';
 import SecaoRecomendacoes from "@/components/SecaoRecomendacoes";
 import SecaoCategoria from "@/components/SecaoCategoria";
+import { verificarTipoDeLoja } from '../../hooks/verificarTipoLoja'; // Caminho para o hook
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_KEY);
 
@@ -46,6 +46,7 @@ export default function ClienteHome() {
     const [bannerLoja, setBannerLoja] = useState(null);
     const [ativarFidelidade, setAtivarFidelidade] = useState(false);
 
+    // --- ESTADOS DO HEAD (Lojas e cores) ---
     const [fotoLoja, setFotoLoja] = useState(null);
     const [corPrimaria, setCorPrimaria] = useState("#3B82F6");
     const [corSecundaria, setCorSecundaria] = useState("#F3F4F6");
@@ -53,12 +54,21 @@ export default function ClienteHome() {
     const [outrasLojas, setOutrasLojas] = useState([]);
     const [idEmpresaAtual, setIdEmpresaAtual] = useState(null);
     const [mostrarOutrasLojasNoCliente, setMostrarOutrasLojasNoCliente] = useState(false);
+    // --- FIM DOS ESTADOS DO HEAD ---
+
+    // --- ESTADO DO BRANCH f1258a40daa811c58dd80c45475013cc0b312457 (tipoLoja) ---
+    const [tipoLoja, setTipoLoja] = useState("");
+    // --- FIM DO ESTADO DO BRANCH ---
 
     const removeAccents = (str) => {
         return str
             .normalize("NFD")
             .replace(/[\u0300-\u036f]/g, "");
     };
+
+    // Removido 'produtosFiltrados' que estava no branch 'f1258a40daa811c58dd80c45475013cc0b312457'
+    // pois 'produtosAgrupadosEFiltrados' já faz a filtragem e agrupamento de forma eficiente.
+    // Manter ambos seria redundante e possivelmente causaria inconsistências.
 
     const [quantidades, setQuantidades] = useState({});
     const [mensagem, setMensagem] = useState('');
@@ -129,12 +139,22 @@ export default function ClienteHome() {
 
     useEffect(() => {
         if (!site) return;
-    
+
+        // --- Chamada a verificarTipoDeLoja do branch f1258a40daa811c58dd80c45475013cc0b312457 ---
+        // É importante que essa chamada não bloqueie o fetchEmpresa principal.
+        // Se `tipo_loja` já vier nos dados da loja, priorize. Senão, use o hook.
+        // A melhor prática seria o `tipo_loja` vir junto com os dados da loja principal.
+        async function fetchAndSetTipoLoja() {
+            const tipo = await verificarTipoDeLoja(site);
+            setTipoLoja(tipo);
+        }
+        fetchAndSetTipoLoja(); // Chama o hook para definir tipoLoja
+
         async function fetchEmpresa() {
             try {
                 const url = `${process.env.NEXT_PUBLIC_EMPRESA_API}/loja/slug/${site}`;
                 const response = await fetch(url);
-    
+
                 if (!response.ok) {
                     let errorMessage = `Erro HTTP ${response.status}: ${response.statusText}`;
                     try {
@@ -149,27 +169,28 @@ export default function ClienteHome() {
                     setNomeFantasia("Erro ao carregar");
                     return;
                 }
-    
+
                 const data = await response.json();
-                // --- CONSOLE.LOGS ADICIONADOS AQUI ---
                 console.log("DEBUG_LOJA_PRINCIPAL: Dados da loja principal ao carregar:", data);
                 console.log("DEBUG_LOJA_PRINCIPAL: id_empresa recebido:", data.id_empresa);
                 console.log("DEBUG_LOJA_PRINCIPAL: mostrar_outras_lojas recebido:", data.mostrar_outras_lojas);
-                // --- FIM DOS CONSOLE.LOGS ADICIONADOS ---
-    
+
                 setLojaId(data.id);
                 setNomeFantasia(data.nome_fantasia || "Sem nome fantasia");
-                setFotoLoja(data.foto_loja || null);
-                setCorPrimaria(data.cor_primaria || "#3B82F6");
-                setCorSecundaria(data.cor_secundaria || "#F3F4F6");
+                setFotoLoja(data.foto_loja || null); // Estado do HEAD
+                setCorPrimaria(data.cor_primaria || "#3B82F6"); // Estado do HEAD
+                setCorSecundaria(data.cor_secundaria || "#F3F4F6"); // Estado do HEAD
                 setSloganLoja(data.slogan || '');
                 setBannerLoja(data.banner || null);
                 setIsLojaClosed(data.is_closed_for_orders || false);
                 setAtivarFidelidade(data.ativarFidelidade || false);
                 setHorariosLoja(data.horarios_funcionamento || null);
-                setIdEmpresaAtual(data.id_empresa);
-                setMostrarOutrasLojasNoCliente(data.mostrar_outras_lojas || false);
-                // Os console.log originais que você já tinha:
+                setIdEmpresaAtual(data.id_empresa); // Estado do HEAD
+                setMostrarOutrasLojasNoCliente(data.mostrar_outras_lojas || false); // Estado do HEAD
+                // Se tipo_loja vier da API principal da loja, use-o
+                if (data.tipo_loja) {
+                    setTipoLoja(data.tipo_loja);
+                }
                 console.log("DEBUG_LOJA_PRINCIPAL: id_empresa:", data.id_empresa);
                 console.log("DEBUG_LOJA_PRINCIPAL: mostrar_outras_lojas:", data.mostrar_outras_lojas);
             } catch (error) {
@@ -177,11 +198,11 @@ export default function ClienteHome() {
                 setNomeFantasia("Erro ao carregar");
             }
         }
-    
+
         fetchEmpresa();
     }, [site]);
 
-    // Lógica para buscar OUTRAS LOJAS
+    // Lógica para buscar OUTRAS LOJAS (Mantida intacta, crucial para a funcionalidade)
     useEffect(() => {
         console.log("DEBUG_OUTRAS_LOJAS: Verificando dependências para buscar outras lojas:");
         console.log("DEBUG_OUTRAS_LOJAS: idEmpresaAtual:", idEmpresaAtual);
@@ -494,6 +515,7 @@ export default function ClienteHome() {
 
             const response = await fetch(url, {
                 method: 'POST',
+                credentials: 'include',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     produtoId: produto.id,
@@ -654,7 +676,18 @@ export default function ClienteHome() {
                                     </div>
                                     <span className="text-[10px] mt-1">Conta</span>
                                 </Menu.Button>
-                                <Menu.Items className="absolute right-0 mt-2 w-40 bg-white border border-gray-200 rounded shadow-md z-50">
+                                <Menu.Items className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-50 focus:outline-none overflow-hidden">
+                                    <Menu.Item>
+                                        {({ active }) => (
+                                            <Link
+                                                href={`/loja/${site}/minha-conta`}
+                                                className={`block px-4 py-2 text-sm w-full text-left text-gray-700 ${active ? 'bg-gray-100' : ''}`}
+                                            >
+                                                Minha Conta
+                                            </Link>
+                                        )}
+                                    </Menu.Item>
+
                                     <Menu.Item>
                                         {({ active }) => (
                                             <button
@@ -681,21 +714,23 @@ export default function ClienteHome() {
                                 <span className="text-[10px] mt-1">Entrar</span>
                             </button>
                         )}
-                        {ativarFidelidade && <PontosFidelidade clienteId={cliente?.id} />}
+                        {ativarFidelidade && clienteLogado && <PontosFidelidade clienteId={cliente?.id} />}
                     </div>
                 )}
             </header>
             {bannerLoja ? (
-                <div className="w-full h-48 relative">
-                    <Image
-                        src={`${getImagemProduto(bannerLoja)}?v=${new Date().getTime()}`}
-                        alt="Banner da loja"
-                        fill
-                        unoptimized
-                        style={{ objectFit: 'cover' }}
-                        className="rounded-none"
-                    />
-                </div>
+            <div className="w-full h-48 relative rounded-t-lg overflow-hidden mb-2">
+            {bannerLoja && (
+                <Image
+                src={`${getImagemProduto(bannerLoja)}?v=${new Date().getTime()}`}
+                alt="Banner da loja"
+                fill
+                unoptimized
+                style={{ objectFit: 'cover' }}
+                className="rounded-t-lg"
+                />
+            )}
+            </div>
             ) : (
                 <div
                     className="w-full h-48 flex items-center justify-between px-6 relative overflow-hidden"
@@ -755,80 +790,82 @@ export default function ClienteHome() {
                 </div>
             )}
 
-            <div className="flex-1 px-4 overflow-y-auto pb-24">
-                {mensagem && (
-                    <div className={`text-center mb-4 font-medium ${corMensagem}`}>
-                        {mensagem}
-                    </div>
-                )}
+            { tipoLoja !== 'atendimento' && (
+                <div className="flex-1 px-4 overflow-y-auto pb-24">
+                    {mensagem && (
+                        <div className={`text-center mb-4 font-medium ${corMensagem}`}>
+                            {mensagem}
+                        </div>
+                    )}
 
-                {recomendacoesFiltradas.length > 0 && !searchTerm && (
-                    <SecaoRecomendacoes
-                        titulo="Você pode gostar"
-                        produtos={recomendacoesFiltradas}
-                        slug={site}
-                        corPrimaria={corPrimaria}
-                        onAdicionar={handleAdicionar}
-                        getImagemProduto={getImagemProduto}
-                        isLojaClosed={isLojaClosed}
-                        quantidades={quantidades}
-                    />
-                )}
-                {Object.keys(produtosAgrupadosEFiltrados).length > 0 ? (
-                    <div>
-                        {Object.entries(produtosAgrupadosEFiltrados).map(([nomeCategoria, produtosDaCategoria]) => (
-                            <SecaoCategoria
-                                key={nomeCategoria}
-                                nomeCategoria={nomeCategoria}
-                                produtosDaCategoria={produtosDaCategoria}
-                                slug={site}
-                                corPrimaria={corPrimaria}
-                                onAdicionar={handleAdicionar}
-                                getImagemProduto={getImagemProduto}
-                                isLojaClosed={isLojaClosed}
-                                quantidades={quantidades}
-                            />
-                        ))}
-                    </div>
-                ) : (
-                    <div className="text-center text-gray-600 mt-10 text-lg">
-                        {searchTerm
-                            ? `Nenhum produto encontrado para "${searchTerm}".`
-                            : "Nenhum produto disponível no momento."
-                        }
-                    </div>
-                )}
-
-                {outrasLojas.length > 0 && (
-                    <div className="mt-8 mb-4">
-                        <h2 className="text-xl font-bold text-gray-800 mb-4 text-center">
-                            Veja também estas lojas da mesma empresa:
-                        </h2>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                            {outrasLojas.map((loja) => (
-                                <Link key={loja.slug_loja} href={`/loja/${loja.slug_loja}`} passHref>
-                                    <div className="bg-white rounded-lg shadow-md p-4 flex items-center space-x-4 cursor-pointer hover:shadow-lg transition-shadow">
-                                        <div className="w-16 h-16 rounded-full overflow-hidden flex-shrink-0">
-                                            <Image
-                                                src={loja.foto_loja ? getImagemProduto(loja.foto_loja) : "/fallback.png"}
-                                                alt={loja.nome_fantasia || "Loja"}
-                                                width={64}
-                                                height={64}
-                                                unoptimized
-                                                className="object-cover w-full h-full"
-                                            />
-                                        </div>
-                                        <div>
-                                            <h3 className="font-semibold text-lg text-gray-900">{loja.nome_fantasia}</h3>
-                                            <p className="text-sm text-gray-600">Ir para a loja</p>
-                                        </div>
-                                    </div>
-                                </Link>
+                    {recomendacoesFiltradas.length > 0 && !searchTerm && (
+                        <SecaoRecomendacoes
+                            titulo="Você pode gostar"
+                            produtos={recomendacoesFiltradas}
+                            slug={site}
+                            corPrimaria={corPrimaria}
+                            onAdicionar={handleAdicionar}
+                            getImagemProduto={getImagemProduto}
+                            isLojaClosed={isLojaClosed}
+                            quantidades={quantidades}
+                        />
+                    )}
+                    {Object.keys(produtosAgrupadosEFiltrados).length > 0 ? (
+                        <div>
+                            {Object.entries(produtosAgrupadosEFiltrados).map(([nomeCategoria, produtosDaCategoria]) => (
+                                <SecaoCategoria
+                                    key={nomeCategoria}
+                                    nomeCategoria={nomeCategoria}
+                                    produtosDaCategoria={produtosDaCategoria}
+                                    slug={site}
+                                    corPrimaria={corPrimaria}
+                                    onAdicionar={handleAdicionar}
+                                    getImagemProduto={getImagemProduto}
+                                    isLojaClosed={isLojaClosed}
+                                    quantidades={quantidades}
+                                />
                             ))}
                         </div>
-                    </div>
-                )}
-            </div>
+                    ) : (
+                        <div className="text-center text-gray-600 mt-10 text-lg">
+                            {searchTerm
+                                ? `Nenhum produto encontrado para "${searchTerm}".`
+                                : "Nenhum produto disponível no momento."
+                            }
+                        </div>
+                    )}
+
+                    {outrasLojas.length > 0 && (
+                        <div className="mt-8 mb-4">
+                            <h2 className="text-xl font-bold text-gray-800 mb-4 text-center">
+                                Veja também estas lojas da mesma empresa:
+                            </h2>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                                {outrasLojas.map((loja) => (
+                                    <Link key={loja.slug_loja} href={`/loja/${loja.slug_loja}`} passHref>
+                                        <div className="bg-white rounded-lg shadow-md p-4 flex items-center space-x-4 cursor-pointer hover:shadow-lg transition-shadow">
+                                            <div className="w-16 h-16 rounded-full overflow-hidden flex-shrink-0">
+                                                <Image
+                                                    src={loja.foto_loja ? getImagemProduto(loja.foto_loja) : "/fallback.png"}
+                                                    alt={loja.nome_fantasia || "Loja"}
+                                                    width={64}
+                                                    height={64}
+                                                    unoptimized
+                                                    className="object-cover w-full h-full"
+                                                />
+                                            </div>
+                                            <div>
+                                                <h3 className="font-semibold text-lg text-gray-900">{loja.nome_fantasia}</h3>
+                                                <p className="text-sm text-gray-600">Ir para a loja</p>
+                                            </div>
+                                        </div>
+                                    </Link>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
             {site && (
                 <Link
                     href={`/loja/${site}/ajuda`}
@@ -845,41 +882,41 @@ export default function ClienteHome() {
 }
 
 function PontosFidelidade({ clienteId }) {
-    const [pontos, setPontos] = useState(0);
-    const [nomeCliente, setNomeCliente] = useState('');
+    const [pontos, setPontos] = useState(0);
+    const [nomeCliente, setNomeCliente] = useState('');
 
-    useEffect(() => {
-        fetchCliente();
-    }, [clienteId]);
+    useEffect(() => {
+        fetchCliente();
+    }, [clienteId]);
 
-    async function fetchCliente() {
-        const { data, error } = await supabase
-            .from('clientes')
-            .select('nome, total_pontos')
-            .eq('id', clienteId)
-            .single();
+    async function fetchCliente() {
+        const { data, error } = await supabase
+            .from('clientes')
+            .select('nome, total_pontos')
+            .eq('id', clienteId)
+            .single();
 
-        if (!error && data) {
-            setPontos(data.total_pontos || 0);
-            setNomeCliente(data.nome || 'Cliente');
-        }
-    }
+        if (!error && data) {
+            setPontos(data.total_pontos || 0);
+            setNomeCliente(data.nome || 'Cliente');
+        }
+    }
 
-    async function resgatarPontos(pontosParaResgatar) {
-        if (pontos < pontosParaResgatar) return;
+    async function resgatarPontos(pontosParaResgatar) {
+        if (pontos < pontosParaResgatar) return;
 
-        const { error } = await supabase
-            .from('clientes')
-            .update({ total_pontos: pontos - pontosParaResgatar })
-            .eq('id', clienteId);
+        const { error } = await supabase
+            .from('clientes')
+            .update({ total_pontos: pontos - pontosParaResgatar })
+            .eq('id', clienteId);
 
-        if (!error) fetchCliente();
-    }
+        if (!error) fetchCliente();
+    }
 
-    return (
-        <div className="p-4 border rounded-lg bg-white shadow mb-4">
-            <div className="text-black">Olá, <strong>{nomeCliente}</strong></div>
-            <div className="text-black">Você tem <strong>{pontos}</strong> ponto{pontos === 1 ? '' : 's'}</div>
-        </div>
-    );
+    return (
+        <div className="p-4 border rounded-lg bg-white shadow mb-4">
+            <div className="text-black">Olá, <strong>{nomeCliente}</strong></div>
+            <div className="text-black">Você tem <strong>{pontos}</strong> ponto{pontos === 1 ? '' : 's'}</div>
+        </div>
+    );
 }

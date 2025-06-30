@@ -1,6 +1,7 @@
-import { buscarLojaPorSlugCompleta, toggleLojaStatus, updateHorariosLoja  } from '../../models/Loja.js';
+import { buscarLojaPorSlugCompleta, toggleLojaStatus, updateHorariosLoja, buscarTipoLoja  } from '../../models/Loja.js';
 import supabase from '../../config/SupaBase.js';
 import bcrypt from 'bcryptjs';
+
 
 export const getLojaBySlugAndEmpresaController = async (req, res) => {
     const empresaId = req.idEmpresa; 
@@ -289,3 +290,25 @@ export const updateVisibilidadeOutrasLojasController = async (req, res) => {
     }
 };
 
+
+export const tipoLoja = async (req, res) => {
+    try {
+      const slug = req.params.slug;
+  
+      if (!slug) {
+        return res.status(400).json({ message: 'Slug não enviado.' });
+      }
+  
+      const tipo = await buscarTipoLoja(slug);
+  
+      if (!tipo) {
+        return res.status(404).json({ message: 'Tipo de loja não encontrado para o slug informado.' });
+      }
+  
+      return res.status(200).json(tipo[0]);
+    } catch (error) {
+      console.error('Erro ao buscar tipo da loja:', error);
+      return res.status(500).json({ message: 'Erro interno ao buscar o tipo da loja.' });
+    }
+  };
+  

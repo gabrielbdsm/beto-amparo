@@ -8,6 +8,7 @@ import supabase from '../../config/SupaBase.js';
 import jwt from 'jsonwebtoken'; 
 import { trackMissionProgress } from '../../../services/missionTrackerService.js';
 
+
 // --- FUNÇÃO AUXILIAR PARA OBTER EMPRESA ID DO TOKEN ---
 async function getEmpresaIdFromToken(req) {
     console.log('DEBUG: Requisição recebida em getEmpresaIdFromToken.');
@@ -278,7 +279,7 @@ export const inativarProduto = async (req, res) => {
 
         console.log('DEBUG InativarProduto: Produto inativado com sucesso.');
         return res.status(200).json({
-          //  mensagem: 'Produto inativado com sucesso.',
+            //  mensagem: 'Produto inativado com sucesso.', // Comentado para retorno mais limpo se desejado
         });
     } catch (erro) {
         console.error('DEBUG InativarProduto: Erro inesperado no controlador inativarProduto:', erro);
@@ -355,7 +356,7 @@ export const ativarProduto = async (req, res) => {
 
         console.log('DEBUG AtivarProduto: Produto ativado com sucesso.');
         return res.status(200).json({
-           //mensagem: 'Produto ativado com sucesso.',
+            //mensagem: 'Produto ativado com sucesso.', // Comentado para retorno mais limpo se desejado
         });
     } catch (erro) {
         console.error('DEBUG AtivarProduto: Erro inesperado no controlador ativarProduto:', erro);
@@ -467,12 +468,19 @@ export const listarProdutosPorLoja = async (req, res) => {
                 // Não definimos estaIndisponivel aqui, pois para 'não controlado',
                 // o cliente não verá como "esgotado".
             }
+            // A flag `indisponivel_automatico` deve ser verdadeira se o produto está esgotado
+            // OU se ele foi inativado manualmente (produto.ativo é false, mas a query já filtra por ativo:true).
+            // No contexto desta função (que pode ser usada pela loja do cliente ou pelo dashboard do dono):
+            // - Para o cliente, produtos inativos nem chegam aqui se a query eq('ativo', true) for usada.
+            // - Para o dono, a query pode ser eq('ativo', false) e ele veria produtos inativos.
+            // A `estaIndisponivel` aqui serve para marcar produtos que estão `esgotados` *automaticamente*.
             return {
                 ...produto,
                 status_estoque: statusEstoque, 
                 indisponivel_automatico: estaIndisponivel 
             };
         });
+        console.log('DEBUG: listarProdutosPorLoja - Produtos enviados para o frontend com status:', produtosComStatus.map(p => ({ id: p.id, nome: p.nome, qtd: p.quantidade, ativo: p.ativo, controlar_estoque: p.controlar_estoque, status_estoque: p.status_estoque, indisponivel_automatico: p.indisponivel_automatico })));
 
         return res.status(200).json(produtosComStatus);
     } catch (erro) {
@@ -613,7 +621,7 @@ export const atualizarProduto = async (req, res) => {
 
         // Re-verificar se a loja do produto corresponde à loja do request (dupla checagem de segurança)
         if (produtoExistente.id_loja !== parseInt(id_loja, 10)) {
-             return res.status(403).json({ mensagem: "Acesso negado: ID da loja do produto não corresponde ao ID da loja fornecido." });
+            return res.status(403).json({ mensagem: "Acesso negado: ID da loja do produto não corresponde ao ID da loja fornecido." });
         }
 
 
@@ -783,7 +791,7 @@ export const deleteProduto = async (req, res) => {
         if (produtoFetchError) {
             console.error('DEBUG: Erro Supabase ao buscar produto para exclusão:', produtoFetchError.message);
             if (produtoFetchError.code === 'PGRST116') {
-                 return res.status(404).json({ mensagem: 'Produto não encontrado ou ID inválido.' });
+                return res.status(404).json({ mensagem: 'Produto não encontrado ou ID inválido.' });
             }
             return res.status(500).json({ mensagem: 'Erro ao verificar produto para exclusão.' });
         }
@@ -856,7 +864,7 @@ export const deleteProduto = async (req, res) => {
     } catch (error) {
         console.error('DEBUG: Erro inesperado no deleteProduto:', error);
         if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
-             return res.status(401).json({ error: 'Token inválido ou expirado.' });
+            return res.status(401).json({ error: 'Token inválido ou expirado.' });
         }
         return res.status(500).json({ mensagem: 'Erro interno do servidor.' });
     }
@@ -891,7 +899,7 @@ export const ajustarEstoqueProduto = async (req, res) => {
         if (produtoFetchError) {
             console.error('DEBUG: Erro Supabase ao buscar produto para ajuste de estoque:', produtoFetchError.message);
             if (produtoFetchError.code === 'PGRST116') {
-                 return res.status(404).json({ mensagem: 'Produto não encontrado ou ID inválido para ajuste de estoque.' });
+                return res.status(404).json({ mensagem: 'Produto não encontrado ou ID inválido para ajuste de estoque.' });
             }
             return res.status(500).json({ mensagem: 'Erro ao verificar produto para ajuste de estoque.' });
         }
@@ -950,13 +958,13 @@ export const ajustarEstoqueProduto = async (req, res) => {
     } catch (error) {
         console.error('Erro inesperado em ajustarEstoqueProduto:', error);
         if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
-             return res.status(401).json({ error: 'Token inválido ou expirado.' });
+            return res.status(401).json({ error: 'Token inválido ou expirado.' });
         }
         return res.status(500).json({ mensagem: 'Erro interno do servidor.' });
     }
 };
 
-// melhorias no dashboard
+// --- Nova função: decrementarEstoque ---
 export async function decrementarEstoque(produtoId, quantidadeComprada) {
     try {
         // Primeiro, obtenha a quantidade atual, o status de controle de estoque e o id_loja do produto
@@ -1025,3 +1033,47 @@ export async function decrementarEstoque(produtoId, quantidadeComprada) {
         return { success: false, error: err.message };
     }
 }
+
+// --- Nova função: inserirAvaliacao ---
+export const inserirAvaliacao = async (req, res) => {
+    console.log('DEBUG req.params:', req.params);
+    const produto_id = parseInt(req.params.id);
+    const { nome, rating, comentario } = req.body;
+
+    if (!produto_id || !nome || !rating) {
+        return res.status(400).json({ error: 'Campos obrigatórios: nome e rating.' });
+    }
+
+    const { data, error } = await produtoModel.inserirAvaliacaoModel({
+        produto_id,
+        nome,
+        rating,
+        comentario
+    });
+
+    if (error) {
+        return res.status(500).json({ error });
+    }
+
+    res.status(201).json({ mensagem: 'Avaliação registrada com sucesso!', avaliacao: data });
+};
+
+// --- Nova função: listarAvaliacoesPorProduto ---
+export const listarAvaliacoesPorProduto = async (req, res) => {
+    console.log('DEBUG: Entrou em listarAvaliacoesPorProduto');
+    console.log('DEBUG: req.params:', req.params);
+    const produto_id = parseInt(req.params.id);
+
+    if (!produto_id) {
+        return res.status(400).json({ error: 'ID do produto inválido.' });
+    }
+
+    // Chama a função do model que já traz as avaliações com o nome do usuário
+    const { data, error } = await produtoModel.buscarAvaliacoesPorProduto(produto_id);
+
+    if (error) {
+        return res.status(500).json({ error });
+    }
+
+    res.status(200).json(data);
+};

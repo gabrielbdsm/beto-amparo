@@ -2,16 +2,19 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useState, useEffect } from 'react';
+import { verificarTipoDeLoja } from '../hooks/verificarTipoLoja'; // Verifique o caminho real para este hook
 
+// Helper component para os itens de navegação
 function NavItem({ icon, label, path, currentSlug, onClick, className }) {
     const router = useRouter();
 
-    // A lógica robusta para construir o caminho completo e verificar se está ativo (do HEAD)
+    // A lógica robusta para construir o caminho completo e verificar se está ativo
     const isFullPathURL = path.startsWith('http://') || path.startsWith('https://');
     const targetPath = isFullPathURL ? path : (currentSlug ? `/empresa/${currentSlug}${path}` : path);
     
     // Verifica se a rota atual é exatamente a do item ou se o item é um prefixo da rota atual (para sub-rotas)
-    const isActive = router.asPath === targetPath || (router.asPath.startsWith(`${targetPath}/`) && targetPath !== `/empresa/${currentSlug}`);
+    // Ajustado para ser mais flexível com sub-rotas, mas ainda garantindo que não pegue paths muito curtos como prefixo.
+    const isActive = router.asPath === targetPath || (router.asPath.startsWith(`${targetPath}/`) && targetPath.length > `/empresa/${currentSlug}`.length);
     
     const baseClasses = "flex items-center gap-2 p-2 w-full text-left cursor-pointer rounded transition-all duration-200";
     const hoverShadowClasses = 'hover-shadow-blue'; // Classe CSS para hover (se definida globalmente)
@@ -72,30 +75,41 @@ export default function OwnerSidebar({ children, slug }) {
     const router = useRouter();
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [slugEmpresa, setSlugEmpresa] = useState(''); // Slug da loja, como prop
+
+    // Estados relacionados aos dados da loja para o OwnerSidebar
     const [lojaData, setLojaData] = useState(null); // Dados completos da loja
     const [loadingLoja, setLoadingLoja] = useState(true); // Estado de carregamento da loja
     const [errorLoja, setErrorLoja] = useState(null); // Erro ao carregar loja
-
-    const [isClient, setIsClient] = useState(false); // Para lidar com hidratação
-    const [showLinkBlock, setShowLinkBlock] = useState(true); // Visibilidade do bloco de link
-    const [copied, setCopied] = useState(false); // Estado para o botão de copiar
-
     const [isLojaClosed, setIsLojaClosed] = useState(false); // Status de aberto/fechado
     const [shopLevel, setShopLevel] = useState('Nenhum'); // Nível da loja (Bronze, Prata, Ouro)
 
-    const [empresaSlugParaOutrasLojas, setEmpresaSlugParaOutrasLojas] = useState(''); // Slug da EMPRESA (nome) para link de outras lojas
+    // Estados para o bloco de link e funcionalidades
+    const [isClient, setIsClient] = useState(false); // Para lidar com hidratação
+    const [showLinkBlock, setShowLinkBlock] = useState(true); // Visibilidade do bloco de link
+    const [copied, setCopied] = useState(false); // Estado para o botão de copiar
+    const [baseUrl, setBaseUrl] = useState(""); // Base URL para o link da Vercel
 
+    // Estado para o slug da EMPRESA para o link "Outras Lojas"
+    const [empresaSlugParaOutrasLojas, setEmpresaSlugParaOutrasLojas] = useState('');
+
+    // Estado para o tipo de loja (do branch f1258a40daa811c58dd80c45475013cc0b312457)
+    const [tipoLoja, setTipoLoja] = useState("");
+
+    // Effect para lidar com a hidratação e carregar a visibilidade do localStorage
     useEffect(() => {
-        setIsClient(true); // Marca que o componente foi hidratado no cliente
+        setIsClient(true);
 
-        // Carrega a visibilidade do localStorage APENAS no cliente
         if (typeof window !== 'undefined') {
             const savedVisibility = localStorage.getItem('linkBlockVisibility');
             if (savedVisibility !== null) {
                 setShowLinkBlock(JSON.parse(savedVisibility));
             }
+            setBaseUrl(`${window.location.protocol}//${window.location.host}`);
         }
+    }, []); // Executa apenas uma vez na montagem do cliente
 
+    // Effect para buscar detalhes da loja e da empresa
+    useEffect(() => {
         if (!slug) {
             setLoadingLoja(false);
             return;
@@ -120,8 +134,17 @@ export default function OwnerSidebar({ children, slug }) {
                     setIsLojaClosed(loja?.is_closed_for_orders || false);
                     setShopLevel(loja?.level_tier || 'Nenhum'); // Pega o level_tier da loja
                     
-                    // Armazena o slug da empresa (nome) para o link "Outras Lojas"
-                    setEmpresaSlugParaOutrasLojas(empresa?.site || empresa?.nome || ''); // Prioriza 'site', fallback para 'nome'
+                    // Armazena o slug da empresa (nome/site/slug_empresa) para o link "Outras Lojas"
+                    // Use o campo correto do seu backend para o slug da EMPRESA
+                    setEmpresaSlugParaOutrasLojas(empresa?.slug_empresa || empresa?.site || empresa?.nome || ''); 
+                    
+                    // Verifica o tipo de loja usando o hook (do branch f1258a40daa811c58dd80c45475013cc0b312457)
+                    if (loja?.tipo_loja) { // Assumindo que tipo_loja vem da API
+                         setTipoLoja(loja.tipo_loja);
+                    } else {
+                        // Fallback se tipo_loja não estiver na API, usa o hook
+                        setTipoLoja(await verificarTipoDeLoja(slug));
+                    }
                     
                     console.log("OwnerSidebar: Dados da loja e empresa obtidos com sucesso:", data);
                 } else {
@@ -133,6 +156,7 @@ export default function OwnerSidebar({ children, slug }) {
                     setIsLojaClosed(false);
                     setShopLevel('Nenhum');
                     setEmpresaSlugParaOutrasLojas('');
+                    setTipoLoja("");
                 }
             } catch (error) {
                 console.error('OwnerSidebar: Erro ao buscar dados da loja:', error);
@@ -142,6 +166,7 @@ export default function OwnerSidebar({ children, slug }) {
                 setIsLojaClosed(false);
                 setShopLevel('Nenhum');
                 setEmpresaSlugParaOutrasLojas('');
+                setTipoLoja("");
             } finally {
                 setLoadingLoja(false);
             }
@@ -150,13 +175,12 @@ export default function OwnerSidebar({ children, slug }) {
         getLojaDetails();
     }, [slug]); // Dependência do 'slug' para re-executar quando ele muda
 
+    // Effect para salvar a visibilidade do bloco de link no localStorage
     useEffect(() => {
-        // Salva a visibilidade do bloco de link no localStorage
         if (isClient && typeof window !== 'undefined') {
             localStorage.setItem('linkBlockVisibility', JSON.stringify(showLinkBlock));
         }
     }, [showLinkBlock, isClient]);
-
 
     const currentActiveSlug = slugEmpresa || slug; // Preferir o slug da loja se já carregado, senão usar o da URL
 
@@ -242,7 +266,7 @@ export default function OwnerSidebar({ children, slug }) {
                     </div>
                     <div className="flex flex-col gap-4">
 
-                        {/* Bloco do Nível da Loja (do HEAD) */}
+                        {/* Bloco do Nível da Loja */}
                         {lojaData && shopLevel && shopLevel !== 'Nenhum' && (
                             <div className="p-2 rounded-md bg-blue-700 text-white flex items-center justify-between shadow-md">
                                 <div className="flex items-center gap-2">
@@ -253,7 +277,7 @@ export default function OwnerSidebar({ children, slug }) {
                             </div>
                         )}
 
-                        {/* Bloco do link da loja (visível condicionalmente, do HEAD/develop) */}
+                        {/* Bloco do link da loja (visível condicionalmente) */}
                         {isClient && showLinkBlock && (loadingLoja || errorLoja || lojaData) && (
                             <div className="mb-4 p-2 bg-white rounded-md text-[#3681B6] relative">
                                 <div className="flex justify-between items-center mb-1">
@@ -274,11 +298,11 @@ export default function OwnerSidebar({ children, slug }) {
                                 {lojaData && (
                                     <>
                                         <p className="text-xs break-all text-[#3681B6]">
-                                            {/* Usando window.location.origin para garantir o domínio correto */}
-                                            {window.location.origin}/loja/{lojaData.slug_loja}
+                                            {/* Usando baseUrl do estado para garantir o domínio Vercel correto */}
+                                            {baseUrl}/loja/{lojaData.slug_loja}
                                         </p>
                                         <button
-                                            onClick={() => handleCopyClick(`${window.location.origin}/loja/${lojaData.slug_loja}`)}
+                                            onClick={() => handleCopyClick(`${baseUrl}/loja/${lojaData.slug_loja}`)}
                                             className="mt-2 text-xs bg-blue-500 hover:bg-blue-600 px-2 py-1 rounded text-white cursor-pointer"
                                         >
                                             {copied ? 'Copiado!' : 'Copiar'}
@@ -315,7 +339,7 @@ export default function OwnerSidebar({ children, slug }) {
                             </div>
                         )}
 
-                        {/* Itens de Navegação da Sidebar (combinados de ambos os branches) */}
+                        {/* Itens de Navegação da Sidebar */}
                         <Link
                             href={ownerAreaPath}
                             className="flex flex-col items-center gap-2 p-2 cursor-pointer text-center owner-area-sidebar-item hover-shadow-blue"
@@ -325,30 +349,37 @@ export default function OwnerSidebar({ children, slug }) {
                         </Link>
 
                         <NavItem // Dashboard
-                            icon="/icons/dashboard_white.svg" // Ícone do dashboard
+                            icon="/icons/dashboard_white.svg"
                             label="Dashboard"
                             path="/dashboard"
                             currentSlug={currentActiveSlug}
                             className="sidebar-dashboard-item"
                         />
 
-                        <NavItem // Meus Produtos
-                            icon="/icons/add_white.svg"
-                            label="Meus Produtos"
-                            path="/produtos"
-                            currentSlug={currentActiveSlug}
-                            className="sidebar-produtos-item"
-                        />
+                        {/* Condicional para "Meus Produtos" baseado em tipoLoja */}
+                        {tipoLoja !== "atendimento" && (
+                            <NavItem
+                                icon="/icons/add_white.svg"
+                                label="Meus Produtos"
+                                path="/produtos"
+                                currentSlug={currentActiveSlug}
+                                className="sidebar-produtos-item"
+                            />
+                        )}
+                        
                         <NavItem icon="/icons/paint_white.svg" label="Personalizar Loja" path="/personalizacao" currentSlug={currentActiveSlug} className="sidebar-personalizar-item" />
                         <NavItem icon="/icons/clock_white.svg" label="Horarios" path="/horarioEmpresa" currentSlug={currentActiveSlug} className="sidebar-horarios-item" />
-                        <NavItem icon="/icons/notes.png" label="Meus agendamentos" path="/meusAgendamentos" currentSlug={currentActiveSlug} className="sidebar-agendamentos-item" />
                         
-                        {/* NOVO ITEM: Minhas Conquistas (do HEAD) */}
+                        {/* Condicional para "Meus Agendamentos" baseado em tipoLoja */}
+                        {tipoLoja === "atendimento" && (
+                            <NavItem icon="/icons/notes.png" label="Meus agendamentos" path="/meusAgendamentos" currentSlug={currentActiveSlug} className="sidebar-agendamentos-item" />
+                        )}
+                        
                         <NavItem icon="/icons/trophy_white.svg" label="Minhas Conquistas" path="/conquistas" currentSlug={currentActiveSlug} className="sidebar-conquistas-item" />
 
+                        {/* Removido NavItem Suporte duplicado e mantido o do HEAD */}
                         <NavItem icon="/icons/help_white.svg" label="Suporte" path="/suporte" currentSlug={currentActiveSlug} className="sidebar-suporte-item" />
 
-                        {/* NOVO ITEM: Configurações (do HEAD) */}
                         <NavItem 
                             icon="/icons/settings_white.svg"
                             label="Configurações" 
@@ -357,10 +388,10 @@ export default function OwnerSidebar({ children, slug }) {
                             className="sidebar-configuracoes-item" 
                         />
 
-                        {/* ITEM: Outras Lojas (do develop) - Condicional, se houver slug da empresa */}
+                        {/* ITEM: Outras Lojas - Agora com o link correto para a Vercel */}
                         {empresaSlugParaOutrasLojas && (
                             <Link
-                                href={`/${empresaSlugParaOutrasLojas}/lojas`} // Use o slug da empresa
+                                href={`/${empresaSlugParaOutrasLojas}/lojas`} // Link para a página de donos: /ben/lojas
                                 className="flex items-center gap-2 p-2 w-full text-left cursor-pointer rounded transition-all duration-200 font-normal text-white hover-shadow-blue"
                             >
                                 <Image src="/icons/loja.png" alt="Outras Lojas" width={20} height={20} className="flex-shrink-0" />

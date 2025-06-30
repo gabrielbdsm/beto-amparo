@@ -22,7 +22,7 @@ router.post('/recuperar-senha', enviarEmailRecuperacao);
 router.post('/nova-senha', definirNovaSenha);
 
 router.put('/empresa/personalizacao/:slug', atualizarPersonalizacao);
-router.post('/empresa/personalizacao', criarPersonalizacao);
+router.post('/empresa/personalizacao',empresaPrivate, criarPersonalizacao);
 router.get('/empresa/personalizacao/:slug', getLojaBySlug);
 router.get('/empresa/verificar-slug', verificarSlug);
 
@@ -44,7 +44,7 @@ router.put('/empresa/agendamentos/:slug', empresaPrivate, agendamentoEmpresaCont
 router.get('/loja/slug-completo/:slug', EmpresaController.BuscarEmpresaBySlug);
 
 
-router.get('/empresa/insights/:slug', insightController.buscarInsightsPorSlug);
+router.get('/empresa/insights/:slug', empresaPrivate ,insightController.buscarInsightsPorSlug);
 
 router.get('/verificar-sessao', AuthController.verificarSessao);
 

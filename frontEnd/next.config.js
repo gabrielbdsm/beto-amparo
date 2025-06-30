@@ -4,6 +4,7 @@ const withPWA = require('next-pwa')({
   dest: 'public',
   register: true,
   skipWaiting: true,
+  scope: "/empresa/",
 });
 
 const nextConfig = withPWA({
@@ -53,6 +54,10 @@ const nextConfig = withPWA({
         destination: '/client/carrinho',
       },
       {
+        source: '/loja/:slug/minha-conta',
+        destination: '/client/minha-conta',
+      },
+      {
         source: '/loja/:slug/ajuda',
         destination: '/client/faq_suporte',
       },
@@ -84,6 +89,7 @@ const nextConfig = withPWA({
         source: '/loginEmpresa',
         destination: '/empresa/LoginEmpresa',
       },
+      
       {
         source: '/cadastroEmpresa',
         destination: '/empresa/CadastroEmpresa',
