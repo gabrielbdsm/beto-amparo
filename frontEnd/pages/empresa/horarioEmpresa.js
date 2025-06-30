@@ -84,7 +84,8 @@ function LinhaIntervalo({
 
   const handleDividirClick = () => {
     if (erroLocal) {
-        toast.error(`Não é possível dividir. Corrija o erro: ${erroLocal}`);
+        
+      onNotify(`Não é possível dividir. Corrija o erro: ${erroLocal}`, "error");
         return;
     }
     console.log(typeof intervalo.inicio)
@@ -115,13 +116,14 @@ function LinhaIntervalo({
       if (subintervalos.length > 0) {
         onSplit(blocoId, intervalo.id, subintervalos);
       } else {
-        toast.error("Não foi possível dividir o intervalo com a duração selecionada.");
+        
+        onNotify(`Não foi possível dividir o intervalo com a duração selecionada.`, "error");
       }
     } else {
-      if (!intervalo.inicio || !intervalo.fim) onNotify("Preencha os horários de início e fim (HH:MM).");
+      if (!intervalo.inicio || !intervalo.fim ) onNotify("Preencha os horários de início e fim (HH:MM).");
       else if (duracao <= 0) onNotify("Selecione uma duração válida.");
       else if (!isMasterInterval) onNotify("Este sub-intervalo não pode ser dividido.");
-      else onNotify("Não é possível dividir com as configurações atuais.", "error");
+      else onNotify("Não é possível dividir com as configurações atuais." , "error");
     }
   };
 
@@ -243,15 +245,17 @@ export default function HorariosPorData({ tipo = "agendamento" }) {
 
       if (response.ok) {
         setBlocos(prev => prev.filter(bloco => bloco.id !== b.id));
-        toast.success("Data excluída com sucesso!");
+
+        show("Data excluída com sucesso!", "success");
       } else {
-        const result = await response.json();
         console.error(result);
-        toast.error("Erro ao excluir a data: " + result.error);
+        show(result.error, "error");
+
       }
     } catch (error) {
       console.error("Erro inesperado:", error);
-      toast.error("Erro inesperado ao tentar excluir a data.");
+      show("Erro inesperado ao tentar excluir a data.", "error");
+
     }
   }
 
@@ -283,15 +287,16 @@ export default function HorariosPorData({ tipo = "agendamento" }) {
         const erroData = await response.json();
         throw new Error(erroData.message || "Erro ao salvar horários.");
       }
-      toast.success("Horários salvos com sucesso!");
+  
+    
       show("Agendamento criado com sucesso!", "success");
-
 
     } catch (err) {
       console.error("Erro ao salvar horários:", err);
       show("Error: " + err.message, "error");
       setErrorGeral(err.message || "Ocorreu um erro desconhecido ao salvar.");
-      toast.error(`Erro: ${err.message}`);
+     
+      
     }
   };
 
