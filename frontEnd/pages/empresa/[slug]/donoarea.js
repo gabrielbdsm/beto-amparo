@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import toast from 'react-hot-toast'; 
-
+import Link from 'next/link';
 
 import { createClient } from '@supabase/supabase-js';
 
@@ -384,7 +384,7 @@ export default function OwnerDono() {
                         </div>
                         <div>
                             <label className="flex items-center justify-between">Valor do Ponto</label>
-                            <label className="block text-sm font-medium text-gray-700">"A cada R$20,00 adquire 1 ponto"</label>
+                            <label className="block text-sm font-medium text-gray-700">A cada R$20,00 adquire 1 ponto</label>
                             <Input
                                 type="number"
                                 value={valorPonto}
