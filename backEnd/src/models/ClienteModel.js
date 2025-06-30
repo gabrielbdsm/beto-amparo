@@ -1,4 +1,5 @@
 // src/models/clienteModel.js
+import supabase from '../config/SupaBase.js';
 class Cliente {
   constructor({
     nome,
@@ -50,3 +51,14 @@ class Cliente {
 }
 
 export default Cliente;
+
+export async function buscarClientePorId(id) {
+  const { data, error } = await supabase
+    .from('clientes')
+    .select('*')
+    .eq('id', id)
+    .single();
+
+  if (error) throw error;
+  return data;
+};

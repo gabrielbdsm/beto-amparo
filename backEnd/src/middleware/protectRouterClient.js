@@ -1,4 +1,4 @@
-import * as clientes from "../models/ClientModel.js"; 
+import * as clientes from "../models/ClienteModel.js"; 
 import JWT from "jsonwebtoken";
 
 export const clientePrivate = async (req, res, next) => {

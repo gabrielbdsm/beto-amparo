@@ -218,7 +218,7 @@ export default function AdicionarProduto() {
                           toast.error(`Categoria "${novaCategoriaNome}" já existe e será usada.`); // Opcional: avisar o usuário
                       } else {
                           console.log('AdicionarProduto - Nova categoria criada, ID:', createdCategoryData.id);
-                          toast.success(`Categoria "${novaCategoriaNome}" criada com sucesso!`); // Opcional: avisar o usuário
+                        //  alert(`Categoria "${novaCategoriaNome}" criada com sucesso!`); // Opcional: avisar o usuário
                       }
                       categoriaIdParaEnviar = createdCategoryData.id; // Pega o ID (seja novo ou existente)
                   } else {
@@ -292,7 +292,7 @@ export default function AdicionarProduto() {
                   throw new Error(errorMessage);
               }
   
-              toast.success('Produto cadastrado com sucesso!');
+            //  alert('Produto cadastrado com sucesso!');
               router.push(`/empresa/${slug}/produtos`); // Redireciona para a página de produtos da loja
   
           } catch (error) {

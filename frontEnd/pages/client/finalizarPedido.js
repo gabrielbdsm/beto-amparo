@@ -721,15 +721,34 @@ export default function FinalizarPedido() {
                     </div>
 
                     <div className="mt-6">
-                        <label className="flex items-center cursor-pointer">
-                            <input
-                                type="checkbox"
-                                checked={aceiteTermos}
-                                onChange={(e) => setAceiteTermos(e.target.checked)}
-                                className="mr-2"
-                            />
-                            <span className="text-sm text-gray-700">Eu concordo com os Termos e Condições.</span>
-                        </label>
+                    <label className="flex items-start cursor-pointer">
+                        <input
+                            type="checkbox"
+                            checked={aceiteTermos}
+                            onChange={(e) => setAceiteTermos(e.target.checked)}
+                            className="mt-1 mr-2"
+                        />
+                        <span className="text-sm text-gray-700">
+                            Eu concordo com os{" "}
+                            <a
+                            href="/termos/termos.html"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 underline hover:text-blue-800"
+                            >
+                            Termos e Condições
+                            </a>{" "}
+                            e com a{" "}
+                            <a
+                            href="/termos/politicaTrocas.html"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 underline hover:text-blue-800"
+                            >
+                            Política de Trocas
+                            </a>.
+                        </span>
+                        </label>
                     </div>
 
                     <button

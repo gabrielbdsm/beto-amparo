@@ -15,24 +15,25 @@ const PersonalizacaoLoja = () => {
   const { slug } = router.query;
 
   const [formData, setFormData] = useState({
-    nomeFantasia: '',
+    nomeFantasia: '', // Nome da variável de estado no frontend
     fotoLoja: null,
     corPrimaria: '#3681B6',
     corSecundaria: '#ffffff',
     slogan: '',
-    slugLoja: '',
-    idEmpresa: null,
+    slugLoja: '', // Nome da variável de estado no frontend
+    idEmpresa: null, // Nome da variável de estado no frontend
+    tipoLoja: '' // Adicione tipoLoja ao formData aqui
   });
 
   const [uploading, setUploading] = useState(false);
   const [step, setStep] = useState(1);
   const [slugError, setSlugError] = useState('');
   const [isCheckingSlug, setIsCheckingSlug] = useState(false);
-  const [tipo, setTipo] = useState('');
+  const [tipo, setTipo] = useState(''); // Estado para o tipo de loja (produtos/atendimento)
 
   const selecionarTipo = (novoTipo) => {
     setTipo(novoTipo);
-    setFormData(prev => ({ ...prev, tipoLoja: novoTipo }));
+    setFormData(prev => ({ ...prev, tipoLoja: novoTipo })); // Atualiza formData com o tipo selecionado
   };
   
 
@@ -104,12 +105,34 @@ const PersonalizacaoLoja = () => {
   };
 
   const handleSubmit = async () => {
-    if (slugError || !formData.slugLoja) {
-      toast.error('Por favor, corrija o link da loja antes de salvar.');
+    // === VALIDAÇÕES EXPLÍCITAS AQUI (INÍCIO DA FUNÇÃO) ===
+    if (!formData.nomeFantasia) {
+      toast.error('O nome fantasia é obrigatório.');
+      return; // Impede a continuação da função
+    }
+    if (!formData.slogan) { // Adicionei validação para slogan também, pois está como required no formulário
+      toast.error('O slogan é obrigatório.');
       return;
     }
+    if (!formData.tipoLoja) {
+      toast.error('Selecione o tipo da loja (Produtos ou Atendimento).');
+      return; // Impede a continuação da função
+    }
+    if (!formData.slugLoja) {
+      toast.error('O link da loja (URL amigável) é obrigatório.');
+      return; // Impede a continuação da função
+    }
+    if (isCheckingSlug) {
+      toast.error('Por favor, aguarde a verificação do link da loja.');
+      return; // Impede a continuação da função enquanto verifica
+    }
+    if (slugError) { // Se slugError já está definido, significa que o slug não está disponível
+      toast.error('Não é possível salvar: ' + slugError); // Exibe a mensagem de erro do slug
+      return; // Impede a continuação da função
+    }
+    // === FIM DAS VALIDAÇÕES EXPLÍCITAS ===
 
-    setUploading(true);
+    setUploading(true); // Só começa a carregar depois de todas as validações passarem
 
     try {
       let imageUrl = '';
@@ -132,21 +155,17 @@ const PersonalizacaoLoja = () => {
 
         imageUrl = publicUrlData.publicUrl;
       }
-      if (!tipo) {
-        toast.error('Selecione o tipo da loja.');
-        return;
-      }
       
-
+      // ONDE A MUDANÇA É FEITA: Nomes das chaves para snake_case
       const payload = {
-        nomeFantasia: formData.nomeFantasia,
-        corPrimaria: formData.corPrimaria,
-        corSecundaria: formData.corSecundaria,
+        nome_fantasia: formData.nomeFantasia, // <- Corrigido aqui
+        cor_primaria: formData.corPrimaria,   // <- Corrigido aqui
+        cor_secundaria: formData.corSecundaria, // <- Corrigido aqui
         slogan: formData.slogan,
-        fotoLoja: imageUrl, // URL da imagem salva no Supabase Storage
-        slugLoja: formData.slugLoja,
-        idEmpresa: formData.idEmpresa,
-        tipoLoja: formData.tipoLoja
+        foto_loja: imageUrl,                 // <- Corrigido aqui
+        slug_loja: formData.slugLoja,         // <- Corrigido aqui
+        id_empresa: formData.idEmpresa,       // <- Corrigido aqui
+        tipo_loja: formData.tipoLoja          // <- Corrigido aqui
       };
 
       const saveResponse = await axios.post(`${process.env.NEXT_PUBLIC_EMPRESA_API}/personalizacao`, payload, {
@@ -171,7 +190,13 @@ const PersonalizacaoLoja = () => {
 
     } catch (error) {
       console.error('Erro ao salvar personalização:', error.response?.data || error.message);
-      toast.error(`Erro ao salvar a personalização: ${error.response?.data?.message || error.message}`);
+      // Aqui, verificamos se o erro é a violação de chave única para dar uma mensagem mais específica
+      if (error.response?.data?.erro?.includes('loja_slug_loja_key')) {
+        toast.error('Erro: Este link (URL amigável) já está em uso. Por favor, escolha outro.');
+        setSlugError('Este link já está em uso.'); // Força o erro no campo slug
+      } else {
+        toast.error(`Erro ao salvar a personalização: ${error.response?.data?.message || error.message}`);
+      }
     } finally {
       setUploading(false);
     }
@@ -179,9 +204,18 @@ const PersonalizacaoLoja = () => {
 
   const handleNext = () => {
     // Validações antes de ir para o próximo passo
-    if (!formData.nomeFantasia || !formData.slogan) {
-      toast.error('Por favor, preencha todos os campos obrigatórios do Passo 1.');
+    if (!formData.nomeFantasia) {
+      toast.error('Por favor, preencha o nome fantasia.');
       return;
+    }
+    if (!formData.slogan) {
+      toast.error('Por favor, preencha o slogan.');
+      return;
+    }
+    // Validação para garantir que o tipo de loja foi selecionado antes de avançar
+    if (!tipo) {
+        toast.error('Selecione o tipo da loja (Produtos ou Atendimento) para continuar.');
+        return;
     }
     setStep(2);
   };
@@ -224,25 +258,27 @@ const PersonalizacaoLoja = () => {
                     required
                   />
                 </div>
-                   {/* tipo de loja */}
-           <div className="flex gap-4">
-        <button
-          className={`px-4 py-2 rounded-md border ${
-            tipo === 'produtos' ? 'bg-blue-600 text-white' : 'bg-gray-100'
-          }`}
-          onClick={() => selecionarTipo('produtos')}
-        >
-          Loja de Produtos
-        </button>
-        <button
-          className={`px-4 py-2 rounded-md border ${
-            tipo === 'atendimento' ? 'bg-green-600 text-white' : 'bg-gray-100'
-          }`}
-          onClick={() => selecionarTipo('atendimento')}
-        >
-          Atendimento
-        </button>
-      </div>
+                {/* tipo de loja */}
+                <div className="flex gap-4">
+                    <button
+                        type="button" // Importante: para não submeter o formulário
+                        className={`px-4 py-2 rounded-md border ${
+                            tipo === 'produtos' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-800'
+                        }`}
+                        onClick={() => selecionarTipo('produtos')}
+                    >
+                        Loja de Produtos
+                    </button>
+                    <button
+                        type="button" // Importante: para não submeter o formulário
+                        className={`px-4 py-2 rounded-md border ${
+                            tipo === 'atendimento' ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-800'
+                        }`}
+                        onClick={() => selecionarTipo('atendimento')}
+                    >
+                        Atendimento
+                    </button>
+                </div>
 
                 <div>
                   <label htmlFor="fotoLoja" className="block text-sm font-medium text-gray-700 mb-1">Foto da Loja</label>

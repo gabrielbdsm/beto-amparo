@@ -136,7 +136,6 @@ export default function ProdutosDaLoja() {
       setProdutos((prevProdutos) =>
         prevProdutos.filter((p) => p.id !== productToHandle.id)
       );
-      toast.success('Produto inativado com sucesso!');
       handleCloseConfirmModal();
     } catch (err) {
       console.error('Erro ao inativar produto:', err);
