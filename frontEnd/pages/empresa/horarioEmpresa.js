@@ -284,7 +284,6 @@ export default function HorariosPorData({ tipo = "agendamento" }) {
         throw new Error(erroData.message || "Erro ao salvar horários.");
       }
       toast.success("Horários salvos com sucesso!");
-
       show("Agendamento criado com sucesso!", "success");
 
 
@@ -293,7 +292,6 @@ export default function HorariosPorData({ tipo = "agendamento" }) {
       show("Error: " + err.message, "error");
       setErrorGeral(err.message || "Ocorreu um erro desconhecido ao salvar.");
       toast.error(`Erro: ${err.message}`);
-
     }
   };
 
