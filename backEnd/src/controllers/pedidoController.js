@@ -1,4 +1,4 @@
-import * as PedidoModel from '../models/ProdutoModel.js';
+import * as PedidoModel from '../models/PedidoModel.js';
 import supabase from '../config/SupaBase.js';
 import jwt from 'jsonwebtoken'; // Para decodificar o token
 import * as lojaModel from '../models/Loja.js';

@@ -6,7 +6,6 @@ import * as ImageModel from '../../models/ImageModel.js'; // Importe o ImageMode
 
 export const criarPersonalizacao = async (req, res) => {
     console.log("Controller: Chamando criarPersonalizacao.");
-    // id_empresa NÃO deve vir do req.body. Ele vem do middleware (req.Id)
     const {
         nome_fantasia,
         slogan,
@@ -14,13 +13,12 @@ export const criarPersonalizacao = async (req, res) => {
         cor_secundaria,
         ativarFidelidade,
         valorPonto,
-        // Remover id_empresa do req.body: id_empresa, // NÃO DESESTRUTURE ISSO DO REQ.BODY
-        banner: bannerFile, // arquivo Multer
-        foto_loja: fotoLojaFile // arquivo Multer
+        banner: bannerFile,
+        foto_loja: fotoLojaFile
     } = req.body;
 
-    // ID da empresa autenticada é o que vem do middleware (confiável)
-    const id_empresa_autenticada = req.Id; 
+    // CORREÇÃO AQUI: Use req.idEmpresa ou req.user.id
+    const id_empresa_autenticada = req.idEmpresa; // Ou use req.user.id se preferir
     console.log('criarPersonalizacao: ID da empresa autenticada:', id_empresa_autenticada);
 
     if (!id_empresa_autenticada) {
@@ -35,10 +33,10 @@ export const criarPersonalizacao = async (req, res) => {
         const { data: existingLoja, error: checkError } = await supabase
             .from('loja')
             .select('id')
-            .eq('id_empresa', id_empresa_autenticada) // Usa o ID autenticado
+            .eq('id_empresa', id_empresa_autenticada)
             .single();
 
-        if (checkError && checkError.code !== 'PGRST116') { // PGRST116 = no rows found
+        if (checkError && checkError.code !== 'PGRST116') {
             console.error('Controller: Erro ao verificar loja existente:', checkError.message);
             throw checkError;
         }
@@ -47,12 +45,15 @@ export const criarPersonalizacao = async (req, res) => {
         }
 
         // Gera o slug
-        const slug_loja = nome_fantasia.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+        const { slug_loja } = req.body;
+
+        if (!slug_loja || !/^[a-z0-9-]+$/.test(slug_loja)) {
+        return res.status(400).json({ mensagem: 'Slug da loja inválido ou ausente.' });
+        }
 
         // Salva a imagem da foto da loja (se houver)
         let fotoLojaUrl = null;
         if (fotoLojaFile) {
-            // Assumindo que ImageModel.salvarImagem recebe id_empresa para bucket pathing ou RLS
             fotoLojaUrl = await ImageModel.salvarImagem(fotoLojaFile.buffer, fotoLojaFile.originalname, fotoLojaFile.mimetype, id_empresa_autenticada); 
             if (!fotoLojaUrl) {
                 return res.status(500).json({ mensagem: 'Erro ao salvar imagem da loja.' });
@@ -74,7 +75,7 @@ export const criarPersonalizacao = async (req, res) => {
             .insert({
                 nome_fantasia,
                 slug_loja,
-                id_empresa: id_empresa_autenticada, // Usa o ID da empresa autenticada
+                id_empresa: id_empresa_autenticada,
                 foto_loja: fotoLojaUrl,
                 cor_primaria,
                 cor_secundaria,
@@ -82,9 +83,9 @@ export const criarPersonalizacao = async (req, res) => {
                 banner: bannerUrl,
                 ativarFidelidade,
                 valorPonto,
-                level_tier: 'Nenhum' // Define o nível inicial da loja
+                level_tier: 'Nenhum'
             })
-            .select('id, slug_loja') // Retorna o ID e slug da loja criada
+            .select('id, slug_loja')
             .single();
 
         if (insertError) {
@@ -98,20 +99,18 @@ export const criarPersonalizacao = async (req, res) => {
 
         const { data: allAchievements, error: fetchAchievementsError } = await supabase
             .from('achievements')
-            .select('id'); // Busca apenas os IDs das definições de conquistas
+            .select('id');
 
         if (fetchAchievementsError) {
             console.error('DEBUG_PERSONALIZACAO: Erro ao buscar definições de conquistas para pré-popular:', fetchAchievementsError.message);
-            // Escolha se quer falhar a criação da loja ou apenas logar e continuar
-            // Por enquanto, vamos apenas logar e permitir a criação da loja
         } else if (allAchievements && allAchievements.length > 0) {
             const achievementsToInsert = allAchievements.map(ach => ({
-                loja_id: novaLojaId, // ID da loja para esta conquista
-                achievement_id: ach.id, // ID da conquista
+                loja_id: novaLojaId,
+                achievement_id: ach.id,
                 current_progress: 0,
                 completed_at: null,
                 last_reset_at: null,
-                owner_id: id_empresa_autenticada // Mantém owner_id se você o tiver na owner_achievements
+                owner_id: id_empresa_autenticada
             }));
 
             const { error: insertAchievementsError } = await supabase
@@ -146,6 +145,7 @@ export const criarPersonalizacao = async (req, res) => {
 export const verificarSlug = async (req, res) => {
     try {
         const { slug } = req.query;
+        console.log('DEBUG_SLUG: Verificando slug:', slug); // NOVO LOG
 
         if (!slug || !/^[a-z0-9-]+$/.test(slug)) {
             return res.status(400).json({ message: 'Slug inválido. Use apenas letras minúsculas, números e hífens.' });
@@ -155,17 +155,19 @@ export const verificarSlug = async (req, res) => {
             .from('loja')
             .select('slug_loja')
             .eq('slug_loja', slug)
-            .single();
+            // .single(); // COMENTE TEMPORARIAMENTE O .single()
+
+        console.log('DEBUG_SLUG: Resultado Supabase para', slug, 'Data:', data, 'Error:', error); // NOVO LOG
 
         if (error && error.code !== 'PGRST116') {
-            // Se houver qualquer outro erro do Supabase que não seja "nenhum resultado"
             console.error('Erro do Supabase ao verificar slug:', error.message);
             return res.status(500).json({ message: 'Erro interno ao verificar a disponibilidade do link.', error: error.message });
         }
 
-        // Se data for null, significa que não encontrou (ou error.code era PGRST116)
-        // Se data não for null, significa que encontrou e o slug já existe
-        return res.status(200).json({ exists: !!data, message: data ? 'Este link já está em uso.' : 'Link disponível.' });
+        // Observe o que 'data' contém aqui. Se for um array vazio, '!!data' será false.
+        // Se for um array com um objeto, '!!data' será true.
+        // Se for null, '!!data' será false.
+        return res.status(200).json({ exists: !!data && data.length > 0, message: (!!data && data.length > 0) ? 'Este link já está em uso.' : 'Link disponível.' });
     } catch (error) {
         console.error('Erro inesperado ao verificar slug:', error.message);
         return res.status(500).json({ message: 'Erro ao verificar slug', error: error.message });
