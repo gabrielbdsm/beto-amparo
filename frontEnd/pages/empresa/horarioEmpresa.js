@@ -83,15 +83,9 @@ function LinhaIntervalo({
   }
 
   const handleDividirClick = () => {
-
-
-
-
     if (erroLocal) {
-      toast.error(`Não é possível dividir. Corrija o erro: ${erroLocal}`);
-
-      onNotify(`Não é possível dividir. Corrija o erro: ${erroLocal}`, "error");
-      return;
+        toast.error(`Não é possível dividir. Corrija o erro: ${erroLocal}`);
+        return;
     }
     console.log(typeof intervalo.inicio)
     console.log(intervalo.fim.length)
@@ -292,6 +286,7 @@ export default function HorariosPorData({ tipo = "agendamento" }) {
       toast.success("Horários salvos com sucesso!");
 
       show("Agendamento criado com sucesso!", "success");
+
 
     } catch (err) {
       console.error("Erro ao salvar horários:", err);
