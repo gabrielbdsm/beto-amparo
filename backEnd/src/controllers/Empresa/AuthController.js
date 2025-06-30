@@ -78,6 +78,46 @@ export const loginEmpresa = async (req, res) => {
     }
 };
 
+export const verificarSessao = async (req, res) => {
+    try {
+        const token = req.cookies.token_empresa;
+        if (!token) {
+            // Se não há token, não é um erro, apenas não está logado.
+            // Retornar um 401 faria o console do navegador mostrar um erro,
+            // o que pode não ser ideal. Um JSON indicando "não logado" é melhor.
+            return res.json({ logado: false });
+        }
+
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const { data: empresa, error } = await empresas.buscarEmpresaPorId(decoded.id);
+
+        if (error || !empresa) {
+            // Limpa o cookie inválido
+            res.clearCookie('token_empresa');
+            return res.status(401).json({ logado: false, error: "Sessão inválida" });
+        }
+
+        // --- MUDANÇA PRINCIPAL AQUI ---
+        // Retorne o objeto 'empresa' completo ou os campos necessários,
+        // incluindo 'slug' e/ou 'site'.
+        res.status(200).json({
+            logado: true,
+            empresa: { // Aninhar os dados da empresa é uma boa prática
+                responsavel: empresa.responsavel,
+                email: empresa.email,
+                cnpj: empresa.cnpj,
+                slug: empresa.slug, // Assumindo que o model retorna isso
+                site: empresa.site   // Assumindo que o model retorna isso
+            }
+        });
+
+    } catch (error) {
+        // Token expirado ou malformado
+        res.clearCookie('token_empresa');
+        return res.status(401).json({ logado: false, error: "Token inválido ou expirado" });
+    }
+};
+
 export const criarEmpresa = async (req, res) => {
     try {
         const dados = req.body;
@@ -144,30 +184,4 @@ export const logout = (req, res) => {
     });
 
     res.status(200).send('Logout realizado com sucesso');
-};
-// ...
-export const verificarSessao = async (req, res) => {
-    try {
-        const token = req.cookies.token_empresa;
-        if (!token) {
-            return res.status(401).json({ error: "Não autenticado" });
-        }
-
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        const { data: empresa, error } = await empresas.buscarEmpresaPorId(decoded.id);
-
-        if (error || !empresa) {
-            return res.status(401).json({ error: "Sessão inválida" });
-        }
-
-        // Retorna os dados completos que precisamos para o formulário
-        res.status(200).json({
-            nome: empresa.responsavel, // Nome do responsável pela empresa
-            email: empresa.email,
-            cnpj: empresa.cnpj
-        });
-
-    } catch (error) {
-        return res.status(401).json({ error: "Token inválido ou expirado" });
-    }
 };

@@ -13,37 +13,30 @@ export default function LoginEmpresa() {
   const [empresaDataFromLogin, setEmpresaDataFromLogin] = useState(null);
 
   useEffect(() => {
-    console.log('LoginEmpresa: Componente MONTADO. Router.query:', router.query);
-
     if (empresaDataFromLogin) {
-      let redirectPath = '/empresa/donoarea'; // Fallback padrão
+        // 1. Comece com um caminho de fallback seguro.
+        let redirectPath = '/'; // Redireciona para a home se nada for especificado
 
-      const { returnTo } = router.query;
-      const { primeiroLoginFeito, slugLoja } = empresaDataFromLogin;
+        const { returnTo } = router.query;
+        // 2. AGORA SIM, puxe as variáveis que vêm da API.
+        const { primeiroLoginFeito, nomeEmpresa } = empresaDataFromLogin;
 
-      console.log('LoginEmpresa useEffect - primeiroLoginFeito:', primeiroLoginFeito, 'slugLoja:', slugLoja);
+        console.log('Dados recebidos para redirecionamento:', { primeiroLoginFeito, nomeEmpresa });
 
-      if (primeiroLoginFeito === false) {
-        redirectPath = `/empresa/personalizacao-loja`;
-      } else if (returnTo) {
-        redirectPath = returnTo;
-      } else if (slugLoja) {
-        redirectPath = `/empresa/${slugLoja}/produtos`;
-      } else {
-        redirectPath = `/empresa/${slugLoja}/produtos`;
-      }
+        // 3. Aplique a lógica de prioridades
+        if (primeiroLoginFeito === false) {
+            redirectPath = `/empresa/personalizacao-loja`;
+        } else if (returnTo) {
+            redirectPath = returnTo;
+        } else if (nomeEmpresa) {
+            // Este é o seu redirecionamento principal desejado
+            redirectPath = `/${nomeEmpresa}/lojas`;
+        }
 
-      console.log('LoginEmpresa - useEffect: Redirecionando APÓS LOGIN para:', redirectPath);
-      router.replace(redirectPath);
+        console.log('Redirecionando para:', redirectPath);
+        router.replace(redirectPath);
     }
-    // Não adicione lógica aqui para ler o cookie 'token_empresa' e redirecionar.
-    // O middleware já lida com isso. Se o usuário está nesta página, é porque o middleware
-    // decidiu que ele precisa fazer login.
-
-    return () => {
-      console.log('LoginEmpresa: Componente DESMONTADO.');
-    };
-  }, [router, empresaDataFromLogin]); // Dispara o useEffect quando router ou empresaDataFromLogin mudam.
+}, [router, empresaDataFromLogin]);
 
   const handleChange = ({ target }) => {
     const { name, value } = target;

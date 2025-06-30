@@ -3,6 +3,9 @@ import { useRouter } from 'next/router';
 import { createClient } from '@supabase/supabase-js';
 import axios from 'axios';
 import toast from 'react-hot-toast'; 
+//import Image from 'next/image';
+import NextImage from 'next/image';
+
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -13,6 +16,8 @@ export default function PersonalizacaoLoja() {
   const router = useRouter();
   const { slug } = router.query;
   const [uploading, setUploading] = useState(false);
+  const [posicaoVerticalBanner, setPosicaoVerticalBanner] = useState(50); // centralizado por padrão
+
 
   const [dados, setDados] = useState({
     nome_fantasia: '',
@@ -28,6 +33,52 @@ export default function PersonalizacaoLoja() {
   const [imagemBanner, setImagemBanner] = useState(null);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState('');
+
+  async function cropBannerImage(file, cropPercent = 50) {
+    return new Promise((resolve, reject) => {
+      const img = new window.Image();
+      const reader = new FileReader();
+
+      reader.onload = () => {
+        img.src = reader.result;
+      };
+
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+
+        const targetWidth = 1200; // exemplo de largura final
+        const targetHeight = 400; // exemplo de altura final
+
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+
+        const ctx = canvas.getContext('2d');
+
+        const scale = targetWidth / img.width;
+        const scaledHeight = img.height * scale;
+
+        const offsetY = (scaledHeight - targetHeight) * ((100 - cropPercent) / 100);
+
+        ctx.drawImage(
+          img,
+          0,
+          -offsetY, // move a imagem para cima
+          targetWidth,
+          scaledHeight
+        );
+
+        canvas.toBlob((blob) => {
+          const croppedFile = new File([blob], file.name, { type: file.type });
+          resolve(croppedFile);
+        }, file.type);
+      };
+
+      img.onerror = reject;
+      reader.onerror = reject;
+
+      reader.readAsDataURL(file);
+    });
+  }
 
   async function uploadImagemSupabase(file, pasta) {
   setUploading(true);
@@ -101,9 +152,11 @@ export default function PersonalizacaoLoja() {
     }
 
     if (imagemBanner) {
-      const url = await uploadImagemSupabase(imagemBanner, 'lojas', 'banner');
+      const imagemCortada = await cropBannerImage(imagemBanner, posicaoVerticalBanner);
+      const url = await uploadImagemSupabase(imagemCortada, 'lojas');
       if (url) urlBanner = url;
     }
+
 
     const atualizados = {
       ...dados,
@@ -114,7 +167,7 @@ export default function PersonalizacaoLoja() {
     await axios.put(`${process.env.NEXT_PUBLIC_EMPRESA_API}/empresa/personalizacao/${slug}`, atualizados);
 
     toast.success('Dados atualizados com sucesso!');
-    router.push('/empresa/donoarea');
+    router.push(`/empresa/${slug}/donoarea`);
   } catch (err) {
     console.error(err);
     toast.error('Erro ao atualizar dados');
@@ -174,17 +227,19 @@ export default function PersonalizacaoLoja() {
         <div>
           <label>Foto da Loja</label>
           {(previewFotoLoja || dados.foto_loja) && (
+            <div className="flex justify-center mb-4">
             <img
               src={previewFotoLoja || dados.foto_loja}
-              className="w-32 h-32 object-cover rounded-xl mb-2"
+              className="w-56 h-56 object-cover rounded-xl mb-2"
               alt="Foto da loja"
             />
+            </div>
           )}
           <input
             id="fotoLojaInput"
             type="file"
             style={{ display: 'none' }}
-            onChange={e => handleImageSelect(e, 'foto_loja')}
+            onChange={e => handleSelect(e, 'foto_loja')}
           />
           <label
             htmlFor="fotoLojaInput"
@@ -195,15 +250,31 @@ export default function PersonalizacaoLoja() {
         </div>
 
           {/* Banner */}
-        <div className="w-full aspect-[3/1] overflow-hidden rounded-xl bg-gray-200 mb-2">
-        {(previewBanner || dados.banner) &&(
-          <img
-            src={previewBanner || dados.banner}
-            alt="Banner"
-            className="w-full h-full object-cover"
+          <label>Banner da Loja</label>
+          <div className="w-full h-48 relative rounded-t-lg overflow-hidden mb-2 bg-gray-200">
+            {(previewBanner || dados.banner) && (
+              <img
+                src={previewBanner || dados.banner}
+                alt="Banner"
+                className="absolute w-full h-auto object-cover"
+                style={{
+                  top: `${posicaoVerticalBanner}%`,
+                  transform: 'translateY(-50%)',
+                  position: 'absolute',
+                }}
+              />
+            )}
+          </div>
+          <label className="text-sm text-gray-700">Ajustar posição vertical do banner</label>
+          <input
+            type="range"
+            min="0"
+            max="100"
+            step="1"
+            value={posicaoVerticalBanner}
+            onChange={(e) => setPosicaoVerticalBanner(Number(e.target.value))}
+            className="w-full"
           />
-        )}
-      </div>
 
       <input
         id="bannerInput"
