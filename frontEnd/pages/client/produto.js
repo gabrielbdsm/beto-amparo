@@ -26,7 +26,7 @@ export default function Produto() {
     const [comentario, setComentario] = useState('');
     const [nota, setNota] = useState(0);
     const [avaliacoes, setAvaliacoes] = useState([]);
-
+    const [cliente , setCliente] = useState("")
     const subtotal =
         (produto?.preco || 0) * quantidade +
         Object.values(selecionados).reduce(
@@ -92,6 +92,24 @@ export default function Produto() {
                 console.error("Erro ao buscar avaliações:", err);
             }
         }
+        async function verificarLoginCliente() {
+            try {
+                const response = await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/me`, {
+                    credentials: 'include',
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    setCliente(data.cliente);
+                } else {
+                    router.push(`/login?redirect=${encodeURIComponent(router.asPath)}`);
+                }
+            } catch (err) {
+                console.error("Erro ao verificar login", err);
+                router.push(`/login?redirect=${encodeURIComponent(router.asPath)}`);
+            }
+        }
+        verificarLoginCliente()
 
         fetchProduto();
         fetchAvaliacoes();
@@ -110,15 +128,20 @@ export default function Produto() {
 
     const handleAddToCart = async () => {
         try {
+          
             if (!produto || !produto.id_loja) {
                 toast.error("Informações do produto incompletas.");
                 return;
             }
-
+           
+         
             const url = `${process.env.NEXT_PUBLIC_EMPRESA_API}/loja/${site}/carrinho`;
             const response = await fetch(url, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json',
+                  },
                 body: JSON.stringify({
                     produtoId: produto.id,
                     quantidade,

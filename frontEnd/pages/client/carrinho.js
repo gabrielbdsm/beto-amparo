@@ -140,6 +140,7 @@ export default function CarrinhoCliente({ empresaId }) {
                 const url = `${API_BASE_URL}/loja/${slug}/carrinho/${itemId}`;
                 const response = await fetch(url, {
                     method: "PUT",
+                    credentials: 'include',
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ quantidade: novaQuantidade }),
                 });
