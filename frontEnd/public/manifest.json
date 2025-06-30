@@ -14,10 +14,10 @@
         "type": "image/png"
       }
     ],
-    "start_url": "/",
+    "start_url": "/empresa/LoginEmpresa",
     "background_color": "#ffffff",
     "display": "standalone",
-    "scope": "/",
+    "scope": "/empresa/",
     "theme_color": "#3681B6"
   }
   
