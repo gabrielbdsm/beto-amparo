@@ -111,3 +111,117 @@ export const criarCategoria = async (req, res) => {
         return res.status(500).json({ mensagem: 'Erro interno do servidor ao criar categoria.', erro: err.message });
     }
 };
+export const atualizarCategoria = async (req, res) => {
+    try {
+        const { id } = req.params; // ID da categoria a ser atualizada
+        const { nome, id_loja } = req.body; // Novo nome e ID da loja para validação
+
+        if (!nome || !id_loja) {
+            return res.status(400).json({ mensagem: 'Nome da categoria e ID da loja são obrigatórios.' });
+        }
+
+        const categoriaIdNum = parseInt(id, 10);
+        const idLojaNum = parseInt(id_loja, 10);
+
+        if (isNaN(categoriaIdNum) || isNaN(idLojaNum)) {
+            return res.status(400).json({ mensagem: 'IDs inválidos.' });
+        }
+
+        // 1. Opcional: Verificar se a categoria pertence a esta loja (segurança extra)
+        const { data: categoriaExistente, error: checkOwnerError } = await supabase
+            .from('categorias')
+            .select('id, nome, loja_id')
+            .eq('id', categoriaIdNum)
+            .eq('loja_id', idLojaNum)
+            .single();
+
+        if (checkOwnerError || !categoriaExistente) {
+             console.error('CategoriaController: Erro ao verificar categoria para atualização ou não pertence à loja:', checkOwnerError?.message);
+             return res.status(404).json({ mensagem: 'Categoria não encontrada ou não pertence à sua loja.' });
+        }
+
+        // 2. Verificar se o novo nome já existe para outra categoria NESTA MESMA LOJA (evitar duplicatas)
+        const { data: categoriaComMesmoNome, error: checkNameError } = await supabase
+            .from('categorias')
+            .select('id')
+            .eq('loja_id', idLojaNum)
+            .eq('nome', nome)
+            .neq('id', categoriaIdNum) // Exclui a própria categoria que está sendo editada
+            .single();
+
+        if (checkNameError && checkNameError.code !== 'PGRST116') { // PGRST116 = no rows found
+            console.error('CategoriaController: Erro ao verificar duplicidade de nome:', checkNameError.message);
+            throw checkNameError;
+        }
+
+        if (categoriaComMesmoNome) {
+            return res.status(409).json({ mensagem: 'Já existe outra categoria com este nome para esta loja.' });
+        }
+
+        // 3. Atualizar a categoria no Supabase
+        const { data, error } = await supabase
+            .from('categorias')
+            .update({ nome: nome })
+            .eq('id', categoriaIdNum)
+            .select('id, nome, loja_id'); // Retorna os dados atualizados
+
+        if (error) {
+            console.error('CategoriaController: Erro no Supabase ao atualizar categoria:', error.message);
+            return res.status(500).json({ mensagem: 'Erro ao atualizar categoria.', erro: error.message });
+        }
+
+        // Retorna a categoria atualizada
+        return res.status(200).json(data[0]);
+
+    } catch (err) {
+        console.error('CategoriaController: Erro inesperado ao atualizar categoria:', err.message);
+        return res.status(500).json({ mensagem: 'Erro interno do servidor ao atualizar categoria.', erro: err.message });
+    }
+};
+
+export const deletarCategoria = async (req, res) => {
+    try {
+        const { id } = req.params; // ID da categoria a ser deletada
+
+        const categoriaIdNum = parseInt(id, 10);
+        if (isNaN(categoriaIdNum)) {
+            return res.status(400).json({ mensagem: 'ID da categoria inválido.' });
+        }
+
+        // --- Opção B: Impedir a exclusão se houver produtos vinculados ---
+        // 1. Verifique se há produtos associados a esta categoria
+        const { data: produtosVinculados, error: checkProductsError } = await supabase
+            .from('produtos')
+            .select('id') // Seleciona apenas o ID, pois só precisamos saber se existe um
+            .eq('categoria_id', categoriaIdNum)
+            .limit(1); // Otimiza a consulta para pegar apenas um resultado, se houver
+
+        if (checkProductsError) {
+            console.error('CategoriaController: Erro ao verificar produtos vinculados:', checkProductsError.message);
+            return res.status(500).json({ mensagem: 'Erro ao verificar produtos vinculados à categoria.', erro: checkProductsError.message });
+        }
+
+        // Se encontrou algum produto vinculado, impede a exclusão
+        if (produtosVinculados && produtosVinculados.length > 0) {
+            return res.status(400).json({ mensagem: 'Não é possível excluir esta categoria porque há produtos vinculados a ela. Por favor, reatribua os produtos a outra categoria primeiro.' });
+        }
+        // --- Fim da Opção B ---
+
+        // Se não há produtos vinculados, proceda com a exclusão da categoria
+        const { error } = await supabase
+            .from('categorias')
+            .delete()
+            .eq('id', categoriaIdNum);
+
+        if (error) {
+            console.error('CategoriaController: Erro no Supabase ao deletar categoria:', error.message);
+            return res.status(500).json({ mensagem: 'Erro ao deletar categoria.', erro: error.message });
+        }
+
+        return res.status(200).json({ mensagem: 'Categoria excluída com sucesso.' });
+
+    } catch (err) {
+        console.error('CategoriaController: Erro inesperado ao deletar categoria:', err.message);
+        return res.status(500).json({ mensagem: 'Erro interno do servidor ao deletar categoria.', erro: err.message });
+    }
+};
