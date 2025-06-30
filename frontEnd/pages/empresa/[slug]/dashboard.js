@@ -6,9 +6,13 @@ import { useRouter } from 'next/router';
 // Importe seus componentes
 import OwnerSidebar from '@/components/OwnerSidebar';
 import HistoricoVendasTable from '@/components/HistoricoVendasTable';
+
 import DashboardMetrics from "@/components/DashboardMetrics"
+import DashboardAtendimento from "@/components/atendimentodashbord"
+import {verificarTipoDeLoja} from '../../../hooks/verificarTipoLoja'
+
 import ControleEstoqueTable from '@/components/ControleEstoqueTable';
-import CancelamentosPendentesTable from '@/components/CancelamentosPendentesTable';
+
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -17,25 +21,25 @@ export default function DashboardPage() {
   const [mostrarResumo, setMostrarResumo] = useState(false);
   // Estados de dados
   const [historicoPedidos, setHistoricoPedidos] = useState([]);
-  const [dadosGrafico, setDadosGrafico] = useState({ labels: [], totals: [] });
+  
   const [produtosEstoque, setProdutosEstoque] = useState([]);
 
   // Estados de loading
   const [loadingPedidos, setLoadingPedidos] = useState(true);
-  const [loadingGrafico, setLoadingGrafico] = useState(true);
+
   const [loadingEstoque, setLoadingEstoque] = useState(true);
 
   // Estados de erro
   const [errorPedidos, setErrorPedidos] = useState(null);
-  const [errorGrafico, setErrorGrafico] = useState(null);
+
   const [errorEstoque, setErrorEstoque] = useState(null);
 
   //Estados para as solicitações de cancelamento
   const [cancelamentos, setCancelamentos] = useState([]);
   const [loadingCancelamentos, setLoadingCancelamentos] = useState(true);
   const [errorCancelamentos, setErrorCancelamentos] = useState(null);
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
-
+        
+  const [tipoLoja , setTipoLoja] = useState("")
 
   // NOVO: Adicione um estado para o ID da empresa (virá do token)
   const [autenticatedEmpresaId, setAutenticatedEmpresaId] = useState(null);
@@ -79,6 +83,8 @@ export default function DashboardPage() {
     const fetchAllDashboardData = async () => {
         const currentAuthenticatedEmpresaId = await fetchEmpresaIdFromToken();
         if (!currentAuthenticatedEmpresaId) return; // Se falhou em obter o ID, para por aqui
+  
+        setTipoLoja( await verificarTipoDeLoja(slug))
 
         // Agora, passe o SLUG para as APIs de histórico e gráfico
         // E o ID da empresa do token para a autorização no backend.
@@ -106,29 +112,6 @@ export default function DashboardPage() {
             setLoadingPedidos(false);
         }
 
-        // Fetch Dados para Gráfico
-        setLoadingGrafico(true);
-        setErrorGrafico(null);
-        try {
-            console.log('DEBUG: DashboardPage - Fetching dados para gráfico para slug:', slug);
-            // A API do backend agora precisa aceitar o slug da loja
-            const response = await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/pedidos/grafico/loja/${slug}?periodo=semana`, { credentials: 'include' }); // MUDADO: /loja/:slug
-            if (!response.ok) {
-                 const errorData = await response.json();
-                 if (response.status === 401) { redirectToLogin(errorData); return; }
-                 throw new Error(errorData.mensagem || `Falha ao carregar dados do gráfico: ${response.status}`);
-            }
-            const data = await response.json();
-            console.log('DEBUG: DashboardPage - Dados do gráfico recebidos:', data);
-            setDadosGrafico(data);
-        } catch (err) {
-            setErrorGrafico(err.message);
-            console.error('DEBUG: DashboardPage - Erro ao buscar dados do gráfico:', err);
-        } finally {
-            setLoadingGrafico(false);
-        }
-
-        // Fetch Produtos para Controle de Estoque (já usava slug, então ok)
         setLoadingEstoque(true);
         setErrorEstoque(null);
         try {
@@ -163,7 +146,7 @@ export default function DashboardPage() {
 
     fetchAllDashboardData();
 
-  }, [router.isReady, slug, router, refreshTrigger]); 
+  }, [router.isReady, slug, router]); 
 
   // Função para obter a URL da imagem do produto (para ControleEstoqueTable se ela for usar imagens)
   // Se essa função já existe em outro lugar ou é um helper, pode importá-la.
@@ -192,13 +175,14 @@ export default function DashboardPage() {
   
   className="w-full bg-blue-100 text-blue-800 border border-blue-300 px-4 py-3 rounded-lg text-left hover:bg-blue-200 transition-colors mb-6"
 >
-  📊 Ver Resumo Financeiro da Loja
+  📊 {tipoLoja === "atendimento"? "Ver Resumo de Atendimentos"  :"Ver Resumo Financeiro da Loja" }
 </button>
     
      {/* DasborardMetricas de Pedidos */}
-{   mostrarResumo && <DashboardMetrics slug ={slug} />}
+{ tipoLoja !== "atendimento" &&  mostrarResumo && <DashboardMetrics slug ={slug} />}
+      {tipoLoja === "atendimento" &&  mostrarResumo &&<DashboardAtendimento  slug ={slug}/>}
         {/* Histórico de Pedidos */}
-        <div className="mb-8">
+        {tipoLoja !== "atendimento" && <div className="mb-8">
           <h2 className="text-2xl font-bold text-gray-800 mb-4">Histórico de Pedidos</h2>
           {loadingPedidos ? (
             <p>Carregando histórico de pedidos...</p>
@@ -209,10 +193,10 @@ export default function DashboardPage() {
           ) : (
             <HistoricoVendasTable pedidos={historicoPedidos} />
           )}
-        </div>
+        </div>}
 
         {/* Controle de Estoque */}
-        <div className="mb-8">
+       {tipoLoja !== "atendimento" && <div className="mb-8">
           <h2 className="text-2xl font-bold text-gray-800 mb-4">Controle de Estoque</h2>
           {loadingEstoque ? (
             <p>Carregando produtos para estoque...</p>
@@ -224,7 +208,7 @@ export default function DashboardPage() {
             // Passe os produtos e a função getImagemProduto para a tabela de estoque
             <ControleEstoqueTable produtos={produtosEstoque} slugLoja={slug} getImagemProduto={getImagemProduto} /* Adicione a função para ajustar estoque aqui */ />
           )}
-        </div>
+        </div>}
       </div>
     </OwnerSidebar>
   );

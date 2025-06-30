@@ -2,7 +2,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useState, useEffect } from 'react';
-import {verificarTipoDeLoja} from '..//hooks/verificarTipoLoja'
+import {verificarTipoDeLoja} from '../hooks/verificarTipoLoja'
 // Helper component para os itens de navegação
 function NavItem({ icon, label, path, currentSlug, onClick, className }) {
   const router = useRouter();
@@ -80,6 +80,7 @@ export default function OwnerSidebar({ children, slug }) {
   // Estado para o status de "loja fechada para pedidos"
   const [isLojaClosed, setIsLojaClosed] = useState(false);
   const [tipoLoja , setTipoLoja] = useState("")
+  const [baseUrl ,setBaseUrl] = useState("")
 
 
   useEffect(() => {
@@ -91,6 +92,7 @@ export default function OwnerSidebar({ children, slug }) {
     // e o estado será ajustado para o valor salvo no localStorage somente no cliente.
     if (typeof window !== 'undefined') {
       const savedVisibility = localStorage.getItem('linkBlockVisibility');
+       setBaseUrl(`${window.location.protocol}//${window.location.host}`)
       if (savedVisibility !== null) {
         setShowLinkBlock(JSON.parse(savedVisibility));
       }
@@ -111,6 +113,7 @@ export default function OwnerSidebar({ children, slug }) {
           method: 'GET',
           credentials: 'include',
         });
+        
         setTipoLoja( await verificarTipoDeLoja(slug))
 
         if (response.ok) {
@@ -265,11 +268,13 @@ export default function OwnerSidebar({ children, slug }) {
                 {errorLoja && <p className="text-xs text-red-500">{errorLoja}</p>}
                 {lojaData && (
                   <>
-                    <p className="text-xs break-all text-[#3681B6]">
-                      http://localhost:3000/loja/{lojaData.slug_loja}
-                    </p>
+                    <a href={`${baseUrl+"/loja/" + lojaData.slug_loja}`}
+                     target="_blank" className="text-xs break-all text-[#3681B6]">
+                      
+                      {`${baseUrl+"/loja/" + lojaData.slug_loja}`}
+                    </a>
                     <button
-                      onClick={() => handleCopyClick(`http://localhost:3000/loja/${lojaData.slug_loja}`)}
+                      onClick={() => handleCopyClick(`${baseUrl}/loja/${lojaData.slug_loja}`)}
                       className="mt-2 text-xs bg-blue-500 hover:bg-blue-600 px-2 py-1 rounded text-white cursor-pointer"
                     >
                       {copied ? 'Copiado!' : 'Copiar'}
@@ -317,7 +322,7 @@ export default function OwnerSidebar({ children, slug }) {
            
             {/* NavItems */}
             <NavItem icon="/icons/dashboard_white.svg" label="Dashboard" path="/dashboard" currentSlug={currentActiveSlug} className="sidebar-dashboard-item" />
-            <NavItem icon="/icons/add_white.svg" label="Meus Produtos" path="/produtos" currentSlug={currentActiveSlug} className="sidebar-produtos-item" />
+           {tipoLoja !== "atendimento" &&  <NavItem icon="/icons/add_white.svg" label="Meus Produtos" path="/produtos" currentSlug={currentActiveSlug} className="sidebar-produtos-item" />}
             <NavItem icon="/icons/paint_white.svg" label="Personalizar Loja" path="/personalizacao" currentSlug={currentActiveSlug} className="sidebar-personalizar-item" />
             <NavItem icon="/icons/clock_white.svg" label="Horarios" path="/horarioEmpresa" currentSlug={currentActiveSlug} className="sidebar-horarios-item" />
           { 
@@ -329,7 +334,7 @@ export default function OwnerSidebar({ children, slug }) {
               className="flex items-center gap-2 p-2 w-full text-left cursor-pointer rounded transition-all duration-200 font-normal text-white hover-shadow-blue"
             >
               <Image src="/icons/loja.png" alt="Outras Lojas" width={20} height={20} className="flex-shrink-0" />
-              <span>Outras Lojas {tipoLoja}</span>
+              <span>Outras Lojas </span>
             </Link>
             <NavItem icon="/icons/help_white.svg" label="Suporte" path="/suporte" currentSlug={currentActiveSlug} className="sidebar-suporte-item" />
             

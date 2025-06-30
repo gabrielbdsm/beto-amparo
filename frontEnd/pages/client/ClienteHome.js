@@ -11,6 +11,7 @@ import { QuestionMarkCircleIcon } from '@heroicons/react/24/outline';
 import { Menu } from '@headlessui/react';
 import SecaoRecomendacoes from "@/components/SecaoRecomendacoes";
 import SecaoCategoria from "@/components/SecaoCategoria";
+import {verificarTipoDeLoja} from '../../hooks/verificarTipoLoja'
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_KEY);
 
@@ -30,13 +31,14 @@ export default function ClienteHome() {
     const [searchTerm, setSearchTerm] = useState("");
     const [bannerLoja, setBannerLoja] = useState(null);
     const [ativarFidelidade, setAtivarFidelidade] = useState(false);
-
+    const [tipoLoja , setTipoLoja] = useState("")
     const removeAccents = (str) => {
         return str
             .normalize("NFD")
             .replace(/[\u0300-\u036f]/g, "");
     };
 
+    
     // A filtragem agora deve ser feita APÓS o carregamento dos produtos,
     // e deve considerar também a disponibilidade para o cliente.
     const produtosFiltrados = produtos.filter((produto) => {
@@ -123,8 +125,10 @@ export default function ClienteHome() {
     useEffect(() => {
         console.log('DEBUG: ClienteHome - useEffect para fetchEmpresa disparado. Site:', site);
         if (!site) return;
+        
 
         async function fetchEmpresa() {
+             setTipoLoja( await verificarTipoDeLoja(site))
             try {
                 const url = `${process.env.NEXT_PUBLIC_EMPRESA_API}/loja/slug/${site}`;
                 console.log('DEBUG: ClienteHome - Buscando dados da empresa:', url);
@@ -599,7 +603,7 @@ export default function ClienteHome() {
                 </div>
             )}
 
-            <div className="flex-1 px-4 overflow-y-auto pb-24">
+     {  tipoLoja !== 'atendimento'  &&   <div className="flex-1 px-4 overflow-y-auto pb-24">
                 {mensagem && (
                     <div className={`text-center mb-4 font-medium ${corMensagem}`}>
                         {mensagem}
@@ -641,7 +645,7 @@ export default function ClienteHome() {
                         }
                     </div>
                 )}
-            </div>
+            </div>}
             {site && (
                 <Link
                     href={`/loja/${site}/ajuda`}
