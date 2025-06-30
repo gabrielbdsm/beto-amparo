@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react'; 
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { createClient } from '@supabase/supabase-js';
 import Image from 'next/image';
 import { useRouter } from 'next/router';
+import toast from 'react-hot-toast';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -32,16 +33,22 @@ const PersonalizacaoLoja = () => {
   const clientBaseUrl = 'localhost:3000/loja/'; // Você pode substituir por seu domínio quando em produção
   // --- Início da alteração: Carregar o ID da empresa do localStorage ---
   useEffect(() => {
+    const queryId = router.query.idEmpresa;
     const storedEmpresaId = localStorage.getItem('id_empresa_cadastrada');
-    console.log('PersonalizacaoLoja: ID da empresa do localStorage:', storedEmpresaId); // ADICIONE ESTE LOG
-    if (storedEmpresaId) {
-      setFormData(prev => ({ ...prev, idEmpresa: storedEmpresaId }));
+
+    const idFinal = queryId || storedEmpresaId;
+
+    console.log('PersonalizacaoLoja: ID da empresa (query > localStorage):', idFinal);
+
+    if (idFinal) {
+      setFormData(prev => ({ ...prev, idEmpresa: idFinal }));
     } else {
-      console.warn('PersonalizacaoLoja: ID da empresa não encontrado no localStorage.');
+      console.warn('PersonalizacaoLoja: ID da empresa não encontrado no localStorage nem na query.');
       // Opcional: Redirecionar aqui se o ID for mandatório
       // router.push('/cadastrar-empresa');
     }
-  }, []);
+  }, [router.query.idEmpresa]);
+
   // --- Fim da alteração ---
   const handleChange = (e) => {
     const { name, value, type, files, checked } = e.target;
@@ -91,7 +98,7 @@ const PersonalizacaoLoja = () => {
 
   const handleSubmit = async () => {
     if (slugError || !formData.slugLoja) {
-      alert('Por favor, corrija o link da loja antes de salvar.');
+      toast.error('Por favor, corrija o link da loja antes de salvar.');
       return;
     }
 
@@ -145,11 +152,13 @@ const PersonalizacaoLoja = () => {
         console.error('Erro ao marcar primeiro login como completo:', markLoginResponse.data?.message || 'Erro desconhecido.');
       }
 
-      //alert('Personalização da loja salva com sucesso!');
+      toast.success('Personalização da loja salva com sucesso!');
       router.push(`/empresa/${formData.slugLoja}/produtos`);
+      //router.push(`/${router.query.nomeEmpresa}/lojas`);
+
     } catch (error) {
       console.error('Erro ao salvar personalização:', error.response?.data || error.message);
-      alert(`Erro ao salvar a personalização: ${error.response?.data?.message || error.message}`);
+      toast.error(`Erro ao salvar a personalização: ${error.response?.data?.message || error.message}`);
     } finally {
       setUploading(false);
     }
@@ -158,7 +167,7 @@ const PersonalizacaoLoja = () => {
   const handleNext = () => {
     // Validações antes de ir para o próximo passo
     if (!formData.nomeFantasia || !formData.slogan) {
-      alert('Por favor, preencha todos os campos obrigatórios do Passo 1.');
+      toast.error('Por favor, preencha todos os campos obrigatórios do Passo 1.');
       return;
     }
     setStep(2);

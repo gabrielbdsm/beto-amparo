@@ -29,17 +29,43 @@ const OrderCancellationModel = {
     return data;
   },
 
-  async atualizarStatus(id, status) {
+  async atualizarStatus(id, status, motivo_rejeicao = null) { // Adicionamos o novo parâmetro
+    const updateData = { status };
+
+    if (motivo_rejeicao) {
+        updateData.motivo_rejeicao = motivo_rejeicao;
+    }
+
     const { data, error } = await supabase
       .from('order_cancellations')
-      .update({ status })
+      .update(updateData) // Usa o objeto de atualização dinâmico
       .eq('id', id)
       .select()
       .single();
 
     if (error) throw error;
     return data;
+  },
+
+  async getOrdens(ids){
+    try {
+       const { data, error } = await supabase
+      .from('order_cancellations')
+      .select('*')
+      .in('order_id', ids);
+      if (error) {
+        console.error('Erro ao buscar pedido_itens:', error.message);
+        return [];
+      }
+  
+      return data ?? [];
+    } catch (e) {
+      console.error('Erro inesperado em getPedido_itens:', e);
+      return [];
+    }
+
   }
+  
 };
 
 export default OrderCancellationModel;

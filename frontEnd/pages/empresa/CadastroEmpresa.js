@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import toast from 'react-hot-toast'; 
 
 const estados = [
   'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT',
@@ -155,7 +156,7 @@ export default function CadastrarEmpresa() {
         redirectPath = '/empresa/donoarea';
       }
 
-      alert('Empresa cadastrada e login automático realizado com sucesso!');
+      toast.success('Empresa cadastrada e login automático realizado com sucesso!');
       window.location.href = redirectPath;
 
     } catch (err) {

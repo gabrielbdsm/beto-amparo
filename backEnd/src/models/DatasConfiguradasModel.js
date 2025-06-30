@@ -3,17 +3,28 @@ import supabase from '../config/SupaBase.js';
 const DATAS_CONFIGURADAS_TABLE = 'datas_configuradas';
 
 export const DatasConfiguradasModel = {
-  async buscarDatasPorEmpresaPorId(empresaId) {
+  async buscarDatasPorEmpresaPorId(empresaId , slug) {
     const { data, error } = await supabase
       .from(DATAS_CONFIGURADAS_TABLE)
       .select('*')
       .eq('empresa_id', empresaId)
+      .eq('slug' , slug)
       .order('data', { ascending: true });
 
     if (error) throw new Error(error.message);
     return data;
   },
-  async getByDataAndEmpresa(data, empresa_id) {
+  async buscarDatasPorEmpresaPorSlug( slug) {
+    const { data, error } = await supabase
+      .from(DATAS_CONFIGURADAS_TABLE)
+      .select('*')
+      .eq('slug' , slug)
+      .order('data', { ascending: true });
+
+    if (error) throw new Error(error.message);
+    return data;
+  },
+  async getByDataAndEmpresa(data, empresa_id , slug) {
     const dateOnly = new Date(data).toISOString().split('T')[0]; // força yyyy-mm-dd
   
     const  result = await supabase
@@ -21,6 +32,7 @@ export const DatasConfiguradasModel = {
       .select('*')
       .eq('data', dateOnly)
       .eq('empresa_id', empresa_id)
+      .eq('slug' , slug)
       .single();
 
     
@@ -38,6 +50,7 @@ export const DatasConfiguradasModel = {
   
   
   async bulkInsert(datasConfig) {
+    console.log(datasConfig)
     const { data, error } = await supabase
       .from(DATAS_CONFIGURADAS_TABLE)
       .insert(datasConfig)
@@ -81,6 +94,7 @@ export const DatasConfiguradasModel = {
   },
 
   async update(id, updates) {
+    console.log(updates)
     const { error } = await supabase
       .from(DATAS_CONFIGURADAS_TABLE)
       .update(updates)

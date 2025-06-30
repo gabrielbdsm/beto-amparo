@@ -21,7 +21,7 @@ export default function ProdutoCard({
     const [imageSrc, setImageSrc] = useState(getImagemProduto(produto.image));
 
     const handleCardClick = () => {
-        window.location.href = `/produto/${slug}/${produto.id}`;
+        window.location.href = `produto/${slug}/${produto.id}`;
     };
 
     const handleAdicionarClick = (event) => {
@@ -84,7 +84,7 @@ export default function ProdutoCard({
 
             <div className="w-full text-center mt-2">
                 <h2 className="text-sm sm:text-base font-semibold text-gray-800 truncate">{produto.nome}</h2>
-                <p className="text-xs text-gray-500 line-clamp-2">{produto.descricao}</p>
+                <p className="text-xs text-gray-500 line-clamp-1">{produto.descricao}</p>
                 <p className="text-green-600 font-bold mt-1">
                     R$ {parseFloat(produto.preco).toFixed(2)}
                 </p>

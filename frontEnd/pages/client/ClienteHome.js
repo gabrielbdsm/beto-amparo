@@ -1,20 +1,36 @@
-import { useEffect, useState, useCallback } from "react";
+// frontEnd/pages/client/ClienteHome.js
+
+import { useEffect, useState, useCallback, useMemo } from "react";
 import Image from "next/image";
 import NavBar from "@/components/NavBar";
-import ProdutoCard from "@/components/ProdutoCard";
+// import ProdutoCard from "@/components/ProdutoCard"; // ProdutoCard pode ser removido se SecaoCategoria o substituir
 import { useRouter } from 'next/router';
 import { createClient } from '@supabase/supabase-js';
-import { Menu } from '@headlessui/react';
 import Link from 'next/link';
+import { QuestionMarkCircleIcon } from '@heroicons/react/24/outline';
+import { Menu } from '@headlessui/react';
+import SecaoRecomendacoes from "@/components/SecaoRecomendacoes";
+import SecaoCategoria from "@/components/SecaoCategoria";
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_KEY);
 
+const diasSemanaMap = {
+    0: 'domingo',
+    1: 'segunda',
+    2: 'terca',
+    3: 'quarta',
+    4: 'quinta',
+    5: 'sexta',
+    6: 'sabado',
+};
+
 export default function ClienteHome() {
     const router = useRouter();
-    const { site } = router.query;
+    const { site, isReady } = router.query;
+
     const [clienteLogado, setClienteLogado] = useState(false);
     const [cliente, setCliente] = useState(null);
-
+    const [rawRecomendacoes, setRawRecomendacoes] = useState([]);
     const [lojaId, setLojaId] = useState(null);
     const [nomeFantasia, setNomeFantasia] = useState("Carregando...");
     const [sloganLoja, setSloganLoja] = useState('');
@@ -22,6 +38,8 @@ export default function ClienteHome() {
 
     const [horariosLoja, setHorariosLoja] = useState(null);
     const [horarioExibicao, setHorarioExibicao] = useState("Verificando...");
+
+    const [categorias, setCategorias] = useState([]);
 
     const [produtos, setProdutos] = useState([]);
     const [searchTerm, setSearchTerm] = useState("");
@@ -34,7 +52,6 @@ export default function ClienteHome() {
 
     const [outrasLojas, setOutrasLojas] = useState([]);
     const [idEmpresaAtual, setIdEmpresaAtual] = useState(null);
-    // NOVO ESTADO: para controlar a visibilidade de outras lojas com base na configuração do backend
     const [mostrarOutrasLojasNoCliente, setMostrarOutrasLojasNoCliente] = useState(false);
 
     const removeAccents = (str) => {
@@ -43,20 +60,45 @@ export default function ClienteHome() {
             .replace(/[\u0300-\u036f]/g, "");
     };
 
-    const produtosFiltrados = produtos.filter((produto) => {
-        const matchesSearch = removeAccents(produto.nome.toLowerCase()).includes(
-            removeAccents(searchTerm.toLowerCase())
-        );
-        
-        const isActuallyAvailableToClient = !produto.indisponivel_automatico;
-
-        return matchesSearch && isActuallyAvailableToClient;
-    });
-
     const [quantidades, setQuantidades] = useState({});
     const [mensagem, setMensagem] = useState('');
     const [corMensagem, setCorMensagem] = useState('');
     const [showSearch, setShowSearch] = useState(false);
+
+    const produtosVisiveis = useMemo(() => {
+        return produtos.filter((produto) => !produto.indisponivel_automatico);
+    }, [produtos]);
+
+    const produtosAgrupadosEFiltrados = useMemo(() => {
+        const produtosFiltradosPorBusca = produtosVisiveis.filter((produto) =>
+            removeAccents(produto.nome.toLowerCase()).includes(removeAccents(searchTerm.toLowerCase()))
+        );
+
+        const agrupados = produtosFiltradosPorBusca.reduce((acc, produto) => {
+            const categoriaDoProduto = categorias.find(c => c.id === produto.categoria_id);
+            const nomeCategoria = categoriaDoProduto ? categoriaDoProduto.nome : 'Outros';
+
+            if (!acc[nomeCategoria]) {
+                acc[nomeCategoria] = [];
+            }
+            acc[nomeCategoria].push(produto);
+            return acc;
+        }, {});
+        const categoriasOrdenadas = categorias.map(c => c.nome);
+        const resultadoOrdenado = {};
+
+        for (const nomeCat of categoriasOrdenadas) {
+            if (agrupados[nomeCat]) {
+                resultadoOrdenado[nomeCat] = agrupados[nomeCat];
+            }
+        }
+        if (agrupados['Outros']) {
+            resultadoOrdenado['Outros'] = agrupados['Outros'];
+        }
+
+        return resultadoOrdenado;
+
+    }, [searchTerm, produtosVisiveis, categorias]);
 
     const verificarLoginCliente = useCallback(async () => {
         try {
@@ -87,12 +129,12 @@ export default function ClienteHome() {
 
     useEffect(() => {
         if (!site) return;
-
+    
         async function fetchEmpresa() {
             try {
                 const url = `${process.env.NEXT_PUBLIC_EMPRESA_API}/loja/slug/${site}`;
                 const response = await fetch(url);
-
+    
                 if (!response.ok) {
                     let errorMessage = `Erro HTTP ${response.status}: ${response.statusText}`;
                     try {
@@ -107,8 +149,14 @@ export default function ClienteHome() {
                     setNomeFantasia("Erro ao carregar");
                     return;
                 }
-
+    
                 const data = await response.json();
+                // --- CONSOLE.LOGS ADICIONADOS AQUI ---
+                console.log("DEBUG_LOJA_PRINCIPAL: Dados da loja principal ao carregar:", data);
+                console.log("DEBUG_LOJA_PRINCIPAL: id_empresa recebido:", data.id_empresa);
+                console.log("DEBUG_LOJA_PRINCIPAL: mostrar_outras_lojas recebido:", data.mostrar_outras_lojas);
+                // --- FIM DOS CONSOLE.LOGS ADICIONADOS ---
+    
                 setLojaId(data.id);
                 setNomeFantasia(data.nome_fantasia || "Sem nome fantasia");
                 setFotoLoja(data.foto_loja || null);
@@ -116,39 +164,52 @@ export default function ClienteHome() {
                 setCorSecundaria(data.cor_secundaria || "#F3F4F6");
                 setSloganLoja(data.slogan || '');
                 setBannerLoja(data.banner || null);
-                setIsLojaClosed(data.is_closed_for_orders || false); 
+                setIsLojaClosed(data.is_closed_for_orders || false);
                 setAtivarFidelidade(data.ativarFidelidade || false);
-                setHorariosLoja(data.horarios_funcionamento || null); 
+                setHorariosLoja(data.horarios_funcionamento || null);
                 setIdEmpresaAtual(data.id_empresa);
-                // CAPTURAR O NOVO CAMPO 'mostrar_outras_lojas' AQUI
-                setMostrarOutrasLojasNoCliente(data.mostrar_outras_lojas || false); // Garante que o valor padrão seja false
+                setMostrarOutrasLojasNoCliente(data.mostrar_outras_lojas || false);
+                // Os console.log originais que você já tinha:
+                console.log("DEBUG_LOJA_PRINCIPAL: id_empresa:", data.id_empresa);
+                console.log("DEBUG_LOJA_PRINCIPAL: mostrar_outras_lojas:", data.mostrar_outras_lojas);
             } catch (error) {
                 console.error("DEBUG: ClienteHome - Erro na requisição ao buscar empresa:", error.message || error);
                 setNomeFantasia("Erro ao carregar");
             }
         }
-
+    
         fetchEmpresa();
     }, [site]);
 
+    // Lógica para buscar OUTRAS LOJAS
     useEffect(() => {
-        // A seção de "outras lojas" só deve ser buscada se mostrarOutrasLojasNoCliente for true
-        // E se tivermos o idEmpresaAtual e o site (slug da loja)
-        if (!idEmpresaAtual || !site || !mostrarOutrasLojasNoCliente) return;
+        console.log("DEBUG_OUTRAS_LOJAS: Verificando dependências para buscar outras lojas:");
+        console.log("DEBUG_OUTRAS_LOJAS: idEmpresaAtual:", idEmpresaAtual);
+        console.log("DEBUG_OUTRAS_LOJAS: site:", site);
+        console.log("DEBUG_OUTRAS_LOJAS: mostrarOutrasLojasNoCliente:", mostrarOutrasLojasNoCliente);
+
+        if (!idEmpresaAtual || !site || !mostrarOutrasLojasNoCliente) {
+            console.log("DEBUG_OUTRAS_LOJAS: Condição para buscar outras lojas NÃO ATENDIDA.");
+            setOutrasLojas([]); // Garante que o estado é limpo se a condição não for atendida
+            return;
+        }
 
         async function fetchOutrasLojas() {
             try {
-                // CHAMA O ENDPOINT AGORA NO /api/loja/outras-da-empresa
                 const url = `${process.env.NEXT_PUBLIC_EMPRESA_API}/loja/outras-da-empresa?idEmpresa=${idEmpresaAtual}&currentLojaSlug=${site}`;
+                console.log("DEBUG_OUTRAS_LOJAS: Fazendo requisição para:", url);
                 const response = await fetch(url);
 
                 if (!response.ok) {
-                    console.error("DEBUG: ClienteHome - Erro ao buscar outras lojas:", response.statusText);
+                    console.error("DEBUG: ClienteHome - Erro ao buscar outras lojas:", response.status, response.statusText);
+                    const errorData = await response.text();
+                    console.error("DEBUG: ClienteHome - Resposta de erro:", errorData);
                     setOutrasLojas([]);
                     return;
                 }
 
                 const data = await response.json();
+                console.log("DEBUG_OUTRAS_LOJAS: Resposta da API de outras lojas:", data);
                 if (data && Array.isArray(data.lojas)) {
                     setOutrasLojas(data.lojas);
                 } else {
@@ -156,7 +217,7 @@ export default function ClienteHome() {
                 }
 
             } catch (error) {
-                console.error("DEBUG: ClienteHome - Erro ao buscar outras lojas:", error.message);
+                console.error("DEBUG: ClienteHome - Erro ao buscar outras lojas (catch):", error.message);
                 setOutrasLojas([]);
             }
         }
@@ -164,6 +225,72 @@ export default function ClienteHome() {
         fetchOutrasLojas();
     }, [idEmpresaAtual, site, mostrarOutrasLojasNoCliente]); // Adicione mostrarOutrasLojasNoCliente como dependência
 
+    // Lógica para buscar CATEGORIAS
+    useEffect(() => {
+        if (!lojaId) return;
+        async function fetchCategorias() {
+            try {
+                const url = `${process.env.NEXT_PUBLIC_EMPRESA_API}/categorias/loja/${lojaId}`;
+                const response = await fetch(url);
+                if (!response.ok) throw new Error('Erro ao buscar categorias');
+                const data = await response.json();
+                setCategorias(Array.isArray(data) ? data : []);
+            } catch (error) {
+                console.error("DEBUG: Erro ao buscar categorias:", error.message);
+                setCategorias([]);
+            }
+        }
+        fetchCategorias();
+    }, [lojaId]);
+
+    // Lógica para buscar RECOMENDAÇÕES
+    useEffect(() => {
+        if (!isReady || !site) {
+            return;
+        }
+        async function fetchRecomendacoes() {
+            try {
+                const clienteQuery = cliente?.id ? `?clienteId=${cliente.id}` : '';
+                const url = `${process.env.NEXT_PUBLIC_EMPRESA_API}/loja/${site}/recomendacoes${clienteQuery}`;
+
+                const response = await fetch(url);
+                if (!response.ok) {
+                    setRawRecomendacoes([]);
+                    return;
+                }
+
+                const data = await response.json();
+
+                if (Array.isArray(data)) {
+                    setRawRecomendacoes(data);
+                } else {
+                    setRawRecomendacoes([]);
+                }
+
+            } catch (error) {
+                setRawRecomendacoes([]);
+            }
+        }
+
+        fetchRecomendacoes();
+    }, [site, cliente, isReady]);
+
+    const recomendacoesFiltradas = useMemo(() => {
+        if (!rawRecomendacoes.length) {
+            return [];
+        }
+
+        const produtosAtuaisIds = new Set(produtos.map(p => p.id));
+        const resultadoFiltrado = rawRecomendacoes.filter(p => !produtosAtuaisIds.has(p.id));
+        if (resultadoFiltrado.length === 0 && rawRecomendacoes.length > 0) {
+            return rawRecomendacoes;
+        }
+
+        return resultadoFiltrado;
+
+    }, [rawRecomendacoes, produtos]);
+
+    // Lógica para buscar PRODUTOS
     useEffect(() => {
         if (!site) return;
 
@@ -179,7 +306,7 @@ export default function ClienteHome() {
                 }
 
                 const data = await response.json();
-                
+
                 if (Array.isArray(data)) {
                     setProdutos(data);
                 } else if (data && Array.isArray(data.produtos)) {
@@ -200,19 +327,14 @@ export default function ClienteHome() {
         fetchProdutos();
     }, [site]);
 
+    // Lógica para verificar horário de funcionamento
     useEffect(() => {
         const now = new Date();
-        const diaSemanaNum = now.getDay(); 
-        
-        const diasSemanaMap = {
-            0: 'domingo',
-            1: 'segunda',
-            2: 'terca',
-            3: 'quarta',
-            4: 'quinta',
-            5: 'sexta',
-            6: 'sabado',
-        };
+        console.log('DEBUG_HORARIOS_DETALHES: Hora atual do cliente (local):', now.toLocaleString());
+        console.log('DEBUG_HORARIOS_DETALHES: Dia da semana (num):', now.getDay());
+        console.log('DEBUG_HORARIOS_DETALHES: Objeto horariosLoja (vindo do backend):', horariosLoja);
+
+        const diaSemanaNum = now.getDay();
         const diaAtualKey = diasSemanaMap[diaSemanaNum];
 
         let lojaEstaAbertaAgoraCalculo = false;
@@ -220,6 +342,7 @@ export default function ClienteHome() {
 
         if (horariosLoja && horariosLoja[diaAtualKey]) {
             const horarioDoDia = horariosLoja[diaAtualKey];
+            console.log('DEBUG_HORARIOS_DETALHES: Horário do dia (do backend, para o dia atual):', horarioDoDia);
 
             if (horarioDoDia.aberto) {
                 const [startHour, startMinute] = horarioDoDia.inicio.split(':').map(Number);
@@ -231,22 +354,44 @@ export default function ClienteHome() {
                 const startDateTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), startHour, startMinute);
                 let endDateTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), endHour, endMinute);
 
+                console.log('DEBUG_HORARIOS_DETALHES: startHour:', startHour, 'startMinute:', startMinute);
+                console.log('DEBUG_HORARIOS_DETALHES: endHour:', endHour, 'endMinute:', endMinute);
+                console.log('DEBUG_HORARIOS_DETALHES: nowHours:', nowHours, 'nowMinutes:', nowMinutes);
+
                 if (endDateTime.getTime() < startDateTime.getTime()) {
                     endDateTime.setDate(endDateTime.getDate() + 1);
+                    console.log('DEBUG_HORARIOS_DETALHES: Horário de fim ajustado para o dia seguinte:', endDateTime.toLocaleString());
                 }
 
                 const currentDateTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), nowHours, nowMinutes);
 
-                if (endDateTime.getTime() < startDateTime.getTime() && currentDateTime.getTime() < startDateTime.getTime()) {
+                console.log('DEBUG_HORARIOS_DETALHES: startDateTime (calculada):', startDateTime.toLocaleString());
+                console.log('DEBUG_HORARIOS_DETALHES: endDateTime (calculada):', endDateTime.toLocaleString());
+                console.log('DEBUG_HORARIOS_DETALHES: currentDateTime (calculada):', currentDateTime.toLocaleString());
+
+                const condition1 = endDateTime.getTime() < startDateTime.getTime() && currentDateTime.getTime() < startDateTime.getTime();
+                const condition2 = currentDateTime.getTime() >= startDateTime.getTime() && currentDateTime.getTime() < endDateTime.getTime();
+
+                console.log('DEBUG_HORARIOS_DETALHES: Condição noturna (end<start && current<start):', condition1);
+                if (condition1) {
+                    const prevDayStartDateTime = new Date(startDateTime);
+                    prevDayStartDateTime.setDate(prevDayStartDateTime.getDate() - 1);
+                    console.log('DEBUG_HORARIOS_DETALHES: Sub-condição noturna (current>=prevStart || current<end):', (currentDateTime.getTime() >= prevDayStartDateTime.getTime() || currentDateTime.getTime() < endDateTime.getTime()));
+                }
+                console.log('DEBUG_HORARIOS_DETALHES: Condição mesmo dia (current>=start && current<end):', condition2);
+
+                if (condition1) {
                     const prevDayStartDateTime = new Date(startDateTime);
                     prevDayStartDateTime.setDate(prevDayStartDateTime.getDate() - 1);
 
                     if (currentDateTime.getTime() >= prevDayStartDateTime.getTime() || currentDateTime.getTime() < endDateTime.getTime()) {
                         lojaEstaAbertaAgoraCalculo = true;
                     }
-                } else if (currentDateTime.getTime() >= startDateTime.getTime() && currentDateTime.getTime() < endDateTime.getTime()) {
+                } else if (condition2) {
                     lojaEstaAbertaAgoraCalculo = true;
                 }
+
+                console.log('DEBUG_HORARIOS_DETALHES: lojaEstaAbertaAgoraCalculo APÓS cálculo:', lojaEstaAbertaAgoraCalculo);
 
                 mensagemHorarioTemporaria = `${horarioDoDia.inicio} às ${horarioDoDia.fim}`;
                 if (lojaEstaAbertaAgoraCalculo) {
@@ -259,13 +404,17 @@ export default function ClienteHome() {
                 mensagemHorarioTemporaria = 'Fechado hoje.';
             }
         } else {
-            mensagemHorarioTemporaria = 'Horário não disponível.'; 
+            mensagemHorarioTemporaria = 'Horário não disponível.';
         }
-        
-        setIsLojaClosed(prevIsLojaClosed => prevIsLojaClosed || !lojaEstaAbertaAgoraCalculo); 
-        setHorarioExibicao(mensagemHorarioTemporaria); 
 
-    }, [horariosLoja]);
+        console.log('DEBUG_HORARIOS_DETALHES: Status final isLojaClosed (ANTES da atualização de estado):', !lojaEstaAbertaAgoraCalculo);
+        console.log('DEBUG_HORARIOS_DETALHES: Mensagem final (ANTES da atualização de estado):', mensagemHorarioTemporaria);
+
+        // A loja está fechada se (isLojaClosed vindo do BD for true) OU (o cálculo local der false)
+        setIsLojaClosed(prevIsLojaClosed => prevIsLojaClosed || !lojaEstaAbertaAgoraCalculo);
+        setHorarioExibicao(mensagemHorarioTemporaria);
+
+    }, [horariosLoja, isLojaClosed]); // isLojaClosed adicionado como dependência para refletir o status do BD
 
     const handleShareClick = async () => {
         if (navigator.share) {
@@ -291,7 +440,7 @@ export default function ClienteHome() {
         }
         if (caminhoImagem.startsWith('http')) return caminhoImagem;
         const baseUrl = 'https://cufzswdymzevdeonjgan.supabase.co/storage/v1/object/public';
-        const fullUrl = `${baseUrl}/imagens/clientes/${encodeURIComponent(caminhoImagem)}`;
+        const fullUrl = `${baseUrl}/imagens/clientes/${encodeURIComponent(caminhoImagem)}`; // OU /lojas/ ou outro bucket
         return fullUrl;
     };
 
@@ -316,6 +465,8 @@ export default function ClienteHome() {
     };
 
     const handleAdicionar = async (produto) => {
+        console.log('DEBUG: ClienteHome - Tentando adicionar produto ao carrinho:', produto.nome);
+
         if (isLojaClosed) {
             setMensagem('Desculpe, a loja está fechada para pedidos no momento.');
             setCorMensagem('text-red-600');
@@ -331,7 +482,7 @@ export default function ClienteHome() {
         }
 
         const id_cliente = cliente?.id;
-        
+
         if (!id_cliente) {
             router.push(`/login?redirect=${encodeURIComponent(router.asPath)}`);
             return;
@@ -418,6 +569,7 @@ export default function ClienteHome() {
                                 alt="Logo da Loja"
                                 width={50}
                                 height={50}
+                                unoptimized
                                 className="object-cover w-full h-full"
                             />
                         </div>
@@ -497,22 +649,12 @@ export default function ClienteHome() {
                                 <Menu.Button className="flex flex-col items-center cursor-pointer">
                                     <div className="bg-white p-2 rounded-full shadow hover:bg-gray-100 transition-colors">
                                         <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill={corPrimaria} viewBox="0 0 24 24">
-                                            <path d="M12 12c2.67 0 8 1.34 8 4v2H4v-2c0-2.66 5.33-4 8-4zm0-2a2 2 0 100-4 2 2 0 000 4z"/>
+                                            <path d="M12 12c2.67 0 8 1.34 8 4v2H4v-2c0-2.66 5.33-4 8-4zm0-2a2 2 0 100-4 2 2 0 000 4z" />
                                         </svg>
                                     </div>
                                     <span className="text-[10px] mt-1">Conta</span>
                                 </Menu.Button>
                                 <Menu.Items className="absolute right-0 mt-2 w-40 bg-white border border-gray-200 rounded shadow-md z-50">
-                                    <Menu.Item>
-                                        {({ active }) => (
-                                            <button
-                                                onClick={() => router.push(`/cliente/cupons`)}
-                                                className={`block px-4 py-2 w-full text-black text-left text-sm ${active ? 'bg-gray-100' : ''}`}
-                                            >
-                                                Meus Cupons
-                                            </button>
-                                        )}
-                                    </Menu.Item>
                                     <Menu.Item>
                                         {({ active }) => (
                                             <button
@@ -523,6 +665,7 @@ export default function ClienteHome() {
                                             </button>
                                         )}
                                     </Menu.Item>
+
                                 </Menu.Items>
                             </Menu>
                         ) : (
@@ -532,7 +675,7 @@ export default function ClienteHome() {
                             >
                                 <div className="bg-white p-2 rounded-full shadow hover:bg-gray-100 transition-colors">
                                     <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill={corPrimaria} viewBox="0 0 24 24">
-                                        <path d="M12 12c2.67 0 8 1.34 8 4v2H4v-2c0-2.66 5.33-4 8-4zm0-2a2 2 0 100-4 2 2 0 000 4z"/>
+                                        <path d="M12 12c2.67 0 8 1.34 8 4v2H4v-2c0-2.66 5.33-4 8-4zm0-2a2 2 0 100-4 2 2 0 000 4z" />
                                     </svg>
                                 </div>
                                 <span className="text-[10px] mt-1">Entrar</span>
@@ -574,6 +717,7 @@ export default function ClienteHome() {
                             alt="Carrinho"
                             width={200}
                             height={200}
+                            unoptimized
                             className="object-contain"
                         />
                     </div>
@@ -590,7 +734,7 @@ export default function ClienteHome() {
                 </div>
 
             )}
-            
+
             {isLojaClosed ? (
                 <div className="bg-red-50 border border-red-200 rounded-md mx-4 my-4 mt-3 px-3 py-2 flex items-center gap-2 text-sm text-red-800">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -618,28 +762,40 @@ export default function ClienteHome() {
                     </div>
                 )}
 
-                {produtosFiltrados.length > 0 ? (
-                    <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-5 gap-x-6 gap-y-4">
-                        {produtosFiltrados.map((produto) => (
-                            <ProdutoCard
-                                key={produto.id}
-                                produto={produto}
-                                quantidade={quantidades[produto.id] || 1}
-                                onAumentar={() => handleAumentar(produto.id)}
-                                onDiminuir={() => handleDiminuir(produto.id)}
-                                onAdicionar={() => handleAdicionar(produto)}
-                                getImagemProduto={getImagemProduto}
+                {recomendacoesFiltradas.length > 0 && !searchTerm && (
+                    <SecaoRecomendacoes
+                        titulo="Você pode gostar"
+                        produtos={recomendacoesFiltradas}
+                        slug={site}
+                        corPrimaria={corPrimaria}
+                        onAdicionar={handleAdicionar}
+                        getImagemProduto={getImagemProduto}
+                        isLojaClosed={isLojaClosed}
+                        quantidades={quantidades}
+                    />
+                )}
+                {Object.keys(produtosAgrupadosEFiltrados).length > 0 ? (
+                    <div>
+                        {Object.entries(produtosAgrupadosEFiltrados).map(([nomeCategoria, produtosDaCategoria]) => (
+                            <SecaoCategoria
+                                key={nomeCategoria}
+                                nomeCategoria={nomeCategoria}
+                                produtosDaCategoria={produtosDaCategoria}
                                 slug={site}
-                                cor={corPrimaria}
-                                isIndisponivel={produto.indisponivel_automatico || isLojaClosed} 
-                                isLojaClosed={isLojaClosed} 
-                                statusEstoque={produto.status_estoque}
+                                corPrimaria={corPrimaria}
+                                onAdicionar={handleAdicionar}
+                                getImagemProduto={getImagemProduto}
+                                isLojaClosed={isLojaClosed}
+                                quantidades={quantidades}
                             />
                         ))}
                     </div>
                 ) : (
                     <div className="text-center text-gray-600 mt-10 text-lg">
-                        Nenhum produto disponível no momento.
+                        {searchTerm
+                            ? `Nenhum produto encontrado para "${searchTerm}".`
+                            : "Nenhum produto disponível no momento."
+                        }
                     </div>
                 )}
 
@@ -658,6 +814,7 @@ export default function ClienteHome() {
                                                 alt={loja.nome_fantasia || "Loja"}
                                                 width={64}
                                                 height={64}
+                                                unoptimized
                                                 className="object-cover w-full h-full"
                                             />
                                         </div>
@@ -672,6 +829,16 @@ export default function ClienteHome() {
                     </div>
                 )}
             </div>
+            {site && (
+                <Link
+                    href={`/loja/${site}/ajuda`}
+                    className="fixed bottom-20 right-4 w-14 h-14 rounded-full flex items-center justify-center text-white shadow-lg transition-transform transform hover:scale-110 z-30"
+                    style={{ backgroundColor: corPrimaria }}
+                    aria-label="Ajuda e Suporte"
+                >
+                    <QuestionMarkCircleIcon className="w-8 h-8 text-white" />
+                </Link>
+            )}
             <NavBar site={site} corPrimaria={corPrimaria} />
         </div>
     );
@@ -706,7 +873,7 @@ function PontosFidelidade({ clienteId }) {
             .update({ total_pontos: pontos - pontosParaResgatar })
             .eq('id', clienteId);
 
-        if (!error) fetchCliente(); 
+        if (!error) fetchCliente();
     }
 
     return (

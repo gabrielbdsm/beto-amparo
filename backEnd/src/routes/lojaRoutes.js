@@ -1,30 +1,35 @@
 // backend/routes/lojaRoutes.js
 import express from 'express';
-// Importe o que vem do personalizacaoController para rotas de personalização (criação/verificação)
-import { criarPersonalizacao, verificarSlug } from '../controllers/Empresa/personalizacaoController.js';
+
+// Importações do personalizacaoController (criação/verificação de slug)
+import { criarPersonalizacao, verificarSlug, getLojaBySlug } from '../controllers/Empresa/personalizacaoController.js'; // getLojaBySlug do personalizacaoController
+
 // Importe o controller de produtos
 import { listarProdutosPorLoja } from '../controllers/produto/ProdutoController.js';
-// Importe os middlewares de proteção
-import { empresaPrivate, verificarAutenticacaoEmpresa } from '../middleware/protectRouterEmpresa.js';
 
-// Importe AGORA getLojaBySlug do EmpresaController para a rota pública
-import { getLojaBySlug } from '../controllers/Empresa/EmpresaController.js'; 
-// Importe as outras funções do lojaController (para rotas de gerenciamento interno da loja)
+// Importe os middlewares de proteção
+import { empresaPrivate } from '../middleware/protectRouterEmpresa.js'; // Apenas empresaPrivate
+
+// Importe outras funções do lojaController (para rotas de gerenciamento interno da loja)
 import * as lojaController from '../controllers/Empresa/lojaController.js'; 
+
+// Importe o controller de recomendações (do develop)
+import { buscarRecomendacoes } from '../controllers/recomendacaoController.js';
+
 
 const router = express.Router();
 
 // Rota GET de teste
 router.get('/', (req, res) => {
-    res.send('Rota da loja funcionando!');
+    res.send('Rota da loja funcionando!');
 });
 
 // Rota GET de produtos (exemplo) - se é um mock, remova
 router.get('/produtos', (req, res) => {
-    res.json([
-        { id: 1, nome: 'Produto A' },
-        { id: 2, nome: 'Produto B' },
-    ]);
+    res.json([
+        { id: 1, nome: 'Produto A' },
+        { id: 2, nome: 'Produto B' },
+    ]);
 });
 
 // --- Rotas de Personalização (Dashboard da Empresa) ---
@@ -33,8 +38,8 @@ router.post('/personalizacao', criarPersonalizacao); // Criar personalização d
 router.get('/check-slug', verificarSlug); // Verificar disponibilidade de slug
 
 // --- Rotas Públicas (para o Cliente ver a loja e seus dados) ---
-// Agora, esta rota usa getLojaBySlug que vem do EmpresaController
-router.get('/slug/:slug', getLojaBySlug); // <--- AQUI ESTÁ A MUDANÇA PRINCIPAL
+// Esta rota usa getLojaBySlug que vem do personalizacaoController
+router.get('/slug/:slug', getLojaBySlug); 
 router.get('/produtos/loja/:slug', listarProdutosPorLoja);
 
 // Rota para buscar outras lojas da mesma empresa (mantida em lojaController)
@@ -46,13 +51,16 @@ router.get('/empresa/loja/:slugLoja', empresaPrivate, lojaController.getLojaBySl
 // Rota para alternar o status de aberto/fechado da loja
 router.put('/loja/:slugLoja/toggle-status', empresaPrivate, lojaController.toggleLojaStatusController);
 
-// Rota para atualizar os horários de funcionamento da loja
+// Rota para atualizar os horários de funcionamento da loja (do HEAD)
 router.put('/loja/:slugLoja/horarios', empresaPrivate, lojaController.updateHorariosFuncionamentoController);
 
-// Rota para atualizar a visibilidade de outras lojas (ADICIONADA AQUI)
+// Rota para atualizar a visibilidade de outras lojas (do HEAD)
 router.put('/loja/:slugLoja/visibilidade-outras-lojas', empresaPrivate, lojaController.updateVisibilidadeOutrasLojasController);
 
-// Rota para deletar loja (requer autenticação da empresa)
-router.post('/:idLoja/deletar', verificarAutenticacaoEmpresa, lojaController.deletarLoja); 
+// Rota para deletar loja (do HEAD, usando empresaPrivate para consistência)
+router.post('/:idLoja/deletar', empresaPrivate, lojaController.deletarLoja); 
+
+// Rota para buscar recomendações (do develop)
+router.get('/:slug/recomendacoes', buscarRecomendacoes);
 
 export default router;

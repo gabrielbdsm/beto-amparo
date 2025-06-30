@@ -1,92 +1,139 @@
 import { inserirEmpresa } from '../../models/EmpresaModel.js';
-import * as empresas from '../../models/EmpresaModel.js'
+import * as empresas from '../../models/EmpresaModel.js';
 import supabase from '../../config/SupaBase.js';
+import * as LojaModel from '../../models/Loja.js';
 
+// VERSÃO ORIGINAL DE getEmpresaBySlug (mantida)
 export async function getEmpresaBySlug(req, res) {
-  const slug = req.params.slug.toLowerCase(); 
+    const slug = req.params.slug.toLowerCase();
 
-  try {
-    const { data, error } = await supabase
-      .from('loja')
-      .select('id_empresa, nome_fantasia, foto_loja')
-      .eq('slug_loja', slug )
-      .single();
-    
-    if (error || !data || data.length === 0) {
-      return res.status(404).json({ erro: 'Loja não encontrada' });
+    try {
+        const { data, error } = await supabase
+            .from('loja')
+            .select('id_empresa, nome_fantasia, foto_loja')
+            .eq('slug_loja', slug)
+            .single();
+
+        if (error || !data || data.length === 0) {
+            return res.status(404).json({ erro: 'Loja não encontrada' });
+        }
+
+        const empresa = await empresas.buscarEmpresaPorId(data.id_empresa);
+
+        if (!empresa) {
+            return res.status(404).json({ erro: 'Empresa não encontrada' });
+        }
+
+        res.status(200).json({
+            ...empresa,
+            nome_fantasia: data.nome_fantasia,
+            foto_loja: data.foto_loja
+        });
+
+    } catch (err) {
+        console.log(err.message);
+        res.status(500).json({ erro: err.message });
     }
-
-    const empresa = await empresas.buscarEmpresaPorId(data.id_empresa);
-
-    if (!empresa) {
-      return res.status(404).json({ erro: 'Empresa não encontrada' });
-    }
-
-    res.status(200).json({
-      ...empresa,
-      nome_fantasia: data.nome_fantasia,
-      foto_loja: data.foto_loja
-    });
-    
-  } catch (err) {
-    console.log(err.message);
-    res.status(500).json({ erro: err.message });
-  }
 }
+
 export const marcarPersonalizacaoCompleta = async (req, res) => {
-  // Assume que req.Id está disponível pelo middleware protectRoutes
-  const idEmpresa = req.Id;
+    // Assume que req.Id está disponível pelo middleware protectRoutes
+    const idEmpresa = req.Id; // CUIDADO: Seu middleware 'empresaPrivate' usa req.idEmpresa (minúsculo). Verifique qual é o correto.
 
-  if (!idEmpresa) {
-      return res.status(400).json({ mensagem: 'ID da empresa não fornecido.' });
-  }
+    if (!idEmpresa) {
+        return res.status(400).json({ mensagem: 'ID da empresa não fornecido.' });
+    }
 
-  try {
-      const { success, error } = await empresas.marcarPrimeiroLoginFeito(idEmpresa);
-      if (success) {
-          return res.status(200).json({ mensagem: 'Personalização marcada como completa.' });
-      } else {
-          return res.status(500).json({ mensagem: 'Erro ao marcar personalização.', erro: error });
-      }
-  } catch (err) {
-      console.error("Erro ao marcar personalização:", err);
-      return res.status(500).json({ mensagem: 'Erro interno do servidor.' });
-  }
+    try {
+        const { success, error } = await empresas.marcarPrimeiroLoginFeito(idEmpresa);
+        if (success) {
+            return res.status(200).json({ mensagem: 'Personalização marcada como completa.' });
+        } else {
+            return res.status(500).json({ mensagem: 'Erro ao marcar personalização.', erro: error });
+        }
+    } catch (err) {
+        console.error("Erro ao marcar personalização:", err);
+        return res.status(500).json({ mensagem: 'Erro interno do servidor.' });
+    }
 };
 
-export async function getLojaBySlug(req, res) { // Ou a função que sua OwnerSidebar.js chama
-  const slug = req.params.slug.toLowerCase();
+// FUNÇÃO LISTAR LOJAS POR EMPRESA SLUG (DO BLOCO 'develop')
+export const listarLojasPorEmpresaSlug = async (req, res) => {
+    // O ID da empresa já estará disponível em req.idEmpresa graças ao middleware 'empresaPrivate'
+    // CUIDADO: O log usa `req.IdEmpresa` (maiúsculo). Seu middleware define como `req.idEmpresa` (minúsculo).
+    // A CONVENÇÃO É `req.idEmpresa`. Sugiro padronizar.
+    const empresaId = req.idEmpresa; // <-- AQUI! Use req.idEmpresa (minúsculo)
+    const empresaSlug = req.params.empresaSlug;
 
-  try {
-      const { data: lojaData, error: lojaError } = await supabase
-          .from('loja')
-          .select('id, nome_fantasia, foto_loja, is_closed_for_orders, slogan, cor_primaria, cor_secundaria, banner, horarios_funcionamento, ativarFidelidade, slug_loja, id_empresa, mostrar_outras_lojas') 
-          .eq('slug_loja', slug)
-          .single();
+    console.log(`DEBUG: [EmpresaController.listarLojasPorEmpresaSlug] Buscando lojas para empresa ID: ${empresaId} com slug: ${empresaSlug}`);
 
-      if (lojaError || !lojaData) {
-          console.error('getLojaBySlug: Erro ao buscar loja por slug:', lojaError?.message || 'Loja não encontrada.');
-          return res.status(404).json({ mensagem: 'Loja não encontrada.' });
-      }
+    try {
+        const { data: lojas, error } = await supabase
+            .from('loja')
+            .select('id, nome_fantasia, slogan, foto_loja, slug_loja')
+            .eq('id_empresa', empresaId); // Assumindo que o campo na tabela é 'id_empresa'
 
-      // Buscar o level_tier da tabela 'empresas' usando o id_empresa da loja
-      const { data: empresaData, error: empresaError } = await supabase
-          .from('loja')
-          .select('level_tier') // Seleciona a nova coluna
-          .eq('id', lojaData.id_empresa) // Usa o id_empresa da loja encontrada
-          .single();
+        console.log("Resultado da consulta de lojas:", lojas);
 
-      if (empresaError && empresaError.code !== 'PGRST116') { // PGRST116 = no rows found
-           console.error('getLojaBySlug: Erro ao buscar nível da empresa:', empresaError.message);
-      }
+        if (error) {
+            console.error("Erro ao buscar lojas no modelo:", error);
+            return res.status(500).json({ message: "Erro interno do servidor ao buscar lojas." });
+        }
+        // req.user já tem os dados da empresa logada (populado pelo empresaPrivate)
+        const empresaInfo = {
+            id: req.user.id,
+            nome: req.user.nome,
+            site: req.user.site,
+            slug: req.user.slug // Adicionando slug se estiver no token/user
+        };
 
-      res.status(200).json({
-          ...lojaData, // Todos os dados da loja
-          level_tier: empresaData ? empresaData.level_tier : 'Nenhum' // Adiciona o level_tier, com fallback
-      });
+        return res.status(200).json({
+            lojas: lojas || [],
+            empresa: empresaInfo
+        });
 
-  } catch (err) {
-      console.error('getLojaBySlug: Erro inesperado:', err.message, err.stack);
-      res.status(500).json({ mensagem: 'Erro interno do servidor.' });
-  }
+    } catch (err) {
+        console.error("Erro inesperado no controller listarLojasPorEmpresaSlug:", err);
+        return res.status(500).json({ message: "Erro inesperado do servidor." });
+    }
+};
+
+// FUNÇÃO BUSCAR EMPRESA POR SLUG (DO BLOCO 'develop')
+export async function BuscarEmpresaBySlug(req, res) {
+    const slug = req.params.slug.toLowerCase();
+
+    try {
+        const { data: lojaData, error } = await supabase
+            .from('loja')
+            .select(`
+                *,
+                empresas: id_empresa(*)
+            `)
+            .eq('slug_loja', slug)
+            .single();
+
+        if (error) {
+            if (error.code === 'PGRST116') {
+                return res.status(404).json({ erro: 'Loja não encontrada.' });
+            }
+            throw error;
+        }
+
+        const empresaData = lojaData.empresas;
+
+        if (!empresaData) {
+            return res.status(404).json({ erro: 'Dados da empresa associada não encontrados.' });
+        }
+
+        delete lojaData.empresas;
+
+        res.status(200).json({
+            loja: lojaData,
+            empresa: empresaData
+        });
+
+    } catch (err) {
+        console.error("Erro ao buscar dados completos da loja:", err.message);
+        res.status(500).json({ erro: 'Erro interno do servidor.' });
+    }
 }

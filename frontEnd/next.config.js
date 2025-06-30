@@ -1,30 +1,44 @@
 /** @type {import('next').NextConfig} */
-const nextConfig = {
+
+const withPWA = require('next-pwa')({
+  dest: 'public',
+  register: true,
+  skipWaiting: true,
+});
+
+const nextConfig = withPWA({
   reactStrictMode: true,
 
   eslint: {
     ignoreDuringBuilds: true,
   },
+
   images: {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'cufzswdymzevdeonjgan.supabase.co', // Este é o seu domínio de imagens de lojas/banners
+        hostname: 'cufzswdymzevdeonjgan.supabase.co', // Domínio de armazenamento de imagens existente
         pathname: '/storage/v1/object/public/**',
       },
       {
         protocol: 'https',
-        hostname: 'qkiyyvnyvjqsjnobfyqn.supabase.co', // <-- ADICIONADO: Este é o seu domínio de imagens de clientes/produtos
+        hostname: 'qkiyyvnyvjqsjnobfyqn.supabase.co', // Domínio de armazenamento de imagens de clientes/produtos
         pathname: '/storage/v1/object/public/**',
       },
+      // Se houver outros domínios de imagem, adicione-os aqui.
     ],
   },
+  // O bloco `remotePatterns` duplicado e comentado foi removido aqui para limpeza.
 
   async rewrites() {
     return [
       {
         source: '/loja/produto/:site/:id',
         destination: '/client/produto',
+      },
+      {
+        source: '/empresa/:slug/suporte',
+        destination: '/suporte',
       },
       {
         source: '/loja/:slug/agendamento',
@@ -39,12 +53,16 @@ const nextConfig = {
         destination: '/client/carrinho',
       },
       {
+        source: '/loja/:slug/ajuda',
+        destination: '/client/faq_suporte',
+      },
+      {
         source: '/loja/:slug/pedidos',
         destination: '/client/pedidos',
       },
       {
         source: '/:slug/carrinho',
-        destination: '/client/carrinho',
+        destination: '/client/carrinho', // Cuidado com rotas muito genéricas que podem sobrescrever outras
       },
       {
         source: '/loja/:site',
@@ -75,11 +93,19 @@ const nextConfig = {
         destination: '/empresa/AdicionarProduto',
       },
       {
-        source: '/empresa/meusAgendamentos',
+        source: '/empresa/:slug/meusAgendamentos',
         destination: '/empresa/visualizacaoAgendamento',
+      },
+      {
+        source: '/empresa/:slug/horarioEmpresa',
+        destination: '/empresa/horarioEmpresa',
+      },
+      {
+        source: '/api/:path*',
+        destination: 'https://beto-amparo.onrender.com/:path*', // Destino para a sua API de backend
       },
     ];
   },
-};
+});
 
 module.exports = nextConfig;

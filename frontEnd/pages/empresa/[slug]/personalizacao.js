@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { createClient } from '@supabase/supabase-js';
 import axios from 'axios';
+import toast from 'react-hot-toast'; 
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -112,11 +113,11 @@ export default function PersonalizacaoLoja() {
 
     await axios.put(`${process.env.NEXT_PUBLIC_EMPRESA_API}/empresa/personalizacao/${slug}`, atualizados);
 
-    alert('Dados atualizados com sucesso!');
+    toast.success('Dados atualizados com sucesso!');
     router.push('/empresa/donoarea');
   } catch (err) {
     console.error(err);
-    alert('Erro ao atualizar dados');
+    toast.error('Erro ao atualizar dados');
   }
 }
 

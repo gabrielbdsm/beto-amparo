@@ -1,8 +1,9 @@
 // pages/empresa/[slug]/editar-produto/[id].js
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import Image from 'next/image';
+import Image from 'next/image'; // Mantido, embora não diretamente usado no JSX principal desta página
 import ProductFormulario from 'components/ProductFormulario';
+import toast from 'react-hot-toast'; 
 
 export default function EditarProdutoPage() {
     const router = useRouter();
@@ -73,6 +74,7 @@ export default function EditarProdutoPage() {
     const handleEditProduct = async (formDataToSend, formError) => {
         if (formError) {
             setError(formError);
+            toast.error(formError); // Exibe o erro do formulário como toast
             return;
         }
         setError(null);
@@ -108,7 +110,7 @@ export default function EditarProdutoPage() {
                     // Se a resposta for OK (200 ou 201), pegamos o ID retornado
                     categoriaIdFinal = createdCategoryData.id;
                     console.log('EditarProdutoPage - Categoria processada com sucesso, ID final:', categoriaIdFinal);
-                    // Opcional: alert(`Categoria "${novaCategoriaNome}" ${createdCategoryData.mensagem === 'Categoria já existe.' ? 'já existe e foi usada.' : 'criada com sucesso!'}`);
+                    // Opcional: toast.success(`Categoria "${novaCategoriaNome}" ${createdCategoryData.mensagem === 'Categoria já existe.' ? 'já existe e foi usada.' : 'criada com sucesso!'}`);
                 } else {
                     // Se houver erro na criação/obtenção da categoria, lançamos um erro
                     console.error('EditarProdutoPage - Erro ao criar/obter nova categoria:', createdCategoryData);
@@ -124,8 +126,8 @@ export default function EditarProdutoPage() {
                 // Se não é uma nova categoria, usa o categoria_id que já veio do formulário
                 categoriaIdFinal = formDataToSend.get('categoria_id');
                 if (!categoriaIdFinal) {
-                     // Isso deve ser pego pela validação do ProductFormulario, mas é um bom fallback.
-                     throw new Error('Erro: Categoria não selecionada.');
+                    // Isso deve ser pego pela validação do ProductFormulario, mas é um bom fallback.
+                    throw new Error('Erro: Categoria não selecionada.');
                 }
                 console.log('EditarProdutoPage - Usando categoria existente com ID:', categoriaIdFinal);
             }
@@ -134,7 +136,7 @@ export default function EditarProdutoPage() {
             console.log('EditarProdutoPage - Enviando requisição PUT para o produto:', id);
             // DEBUG: Você pode logar o FormData aqui para ver o que está sendo enviado
             // for (let pair of formDataToSend.entries()) {
-            //     console.log(pair[0]+ ': ' + pair[1]);
+            //     console.log(pair[0]+ ': ' + pair[1]);
             // }
 
             const response = await fetch(`${API_BASE_URL}/produtos/${id}`, {
@@ -148,7 +150,7 @@ export default function EditarProdutoPage() {
                 console.log('EditarProdutoPage - handleEditProduct: Resposta 401 do backend:', errorData);
                 const targetUrl = errorData.redirectTo || `/empresa/LoginEmpresa?returnTo=${encodeURIComponent(router.asPath)}`;
                 router.push(targetUrl);
-                setIsSavingForm(false);
+                setIsSavingForm(false); // Garante que o loading seja desativado antes do redirecionamento
                 return;
             }
 
@@ -168,12 +170,13 @@ export default function EditarProdutoPage() {
                 throw new Error(errorMessage);
             }
 
-            // alert("Produto atualizado com sucesso!"); // Descomente se quiser o alert
-            router.push(`/empresa/${slug}/produtos`);
+            toast.success("Produto atualizado com sucesso!"); // <--- ADICIONADO: toast de sucesso
+            router.push(`/empresa/${slug}/produtos`); // Redireciona após o sucesso
 
         } catch (err) {
             console.error('EditarProdutoPage - Erro durante a atualização do produto ou categoria:', err);
             setError(`Erro ao salvar produto: ${err.message}`);
+            toast.error(`Erro ao salvar produto: ${err.message}`); // Exibe o erro como toast
         } finally {
             setIsSavingForm(false);
         }

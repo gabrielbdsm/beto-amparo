@@ -10,7 +10,8 @@ import {
     getItensDoPedido,
     listarPedidosPorCliente,
     atualizarStatusPedido,
-    listarTodosPedidosDaLoja
+    listarTodosPedidosDaLoja,
+    cancelarPedidoDireto
 } from '../controllers/pedidoController.js';
 
 const router = express.Router();
@@ -20,7 +21,7 @@ router.get('/loja/:slugLoja/pedidos', listarTodosPedidosDaLoja);
 router.get('/loja/:slug/pedidos/:pedidoId', getPedidoPorId);
 router.get('/pedidos/:idPedido/itens', getItensDoPedido);
 router.put('/pedidos/:idPedido/status', atualizarStatusPedido);
-
+router.put('/pedidos/:idPedido/cancelar-direto', cancelarPedidoDireto); 
 router.post('/loja/:slug/pedidos', criarPedido);
 router.post('/loja/:slug/pedidos/item', adicionarItemPedido);
 router.put('/loja/:slug/pedidos/:idPedido/finalizar', finalizarPedido);

@@ -50,7 +50,7 @@ export default function RedefinirSenha() {
         throw new Error(data?.mensagem || 'Erro ao redefinir senha.');
       }
 
-      alert('Senha redefinida com sucesso!');
+      toast.success('Senha redefinida com sucesso!');
       router.push('/loginEmpresa');
     } catch (err) {
       setErro(err.message);

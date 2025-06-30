@@ -43,7 +43,7 @@ export const getLojaBySlugAndEmpresaController = async (req, res) => {
 export const updateHorariosFuncionamentoController = async (req, res) => {
     const { slugLoja } = req.params;
     const { horarios } = req.body;
-    const empresaId = req.IdEmpresa;
+    const empresaId = req.idEmpresa;
 
     console.log('DEBUG: Backend - updateHorariosFuncionamentoController foi chamado.');
     console.log('DEBUG: Backend - req.params.slugLoja:', slugLoja);
@@ -249,7 +249,7 @@ export const getOutrasLojasDaMesmaEmpresa = async (req, res) => {
 export const updateVisibilidadeOutrasLojasController = async (req, res) => {
     const { slugLoja } = req.params;
     const { mostrar_outras_lojas } = req.body;
-    const empresaId = req.IdEmpresa; // Assegure-se de que o middleware empresaPrivate esteja rodando
+    const empresaId = req.idEmpresa; // Assegure-se de que o middleware empresaPrivate esteja rodando
 
     if (typeof mostrar_outras_lojas !== 'boolean') {
         return res.status(400).json({ mensagem: 'O valor de "mostrar_outras_lojas" deve ser booleano.' });

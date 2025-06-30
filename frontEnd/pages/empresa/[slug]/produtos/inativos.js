@@ -5,6 +5,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/router';
 import Image from 'next/image';
 import Link from 'next/link';
+import toast from 'react-hot-toast'; 
 
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Pagination } from 'swiper/modules';

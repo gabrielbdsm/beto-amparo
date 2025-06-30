@@ -1,4 +1,3 @@
-// OwnerSidebar.js
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -6,10 +5,16 @@ import { useState, useEffect } from 'react';
 
 function NavItem({ icon, label, path, currentSlug, onClick, className }) {
     const router = useRouter();
-    const fullPath = path.startsWith('/empresa/') ? path : (currentSlug ? `/empresa/${currentSlug}${path}` : path);
-    const isActive = router.asPath === fullPath || router.asPath.startsWith(`${fullPath}/`);
+
+    // A lógica robusta para construir o caminho completo e verificar se está ativo (do HEAD)
+    const isFullPathURL = path.startsWith('http://') || path.startsWith('https://');
+    const targetPath = isFullPathURL ? path : (currentSlug ? `/empresa/${currentSlug}${path}` : path);
+    
+    // Verifica se a rota atual é exatamente a do item ou se o item é um prefixo da rota atual (para sub-rotas)
+    const isActive = router.asPath === targetPath || (router.asPath.startsWith(`${targetPath}/`) && targetPath !== `/empresa/${currentSlug}`);
+    
     const baseClasses = "flex items-center gap-2 p-2 w-full text-left cursor-pointer rounded transition-all duration-200";
-    const hoverShadowClasses = 'hover-shadow-blue';
+    const hoverShadowClasses = 'hover-shadow-blue'; // Classe CSS para hover (se definida globalmente)
     const activeTextClass = isActive ? 'font-bold text-white' : 'font-normal text-white';
 
     if (onClick) {
@@ -26,7 +31,7 @@ function NavItem({ icon, label, path, currentSlug, onClick, className }) {
 
     return (
         <Link
-            href={fullPath}
+            href={targetPath}
             className={`${baseClasses} ${activeTextClass} ${className || ''} ${hoverShadowClasses}`}
         >
             <Image src={icon} alt={label} width={20} height={20} className="flex-shrink-0" />
@@ -66,19 +71,24 @@ function LevelMedal({ level }) {
 export default function OwnerSidebar({ children, slug }) {
     const router = useRouter();
     const [sidebarOpen, setSidebarOpen] = useState(false);
-    const [slugEmpresa, setSlugEmpresa] = useState('');
-    const [lojaData, setLojaData] = useState(null);
-    const [loadingLoja, setLoadingLoja] = useState(true);
-    const [errorLoja, setErrorLoja] = useState(null);
-    const [isClient, setIsClient] = useState(false);
-    const [showLinkBlock, setShowLinkBlock] = useState(true);
-    const [copied, setCopied] = useState(false);
-    const [isLojaClosed, setIsLojaClosed] = useState(false);
-    const [shopLevel, setShopLevel] = useState('Nenhum');
+    const [slugEmpresa, setSlugEmpresa] = useState(''); // Slug da loja, como prop
+    const [lojaData, setLojaData] = useState(null); // Dados completos da loja
+    const [loadingLoja, setLoadingLoja] = useState(true); // Estado de carregamento da loja
+    const [errorLoja, setErrorLoja] = useState(null); // Erro ao carregar loja
+
+    const [isClient, setIsClient] = useState(false); // Para lidar com hidratação
+    const [showLinkBlock, setShowLinkBlock] = useState(true); // Visibilidade do bloco de link
+    const [copied, setCopied] = useState(false); // Estado para o botão de copiar
+
+    const [isLojaClosed, setIsLojaClosed] = useState(false); // Status de aberto/fechado
+    const [shopLevel, setShopLevel] = useState('Nenhum'); // Nível da loja (Bronze, Prata, Ouro)
+
+    const [empresaSlugParaOutrasLojas, setEmpresaSlugParaOutrasLojas] = useState(''); // Slug da EMPRESA (nome) para link de outras lojas
 
     useEffect(() => {
-        setIsClient(true);
+        setIsClient(true); // Marca que o componente foi hidratado no cliente
 
+        // Carrega a visibilidade do localStorage APENAS no cliente
         if (typeof window !== 'undefined') {
             const savedVisibility = localStorage.getItem('linkBlockVisibility');
             if (savedVisibility !== null) {
@@ -95,47 +105,60 @@ export default function OwnerSidebar({ children, slug }) {
             setLoadingLoja(true);
             setErrorLoja(null);
             try {
-                const response = await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/empresa/loja/${slug}`, {
+                // Endpoint /loja/slug-completo/slugLoja retorna { loja, empresa }
+                const response = await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/loja/slug-completo/${slug}`, {
                     method: 'GET',
                     credentials: 'include',
                 });
 
                 if (response.ok) {
                     const data = await response.json();
-                    setLojaData(data);
-                    setSlugEmpresa(data?.slug_loja || '');
-                    setIsLojaClosed(data?.is_closed_for_orders || false);
-                    setShopLevel(data?.level_tier || 'Nenhum');
+                    const { loja, empresa } = data; // Desestrutura para pegar dados da loja e da empresa
+
+                    setLojaData(loja);
+                    setSlugEmpresa(loja?.slug_loja || '');
+                    setIsLojaClosed(loja?.is_closed_for_orders || false);
+                    setShopLevel(loja?.level_tier || 'Nenhum'); // Pega o level_tier da loja
+                    
+                    // Armazena o slug da empresa (nome) para o link "Outras Lojas"
+                    setEmpresaSlugParaOutrasLojas(empresa?.site || empresa?.nome || ''); // Prioriza 'site', fallback para 'nome'
+                    
+                    console.log("OwnerSidebar: Dados da loja e empresa obtidos com sucesso:", data);
                 } else {
                     const errorData = await response.json();
-                    setErrorLoja(errorData.message || response.statusText);
+                    console.error('OwnerSidebar: Falha ao obter dados da loja:', errorData.message || response.statusText);
+                    setErrorLoja(errorData.message || `Erro ${response.status}: ${response.statusText}`);
                     setLojaData(null);
                     setSlugEmpresa('');
                     setIsLojaClosed(false);
                     setShopLevel('Nenhum');
+                    setEmpresaSlugParaOutrasLojas('');
                 }
             } catch (error) {
+                console.error('OwnerSidebar: Erro ao buscar dados da loja:', error);
                 setErrorLoja("Erro de conexão ao buscar dados da loja.");
                 setLojaData(null);
                 setSlugEmpresa('');
                 setIsLojaClosed(false);
                 setShopLevel('Nenhum');
+                setEmpresaSlugParaOutrasLojas('');
             } finally {
                 setLoadingLoja(false);
             }
         };
 
         getLojaDetails();
-    }, [slug]);
+    }, [slug]); // Dependência do 'slug' para re-executar quando ele muda
 
     useEffect(() => {
+        // Salva a visibilidade do bloco de link no localStorage
         if (isClient && typeof window !== 'undefined') {
             localStorage.setItem('linkBlockVisibility', JSON.stringify(showLinkBlock));
         }
     }, [showLinkBlock, isClient]);
 
 
-    const currentActiveSlug = slug || slugEmpresa;
+    const currentActiveSlug = slugEmpresa || slug; // Preferir o slug da loja se já carregado, senão usar o da URL
 
     const handleLogout = async () => {
         try {
@@ -164,31 +187,33 @@ export default function OwnerSidebar({ children, slug }) {
     };
 
     const handleToggleLojaStatus = async () => {
-        const newStatus = !isLojaClosed;
+        const newStatus = !isLojaClosed; // Inverte o status atual
         try {
             const response = await fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/loja/${currentActiveSlug}/toggle-status`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',
-                body: JSON.stringify({ isClosed: newStatus }),
+                body: JSON.stringify({ isClosed: newStatus }), // Envia o novo status para o backend
             });
 
             if (response.ok) {
                 const data = await response.json();
-                setIsLojaClosed(data.is_closed_for_orders);
+                setIsLojaClosed(data.is_closed_for_orders); // Atualiza o estado com o status retornado pelo backend
             } else {
                 const errorData = await response.json();
-                alert(`Erro ao alternar status da loja: ${errorData.mensagem || 'Tente novamente.'}`);
+                alert(`Erro ao alternar status da loja: ${errorData.message || 'Tente novamente.'}`);
             }
         } catch (error) {
             alert('Erro de conexão. Verifique sua rede e tente novamente.');
         }
     };
 
+    // Caminho da Área do Dono (Dashboard principal)
     const ownerAreaPath = `/empresa/${currentActiveSlug}/donoarea`;
 
     return (
         <div className="min-h-screen flex flex-col md:flex-row">
+            {/* Header Mobile (visível apenas em telas pequenas) */}
             <div className="bg-[#3681B6] text-white flex items-center justify-between p-4 md:hidden">
                 <div className="flex items-center gap-2">
                     <Image src="/logo.png" alt="Logo" width={32} height={32} />
@@ -201,6 +226,7 @@ export default function OwnerSidebar({ children, slug }) {
                 </button>
             </div>
 
+            {/* Sidebar (barra lateral principal) */}
             <aside className={`
                 fixed md:static z-40 bg-[#3681B6] text-white w-64 min-h-screen p-4 flex flex-col justify-between
                 transition-transform duration-300
@@ -214,8 +240,9 @@ export default function OwnerSidebar({ children, slug }) {
                             <span className="font-normal">Amparo</span>
                         </div>
                     </div>
-
                     <div className="flex flex-col gap-4">
+
+                        {/* Bloco do Nível da Loja (do HEAD) */}
                         {lojaData && shopLevel && shopLevel !== 'Nenhum' && (
                             <div className="p-2 rounded-md bg-blue-700 text-white flex items-center justify-between shadow-md">
                                 <div className="flex items-center gap-2">
@@ -226,6 +253,7 @@ export default function OwnerSidebar({ children, slug }) {
                             </div>
                         )}
 
+                        {/* Bloco do link da loja (visível condicionalmente, do HEAD/develop) */}
                         {isClient && showLinkBlock && (loadingLoja || errorLoja || lojaData) && (
                             <div className="mb-4 p-2 bg-white rounded-md text-[#3681B6] relative">
                                 <div className="flex justify-between items-center mb-1">
@@ -246,10 +274,11 @@ export default function OwnerSidebar({ children, slug }) {
                                 {lojaData && (
                                     <>
                                         <p className="text-xs break-all text-[#3681B6]">
-                                            http://localhost:3000/loja/{lojaData.slug_loja}
+                                            {/* Usando window.location.origin para garantir o domínio correto */}
+                                            {window.location.origin}/loja/{lojaData.slug_loja}
                                         </p>
                                         <button
-                                            onClick={() => handleCopyClick(`http://localhost:3000/loja/${lojaData.slug_loja}`)}
+                                            onClick={() => handleCopyClick(`${window.location.origin}/loja/${lojaData.slug_loja}`)}
                                             className="mt-2 text-xs bg-blue-500 hover:bg-blue-600 px-2 py-1 rounded text-white cursor-pointer"
                                         >
                                             {copied ? 'Copiado!' : 'Copiar'}
@@ -258,6 +287,7 @@ export default function OwnerSidebar({ children, slug }) {
                                 )}
                             </div>
                         )}
+                        {/* Botão para mostrar o link da loja, se ele estiver escondido */}
                         {isClient && !showLinkBlock && (
                             <div className="flex justify-center mt-2">
                                 <button
@@ -270,6 +300,7 @@ export default function OwnerSidebar({ children, slug }) {
                             </div>
                         )}
 
+                        {/* Bloco de status da loja (aberta/fechada) */}
                         {lojaData && (
                             <div className={`mt-4 p-2 rounded-md text-white flex items-center justify-between ${isLojaClosed ? 'bg-gray-500' : 'bg-blue-700'}`}>
                                 <span>Loja: {isLojaClosed ? 'Fechada' : 'Aberta'} para Pedidos</span>
@@ -284,6 +315,7 @@ export default function OwnerSidebar({ children, slug }) {
                             </div>
                         )}
 
+                        {/* Itens de Navegação da Sidebar (combinados de ambos os branches) */}
                         <Link
                             href={ownerAreaPath}
                             className="flex flex-col items-center gap-2 p-2 cursor-pointer text-center owner-area-sidebar-item hover-shadow-blue"
@@ -292,31 +324,31 @@ export default function OwnerSidebar({ children, slug }) {
                             <span className="font-semibold text-lg">Área do dono</span>
                         </Link>
 
-                        <NavItem
-                            icon={router.asPath === `/empresa/${currentActiveSlug}/dashboard` && shopLevel === 'Prata'
-                                ? "/icons/dashboard_white.svg"
-                                : "/icons/dashboard_white.svg"}
+                        <NavItem // Dashboard
+                            icon="/icons/dashboard_white.svg" // Ícone do dashboard
                             label="Dashboard"
                             path="/dashboard"
                             currentSlug={currentActiveSlug}
                             className="sidebar-dashboard-item"
                         />
 
-                        <NavItem
-                        icon="/icons/add_white.svg"
-                        label="Meus Produtos"
-                        path="/produtos"
-                        currentSlug={currentActiveSlug}
-                        className="sidebar-produtos-item"
+                        <NavItem // Meus Produtos
+                            icon="/icons/add_white.svg"
+                            label="Meus Produtos"
+                            path="/produtos"
+                            currentSlug={currentActiveSlug}
+                            className="sidebar-produtos-item"
                         />
                         <NavItem icon="/icons/paint_white.svg" label="Personalizar Loja" path="/personalizacao" currentSlug={currentActiveSlug} className="sidebar-personalizar-item" />
                         <NavItem icon="/icons/clock_white.svg" label="Horarios" path="/horarioEmpresa" currentSlug={currentActiveSlug} className="sidebar-horarios-item" />
                         <NavItem icon="/icons/notes.png" label="Meus agendamentos" path="/meusAgendamentos" currentSlug={currentActiveSlug} className="sidebar-agendamentos-item" />
-
+                        
+                        {/* NOVO ITEM: Minhas Conquistas (do HEAD) */}
                         <NavItem icon="/icons/trophy_white.svg" label="Minhas Conquistas" path="/conquistas" currentSlug={currentActiveSlug} className="sidebar-conquistas-item" />
 
                         <NavItem icon="/icons/help_white.svg" label="Suporte" path="/suporte" currentSlug={currentActiveSlug} className="sidebar-suporte-item" />
 
+                        {/* NOVO ITEM: Configurações (do HEAD) */}
                         <NavItem 
                             icon="/icons/settings_white.svg"
                             label="Configurações" 
@@ -325,6 +357,16 @@ export default function OwnerSidebar({ children, slug }) {
                             className="sidebar-configuracoes-item" 
                         />
 
+                        {/* ITEM: Outras Lojas (do develop) - Condicional, se houver slug da empresa */}
+                        {empresaSlugParaOutrasLojas && (
+                            <Link
+                                href={`/${empresaSlugParaOutrasLojas}/lojas`} // Use o slug da empresa
+                                className="flex items-center gap-2 p-2 w-full text-left cursor-pointer rounded transition-all duration-200 font-normal text-white hover-shadow-blue"
+                            >
+                                <Image src="/icons/loja.png" alt="Outras Lojas" width={20} height={20} className="flex-shrink-0" />
+                                <span>Outras Lojas</span>
+                            </Link>
+                        )}
                     </div>
                 </div>
 
