@@ -7,7 +7,7 @@ export const inserirProduto = async ({ id_loja, nome, categoria_id, image, preco
         const { data, error } = await supabase
             .from('produto')
             .insert([{
-                id_loja, // <--- USANDO id_loja AQUI
+                id_loja,
                 nome,
                 image,
                 categoria_id,
@@ -56,8 +56,6 @@ export const listarProdutos = async () => {
         return { data: null, error: err.message };
     }
 };
-
-// ... (Função deletarProduto mantida) ...
 
 // --- Função para atualizar um produto ---
 export const atualizarProduto = async (id, camposAtualizados) => {
@@ -134,7 +132,7 @@ export const listarProdutosPorEmpresa = async (id_empresa) => {
                     id
                 )
             `)
-            .in("id_loja", ids_lojas); // <--- USANDO id_loja AQUI
+            .in("id_loja", ids_lojas);
 
         if (error) {
             console.error('ProdutoModel: Erro ao listar produtos por loja:', error);
@@ -160,7 +158,7 @@ export const listarProdutosPorLoja = async (lojaId) => {
                     id
                 )
             `)
-            .eq("id_loja", lojaId); // <--- USANDO id_loja AQUI
+            .eq("id_loja", lojaId);
 
         if (error) {
             console.error('ProdutoModel: Erro ao listar produtos por loja:', error.message);
@@ -174,22 +172,67 @@ export const listarProdutosPorLoja = async (lojaId) => {
     }
 };
 
-
 export const getProduto = async (ids) => {
-  try {
-    const { data, error } = await supabase
-      .from('produto')
-      .select('nome, id , preco')
-      .in('id', ids);
+    try {
+        const { data, error } = await supabase
+            .from('produto')
+            .select('nome, id , preco')
+            .in('id', ids);
 
-    if (error) {
-      console.error('Erro ao buscar pedido_itens:', error.message);
-      return [];
+        if (error) {
+            console.error('Erro ao buscar pedido_itens:', error.message);
+            return [];
+        }
+
+        return data ?? [];
+    } catch (e) {
+        console.error('Erro inesperado em getPedido_itens:', e);
+        return [];
     }
+};
 
-    return data ?? [];
-  } catch (e) {
-    console.error('Erro inesperado em getPedido_itens:', e);
-    return [];
-  }
+// --- NOVO: Inserir uma avaliação ---
+export const inserirAvaliacaoModel = async ({ produto_id, nome, rating, comentario }) => {
+    try {
+        const { data, error } = await supabase
+            .from('avaliacoes')
+            .insert([{
+                produto_id,
+                nome,
+                rating,
+                comentario,
+            }])
+            .select('*');
+
+        if (error) {
+            console.error('ProdutoModel: Erro ao inserir avaliação:', error.message);
+            return { data: null, error: error.message };
+        }
+
+        return { data: data[0], error: null };
+    } catch (err) {
+        console.error('ProdutoModel: Erro inesperado em inserirAvaliacao:', err.message);
+        return { data: null, error: err.message };
+    }
+};
+
+// --- NOVO: Listar avaliações de um produto ---
+export const buscarAvaliacoesPorProduto = async (produto_id) => {
+    try {
+        const { data, error } = await supabase
+            .from('avaliacoes')
+            .select(`*`)
+            .eq('produto_id', produto_id)
+            .order('data', { ascending: false });
+
+        if (error) {
+            console.error('ProdutoModel: Erro ao listar avaliações:', error.message);
+            return { data: null, error: error.message };
+        }
+
+        return { data, error: null };
+    } catch (err) {
+        console.error('ProdutoModel: Erro inesperado em buscarAvaliacoesPorProduto:', err.message);
+        return { data: null, error: err.message };
+    }
 };

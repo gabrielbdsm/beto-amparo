@@ -27,19 +27,23 @@ ChartJS.register(
   Filler
 );
 
-const Index = (slug) => {
-  const slugLoja = slug.slug
-  const [ticketData, setTicketData] = useState([]);
-  const [metrics, setMetrics] = useState({});
+const Index = ({ slug }) => {
+  const slugLoja = slug;
+  const [ticketData, setTicketData] = useState({ labels: [], daily: [] });
+  const [metrics, setMetrics] = useState({
+    totalSales: 0,
+    totalRevenue: '0',
+    averageTicket: '0',
+    cancellationRate: '0'
+  });
   const [topProducts, setTopProducts] = useState([]);
   const [cancelPercent, setCancelPercent] = useState(0);
-  let dataATT 
-  // Estados dos filtros (apenas período)
+  const [dataATT, setDataATT] = useState('');
+  
   const [dateFilter, setDateFilter] = useState('7d');
-  const [currentPeriod, setCurrentPeriod] = useState(0); // 0 = atual, 1 = anterior, etc.
-
-  // Dados originais para aplicar filtros
+  const [currentPeriod, setCurrentPeriod] = useState(0);
   const [originalData, setOriginalData] = useState(null);
+
   const getDateRangeQuery = () => {
     if (dateFilter === 'all') return '';
   
@@ -48,31 +52,29 @@ const Index = (slug) => {
     const periodStart = new Date(today.getTime() - ((days * (currentPeriod + 1)) * 24 * 60 * 60 * 1000));
     const periodEnd = new Date(today.getTime() - ((days * currentPeriod) * 24 * 60 * 60 * 1000));
   
-    // Formatar para YYYY-MM-DD
     const formatDate = d => d.toISOString().split('T')[0];
-  
     return `?start=${formatDate(periodStart)}&end=${formatDate(periodEnd)}`;
   };
 
-  function getDate(){
+  const fetchData = () => {
     const query = getDateRangeQuery();
+    const apiUrl = process.env.NEXT_PUBLIC_EMPRESA_API;
 
-    fetch( `${process.env.NEXT_PUBLIC_EMPRESA_API}/empresa/insights/${slugLoja}${query}`)
+    fetch(`${apiUrl}/empresa/insights/${slugLoja}${query}`)
       .then(res => res.json())
       .then(data => {
         setOriginalData(data);
         applyFilters(data);
+        setDataATT(new Date().toLocaleTimeString('pt-BR'));
       })
       .catch(error => {
         console.error('Error fetching data:', error);
       });
+  };
 
-  }
   useEffect(() => {
-    getDate()
-    dataATT = new Date().toLocaleTimeString('pt-BR')
-  },[dateFilter, currentPeriod], slugLoja);
-
+    fetchData();
+  }, [dateFilter, currentPeriod, slugLoja]);
 
   useEffect(() => {
     if (originalData) {
@@ -81,18 +83,17 @@ const Index = (slug) => {
   }, [dateFilter, currentPeriod]);
 
   const applyFilters = (data) => {
+    if (!data || !data.ticketPorData) return;
+
     let filteredData = { ...data };
 
-    // Filtro de data com navegação de períodos
     if (dateFilter !== 'all') {
       const days = parseInt(dateFilter);
       const today = new Date();
       
-      // Calcular o período baseado no currentPeriod
       const periodStart = new Date(today.getTime() - ((days * (currentPeriod + 1)) * 24 * 60 * 60 * 1000));
       const periodEnd = new Date(today.getTime() - ((days * currentPeriod) * 24 * 60 * 60 * 1000));
       
-      // Filtrar ticketPorData
       const filteredTickets = Object.keys(data.ticketPorData)
         .filter(dateKey => {
           const date = new Date(dateKey);
@@ -104,44 +105,32 @@ const Index = (slug) => {
         }, {});
       
       filteredData.ticketPorData = filteredTickets;
-      
     }
 
-    // Processar dados filtrados
     const labels = Object.keys(filteredData.ticketPorData);
-    const daily = labels.map(key => filteredData.ticketPorData[key].totalReceita);
+    const daily = labels.map(key => filteredData.ticketPorData[key]?.totalReceita || 0);
 
     setTicketData({ labels, daily });
 
-    // Métricas
-    const receitaTotal = Object.values(filteredData.ticketPorData).reduce((acc, cur) => acc + cur.totalReceita, 0);
-    const quantidadeTotal = Object.values(filteredData.ticketPorData).reduce((acc, cur) => acc + cur.totalQuantidade, 0);
+    const receitaTotal = Object.values(filteredData.ticketPorData).reduce((acc, cur) => acc + (cur?.totalReceita || 0), 0);
+    const quantidadeTotal = Object.values(filteredData.ticketPorData).reduce((acc, cur) => acc + (cur?.totalQuantidade || 0), 0);
     const averageTicket = quantidadeTotal > 0 ? receitaTotal / quantidadeTotal : 0;
-    console.log(data)
+    
     setMetrics({
       totalSales: quantidadeTotal,
       totalRevenue: receitaTotal.toFixed(2),
       averageTicket: averageTicket.toFixed(2),
-      cancellationRate:  data.pedidosCancelados === 0 ?
-      0
-      :
-      ((data.pedidosCancelados / data.totalPedidos) * 100).toFixed(1),
+      cancellationRate: data.pedidosCancelados === 0 ? '0' : ((data.pedidosCancelados / data.totalPedidos) * 100).toFixed(1),
     });
 
-    // Produtos
-    const produtos = data.top5Produtos.map(produto => ({
+    const produtos = (data.top5Produtos || []).map(produto => ({
       name: produto.nome,
       sales: produto.quantidade,
-      revenue: produto.preco * produto.quantidade,
+      revenue: (produto.preco || 1) * produto.quantidade,
     }));
-    console.log(produtos)
     
     setTopProducts(produtos);
-    setCancelPercent(
-      data.pedidosCancelados === 0 ?
-      0
-      :
-      ((data.pedidosCancelados / data.totalPedidos) * 100).toFixed(1));
+    setCancelPercent(data.pedidosCancelados === 0 ? 0 : parseFloat(((data.pedidosCancelados / data.totalPedidos) * 100).toFixed(1)));
   };
 
   const resetFilters = () => {
@@ -212,7 +201,7 @@ const Index = (slug) => {
     labels: ['Vendas Concluídas', 'Cancelamentos'],
     datasets: [
       {
-        data: [100 - cancelPercent, parseFloat(cancelPercent)],
+        data: [100 - cancelPercent, cancelPercent],
         backgroundColor: [
           'rgba(16, 185, 129, 0.8)',
           'rgba(239, 68, 68, 0.8)',
@@ -247,7 +236,7 @@ const Index = (slug) => {
         displayColors: false,
         callbacks: {
           label: function(context) {
-            return ` ${context.parsed.y.toLocaleString('pt-BR')}`;
+            return `${context.parsed.y.toLocaleString('pt-BR')}`;
           }
         }
       },
@@ -260,7 +249,7 @@ const Index = (slug) => {
         },
         ticks: {
           callback: function(value) {
-            return  value.toLocaleString('pt-BR');
+            return value.toLocaleString('pt-BR');
           }
         }
       },
@@ -285,33 +274,33 @@ const Index = (slug) => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-2 sm:p-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-slate-800 mb-2">
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-4xl font-bold text-slate-800 mb-2">
             Dashboard de Métricas
           </h1>
-          <p className="text-slate-600">
+          <p className="text-sm sm:text-base text-slate-600">
             Insights e análises de vendas em tempo real
           </p>
         </div>
 
         {/* Filtros Simplificados */}
-        <div className="bg-white rounded-xl shadow-lg p-6 border border-slate-200 mb-8">
-          <div className="flex flex-wrap items-center gap-4 mb-4">
+        <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 border border-slate-200 mb-6 sm:mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-4">
             <h3 className="text-lg font-semibold text-slate-800">Filtros</h3>
             <button
               onClick={resetFilters}
-              className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+              className="text-sm text-blue-600 hover:text-blue-800 font-medium self-start sm:self-auto"
             >
               Limpar Filtros
             </button>
           </div>
           
-          <div className="flex flex-wrap items-center gap-4">
+          <div className="flex flex-col lg:flex-row lg:items-center gap-4">
             {/* Filtro de Período */}
-            <div className="flex-1 min-w-48">
+            <div className="flex-1 min-w-full sm:min-w-48">
               <label className="block text-sm font-medium text-slate-700 mb-2">
                 Período
               </label>
@@ -329,20 +318,20 @@ const Index = (slug) => {
 
             {/* Navegação de Períodos */}
             {dateFilter !== 'all' && (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <button
                   onClick={() => navigatePeriod('prev')}
-                  className="px-3 py-2 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
+                  className="px-3 py-2 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors text-sm"
                 >
                   ← Anterior
                 </button>
-                <span className="px-4 py-2 bg-blue-50 text-blue-700 rounded-lg font-medium">
+                <span className="px-4 py-2 bg-blue-50 text-blue-700 rounded-lg font-medium text-sm">
                   {getPeriodLabel()}
                 </span>
                 <button
                   onClick={() => navigatePeriod('next')}
                   disabled={currentPeriod === 0}
-                  className="px-3 py-2 bg-slate-100 hover:bg-slate-200 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors"
+                  className="px-3 py-2 bg-slate-100 hover:bg-slate-200 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors text-sm"
                 >
                   Próximo →
                 </button>
@@ -367,67 +356,63 @@ const Index = (slug) => {
         </div>
 
         {/* Cards de Métricas Principais */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-xl shadow-lg p-6 border border-slate-200">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
+          <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 border border-slate-200">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-slate-600">Total de Vendas</p>
-                <p className="text-3xl font-bold text-slate-900">
+                <p className="text-xs sm:text-sm font-medium text-slate-600">Total de Vendas</p>
+                <p className="text-xl sm:text-3xl font-bold text-slate-900">
                   {metrics.totalSales}
                 </p>
-              
               </div>
-              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                <svg className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                 </svg>
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-lg p-6 border border-slate-200">
+          <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 border border-slate-200">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-slate-600">Receita Total</p>
-                <p className="text-3xl font-bold text-slate-900">
+                <p className="text-xs sm:text-sm font-medium text-slate-600">Receita Total</p>
+                <p className="text-xl sm:text-3xl font-bold text-slate-900">
                   R$ {metrics.totalRevenue}
                 </p>
-                
               </div>
-              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                <svg className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
                 </svg>
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-lg p-6 border border-slate-200">
+          <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 border border-slate-200">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-slate-600">Ticket Médio</p>
-                <p className="text-3xl font-bold text-slate-900">
+                <p className="text-xs sm:text-sm font-medium text-slate-600">Ticket Médio</p>
+                <p className="text-xl sm:text-3xl font-bold text-slate-900">
                   R$ {metrics.averageTicket}
                 </p>
-              
               </div>
-              <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
-                <svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+                <svg className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 9a2 2 0 10-4 0v5a2 2 0 01-2 2h6m-6-4h4m8 0a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-lg p-6 border border-slate-200">
+          <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 border border-slate-200">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-slate-600">Taxa de Cancelamento</p>
-                <p className="text-3xl font-bold text-red-600">{metrics.cancellationRate}%</p>
-
+                <p className="text-xs sm:text-sm font-medium text-slate-600">Taxa de Cancelamento</p>
+                <p className="text-xl sm:text-3xl font-bold text-red-600">{metrics.cancellationRate}%</p>
               </div>
-              <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
-                <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-red-100 rounded-lg flex items-center justify-center">
+                <svg className="w-5 h-5 sm:w-6 sm:h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </div>
@@ -436,57 +421,57 @@ const Index = (slug) => {
         </div>
 
         {/* Gráficos */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-          {/* Vendas por Dia - Melhorado */}
-          <div className="bg-white rounded-xl shadow-lg p-6 border border-slate-200">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold text-slate-800">Vendas por Período</h3>
-              <div className="text-sm text-slate-500">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 mb-6 sm:mb-8">
+          {/* Vendas por Dia */}
+          <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 border border-slate-200">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-2">
+              <h3 className="text-lg sm:text-xl font-bold text-slate-800">Vendas por Período</h3>
+              <div className="text-xs sm:text-sm text-slate-500">
                 {getPeriodLabel()}
               </div>
             </div>
-            <div className="h-80">
+            <div className="h-64 sm:h-80">
               <Line data={enhancedDailySalesConfig} options={enhancedChartOptions} />
             </div>
           </div>
 
           {/* Top 5 Produtos */}
-          <div className="bg-white rounded-xl shadow-lg p-6 border border-slate-200">
-            <h3 className="text-xl font-bold text-slate-800 mb-4">Top 5 Produtos Vendidos</h3>
-            <div className="h-80">
+          <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 border border-slate-200">
+            <h3 className="text-lg sm:text-xl font-bold text-slate-800 mb-4">Top 5 Produtos Vendidos</h3>
+            <div className="h-64 sm:h-80">
               <Bar data={topProductsConfig} options={enhancedChartOptions} />
             </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 mb-6 sm:mb-8">
           {/* Taxa de Cancelamento */}
-          <div className="bg-white rounded-xl shadow-lg p-6 border border-slate-200">
-            <h3 className="text-xl font-bold text-slate-800 mb-4">Taxa de Cancelamento</h3>
-            <div className="h-80">
+          <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 border border-slate-200">
+            <h3 className="text-lg sm:text-xl font-bold text-slate-800 mb-4">Taxa de Cancelamento</h3>
+            <div className="h-64 sm:h-80">
               <Doughnut data={cancellationConfig} options={doughnutOptions} />
             </div>
           </div>
         </div>
 
         {/* Tabela de Produtos Detalhada */}
-        <div className="bg-white rounded-xl shadow-lg p-6 border border-slate-200 mb-8">
-          <h3 className="text-xl font-bold text-slate-800 mb-6">Produtos Mais Vendidos - Detalhado</h3>
+        <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 border border-slate-200 mb-6 sm:mb-8">
+          <h3 className="text-lg sm:text-xl font-bold text-slate-800 mb-4 sm:mb-6">Produtos Mais Vendidos - Detalhado</h3>
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead>
                 <tr className="border-b border-slate-200">
-                  <th className="pb-3 text-sm font-semibold text-slate-600">Produto</th>
-                  <th className="pb-3 text-sm font-semibold text-slate-600">Unidades Vendidas</th>
-                  <th className="pb-3 text-sm font-semibold text-slate-600">Receita Total</th>
+                  <th className="pb-3 text-xs sm:text-sm font-semibold text-slate-600">Produto</th>
+                  <th className="pb-3 text-xs sm:text-sm font-semibold text-slate-600">Unidades Vendidas</th>
+                  <th className="pb-3 text-xs sm:text-sm font-semibold text-slate-600">Receita Total</th>
                 </tr>
               </thead>
               <tbody>
                 {topProducts.map((product, index) => (
                   <tr key={index} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
-                    <td className="py-4 text-slate-800 font-medium">{product.name}</td>
-                    <td className="py-4 text-slate-600">{product.sales}</td>
-                    <td className="py-4 text-slate-600">R$ {(product.revenue ).toLocaleString()}</td>
+                    <td className="py-3 sm:py-4 text-xs sm:text-sm text-slate-800 font-medium">{product.name}</td>
+                    <td className="py-3 sm:py-4 text-xs sm:text-sm text-slate-600">{product.sales}</td>
+                    <td className="py-3 sm:py-4 text-xs sm:text-sm text-slate-600">R$ {product.revenue.toLocaleString()}</td>
                   </tr>
                 ))}
               </tbody>
@@ -494,8 +479,12 @@ const Index = (slug) => {
           </div>
         </div>
 
-    
-        
+        {/* Footer */}
+        <div className="mt-6 sm:mt-8 text-center">
+          <p className="text-slate-500 text-xs sm:text-sm">
+            Dados atualizados em tempo real • Última atualização: {dataATT || new Date().toLocaleTimeString('pt-BR')}
+          </p>
+        </div>
       </div>
     </div>
   );

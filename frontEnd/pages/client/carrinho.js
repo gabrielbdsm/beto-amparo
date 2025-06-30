@@ -4,6 +4,8 @@ import Image from "next/image";
 import { FaTrashAlt } from "react-icons/fa";
 import NavBar from "@/components/NavBar";
 import { useRouter } from "next/router";
+import toast from 'react-hot-toast'; 
+import ConfirmModal from "@/components/ConfirmModal";
 
 export default function CarrinhoCliente({ empresaId }) {
     const [itensCarrinho, setItensCarrinho] = useState([]);
@@ -138,6 +140,7 @@ export default function CarrinhoCliente({ empresaId }) {
                 const url = `${API_BASE_URL}/loja/${slug}/carrinho/${itemId}`;
                 const response = await fetch(url, {
                     method: "PUT",
+                    credentials: 'include',
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ quantidade: novaQuantidade }),
                 });
@@ -157,7 +160,7 @@ export default function CarrinhoCliente({ empresaId }) {
                 });
             } catch (error) {
                 console.error("Erro ao atualizar quantidade:", error);
-                alert("Não foi possível atualizar a quantidade do item.");
+                toast.error("Não foi possível atualizar a quantidade do item.");
             }
         },
         [slug, API_BASE_URL]
@@ -181,21 +184,21 @@ export default function CarrinhoCliente({ empresaId }) {
             const response = await fetch(`${API_BASE_URL}/loja/${slug}/validar-cupom?nome=${codigo}`);
             if (!response.ok) {
                 const erro = await response.json();
-                alert(erro.erro);
+                toast.error(erro.erro);
                 return null;
             }
             const data = await response.json();
             return data; // { id, nome, valor }
         } catch (error) {
             console.error('Erro ao validar cupom:', error);
-            alert('Erro ao validar cupom.');
+            toast.error('Erro ao validar cupom.');
             return null;
         }
     };
 
     const handleAplicarCupom = async () => {
     if (!codigoCupom) {
-        alert("Digite o código do cupom.");
+        toast.error("Digite o código do cupom.");
         return;
     }
 
@@ -212,19 +215,19 @@ export default function CarrinhoCliente({ empresaId }) {
 
     const handleFinalizarCompra = useCallback(async () => {
         if (!lojaAberta) {
-            alert("A loja está fechada e não é possível realizar o pedidodno momento.");
+            toast.error("A loja está fechada e não é possível realizar o pedidodno momento.");
             return;
         }
         if (itensCarrinho.length === 0) {
-            alert("Seu carrinho está vazio. Adicione itens antes de realizar o pedido.");
+            toast.error("Seu carrinho está vazio. Adicione itens antes de realizar o pedido.");
             return;
         }
         if (lojaId === null) {
-            alert("Informações da loja não carregadas. Tente novamente.");
+            toast.error("Informações da loja não carregadas. Tente novamente.");
             return;
         }
         if (!cliente?.id) { // Verifica se o cliente está logado e tem ID
-            alert("Você precisa estar logado para realizar o pedido.");
+            toast.error("Você precisa estar logado para realizar o pedido.");
             router.push(`/login?redirect=${encodeURIComponent(router.asPath)}`);
             return;
         }
@@ -331,7 +334,6 @@ export default function CarrinhoCliente({ empresaId }) {
                 }
             }
 
-            alert("Pedido realizado com sucesso!");
            router.push(`/client/finalizarPedido?slug=${slug}&pedidoId=${pedidoId}&clienteId=${cliente.id}`);
 
             setItensCarrinho([]);
@@ -340,7 +342,7 @@ export default function CarrinhoCliente({ empresaId }) {
             setPontosParaUsar(0);
         } catch (error) {
             console.error("Erro ao realizar o pedido:", error);
-            alert(`Ocorreu um erro ao realizar o pedido: ${error.message || "Tente novamente."}`);
+            toast.error(`Ocorreu um erro ao realizar o pedido: ${error.message || "Tente novamente."}`);
         }
     }, [
         lojaAberta,
@@ -377,7 +379,7 @@ export default function CarrinhoCliente({ empresaId }) {
                 });
             } catch (error) {
                 console.error("Erro ao remover item:", error);
-                alert("Não foi possível remover o item do carrinho.");
+                toast.error("Não foi possível remover o item do carrinho.");
             }
         },
         [slug, API_BASE_URL]

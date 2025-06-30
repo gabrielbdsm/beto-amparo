@@ -6,7 +6,11 @@ dotenv.config();
 export const criarPersonalizacao = async (req, res) => {
   try {
     // --- ALTERAÇÃO AQUI: Adicione idEmpresa ao req.body ---
-    const { nomeFantasia, corPrimaria, corSecundaria, slogan, fotoLoja, slugLoja, idEmpresa } = req.body;
+    const { nomeFantasia, corPrimaria, corSecundaria, slogan, fotoLoja, slugLoja ,tipoLoja} = req.body;
+
+
+      const idEmpresa = req.IdEmpresa;
+   
     // --- FIM DA ALTERAÇÃO ---
     console.log('criarPersonalizacao: Dados recebidos no req.body:', req.body); // ADICIONE ESTE LOG
     console.log('criarPersonalizacao: ID da empresa recebido:', idEmpresa); // ADICIONE ESTE LOG
@@ -37,6 +41,7 @@ export const criarPersonalizacao = async (req, res) => {
         slug_loja: slugLoja,
         // --- ALTERAÇÃO AQUI: Adicione id_empresa na inserção ---
         id_empresa: idEmpresa, // Certifique-se de que o nome da coluna no seu DB é 'id_empresa'
+        tipoLoja
         // --- FIM DA ALTERAÇÃO ---
       })
       .select();

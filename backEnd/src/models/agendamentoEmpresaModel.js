@@ -50,3 +50,4 @@ export const updateAgendamentoController = async (date, time, empresaId, status,
 
   return data;
 }
+

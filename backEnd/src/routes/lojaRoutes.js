@@ -3,6 +3,9 @@ import { criarPersonalizacao, verificarSlug , getLojaBySlug } from '../controlle
 import { listarProdutosPorLoja } from '../controllers/produto/ProdutoController.js';
 import { empresaPrivate } from '../middleware/protectRouterEmpresa.js';
 import * as lojaController from '../controllers/Empresa/lojaController.js';
+import { buscarRecomendacoes } from '../controllers/recomendacaoController.js';
+import { routePrivate } from '../middleware/protectRoutes.js';
+
 const router = express.Router();
 
 // Rota GET de teste
@@ -19,7 +22,7 @@ router.get('/produtos', (req, res) => {
 });
 
 // Rota POST para personalização
-router.post('/personalizacao', criarPersonalizacao);
+router.post('/personalizacao', empresaPrivate ,criarPersonalizacao);
 
 // Rota GET para verificar disponibilidade de slug
 router.get('/check-slug', verificarSlug);
@@ -27,4 +30,6 @@ router.get('/slug/:slug', getLojaBySlug);
 router.get('/produtos/loja/:slug', listarProdutosPorLoja); // Mantenha esta como sua rota original
 router.get('/empresa/loja/:slugLoja', empresaPrivate ,  lojaController.getLojaBySlugAndEmpresaController);
 router.put('/loja/:slugLoja/toggle-status', empresaPrivate, lojaController.toggleLojaStatusController);
+router.get('/:slug/recomendacoes', buscarRecomendacoes);
+router.get('/tipoLoja/:slug' , lojaController.tipoLoja)
 export default router;

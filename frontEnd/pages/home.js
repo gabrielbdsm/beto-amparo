@@ -35,9 +35,9 @@ export default function Home() {
           <h1 className="text-3xl lg:text-5xl font-bold mb-4">Transforme o atendimento do seu negócio</h1>
           <p className="text-lg lg:text-xl mb-6">Automatize pedidos e agendamentos com a cara do seu negócio.</p>
           <div className="flex flex-col lg:flex-row gap-4 justify-center">
-            <Link href="/cadastro" passHref>
+            <Link href="/cadastroEmpresa" passHref>
               <button className="bg-[#F7941D] text-white font-semibold px-6 py-3 rounded-xl shadow-md hover:bg-[#d37313] transition duration-300">
-                Quero experimentar grátis
+                Quero experimentar agora
               </button>
             </Link>
             <Link href="/sobre" passHref>
@@ -166,7 +166,7 @@ export default function Home() {
         <div className="flex flex-row flex-wrap justify-center gap-4 mb-2">
           <Link href="/suporte" className="font-semibold hover:underline text-white">Suporte</Link>
           <Link href="/politicas" className="font-semibold hover:underline text-white">Política de Privacidade</Link>
-          <Link href="/cadastro" className="font-semibold hover:underline text-white">Comece grátis</Link>
+          <Link href="/cadastroEmpresa" className="font-semibold hover:underline text-white">Comece agora</Link>
         </div>
         <p className="text-xs text-white opacity-60">© 2025 Beto Amparo. Todos os direitos reservados.</p>
       </footer>
