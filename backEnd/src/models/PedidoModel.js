@@ -78,29 +78,28 @@ export async function atualizarStatusPedido(pedidoId, newStatus) {
   }
 }
 export async function listarPedidosDaLoja(idLoja) {
-  console.log('DEBUG: PedidoModel: Listando pedidos para loja ID:', idLoja);
-  // O `select` foi ajustado para trazer todos os campos necessários, incluindo JOINs
-  let query = supabase
-      .from('pedidos')
-      .select(`
-          *, // Seleciona todos os campos da tabela 'pedidos'
-          cliente:id_cliente ( id, nome, email, telefone ), // JOIN com a tabela 'clientes'
-          pedido_itens:pedido_itens ( // JOIN com a tabela 'pedido_itens'
-              *,
-              produto:produto_id ( id, nome, preco, image, descricao ) // JOIN com a tabela 'produto'
-          )
-      `)
-      .eq('id_loja', idLoja)
-      .order('data', { ascending: false });
+  console.log('DEBUG: PedidoModel: Listando pedidos para loja ID:', idLoja);
+  let query = supabase
+      .from('pedidos')
+      .select(`
+          *,
+          cliente:id_cliente (id, nome, email, telefone),
+          pedido_itens:pedido_itens (
+              *,
+              produto:produto_id (id, nome, preco, image, descricao)
+          )
+      `)
+      .eq('id_loja', idLoja)
+      .order('data', { ascending: false });
 
-  const { data, error } = await query;
+  const { data, error } = await query;
 
-  if (error) {
-      console.error('DEBUG: PedidoModel: Erro ao listar pedidos da loja:', error.message);
-      return { data: null, error };
-  }
-  console.log('DEBUG: PedidoModel: Pedidos listados com sucesso:', data.length, 'pedidos.');
-  return { data, error: null };
+  if (error) {
+      console.error('DEBUG: PedidoModel: Erro ao listar pedidos da loja:', error.message);
+      return { data: null, error };
+  }
+  console.log('DEBUG: PedidoModel: Pedidos listados com sucesso:', data.length, 'pedidos.');
+  return { data, error: null };
 }
 
 export async function getDadosVendasAgregados(idLoja, periodo = 'semana') {

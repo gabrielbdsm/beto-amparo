@@ -13,7 +13,7 @@ export const inserirProduto = async ({ id_loja, nome, categoria_id, image, preco
                 categoria_id,
                 preco,
                 descricao,
-                tocar_estoque: controlar_estoque, // Corrigido para tocar_estoque, se for o nome correto da coluna
+                controlar_estoque, 
                 quantidade: quantidade || 0,
                 ativo: true,
             }])

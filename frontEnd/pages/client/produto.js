@@ -230,6 +230,7 @@ export default function Produto() {
                                     quantidade={quantidade}
                                     setQuantidade={setQuantidade}
                                     corPrimaria={corPrimaria}
+                                    className="text-black"
                                 />
                             </div>
 

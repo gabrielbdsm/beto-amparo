@@ -19,7 +19,8 @@ const QuantidadeControl = ({ produto, quantidade, setQuantidade, corPrimaria }) 
       >
         -
       </button>
-      <span className="text-xl font-medium w-8 text-center">{quantidade}</span>
+      {/* Adicionado text-black aqui */}
+      <span className="text-xl font-medium w-8 text-center text-black">{quantidade}</span> 
       <button
         onClick={() => setQuantidade((q) => q + 1)}
         className="w-10 h-10 flex items-center justify-center rounded-full text-white transition-colors"
