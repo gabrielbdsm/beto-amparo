@@ -1,6 +1,9 @@
 # node_modules para backend e frontend
 **/node_modules/
 node_modules/
+# dependências de desenvolvimento
+
+/public/sw.js
 
 # arquivos de log
 *.log
