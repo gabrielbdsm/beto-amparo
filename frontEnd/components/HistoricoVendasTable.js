@@ -11,6 +11,26 @@ export default function HistoricoVendasTable({ pedidos }) {
     setExpandedPedidoId(expandedPedidoId === pedidoId ? null : pedidoId);
   };
 
+  // --- NOVA FUNÇÃO: Traduzir status numérico para texto ---
+  const traduzirStatus = (status) => {
+    switch (status) {
+      case 0:
+        return 'Aguardando confirmação';
+      case 1:
+        return 'Confirmado';
+      case 2:
+        return 'Em preparação';
+      case 3:
+        return 'Pronto para entrega';
+      case 4:
+        return 'Finalizado';
+      case 5: // Este é o status de 'Cancelado' conforme sua lógica de backend
+        return 'Cancelado';
+      default:
+        return 'Status desconhecido';
+    }
+  };
+
   // Função auxiliar para formatar a data
   const formatarData = (dataString) => {
     if (!dataString) return 'N/A';
@@ -69,7 +89,9 @@ export default function HistoricoVendasTable({ pedidos }) {
                 <td className="py-3 px-4 text-sm text-gray-800">{formatarData(pedido.data)}</td>
                 <td className="py-3 px-4 text-sm text-gray-800">{pedido.id_cliente}</td> {/* Altere para pedido.clientes?.nome se estiver fazendo join */}
                 <td className="py-3 px-4 text-sm text-gray-800">{formatarPreco(pedido.total)}</td>
-                <td className="py-3 px-4 text-sm text-gray-800">{pedido.status || 'N/A'}</td>
+                {/* --- MUDANÇA AQUI: Chamar a função traduzirStatus --- */}
+                <td className="py-3 px-4 text-sm text-gray-800">{traduzirStatus(pedido.status)}</td>
+                {/* --- FIM DA MUDANÇA --- */}
                 <td className="py-3 px-4 text-center">
                   <button
                     onClick={() => toggleExpand(pedido.id)}
@@ -110,7 +132,7 @@ export default function HistoricoVendasTable({ pedidos }) {
                   </td>
                 </tr>
               )}
-               {expandedPedidoId === pedido.id && (!pedido.pedido_itens || pedido.pedido_itens.length === 0) && (
+                {expandedPedidoId === pedido.id && (!pedido.pedido_itens || pedido.pedido_itens.length === 0) && (
                 <tr>
                   <td colSpan="6" className="p-4 bg-gray-50 border-t border-gray-200">
                     <p className="text-gray-600 text-center">Nenhum item encontrado para este pedido.</p>

@@ -66,7 +66,7 @@ export default function ControleEstoqueTable({ produtos, getImagemProduto }) {
       // A melhor prática é notificar o componente pai (DashboardPage) para refetch
       // ou para atualizar seu estado de 'produtosEstoque'.
       // Por simplicidade, vamos manter um alert e fechar a edição.
-      alert('Estoque ajustado com sucesso!');
+     // alert('Estoque ajustado com sucesso!');
       // TODO: Adicionar uma prop onStockAdjusted={() => router.reload()} ou similar do pai
       handleCancelEdit(); // Fecha o modo de edição
       router.reload();

@@ -1,7 +1,10 @@
+// frontEnd/components/NavBar.js
+
 import Link from "next/link";
 import { useRouter } from 'next/router';
 import { useState, useEffect } from 'react';
 import { verificarTipoDeLoja } from '../hooks/verificarTipoLoja';
+import Image from "next/image";
 
 const NavBar = ({ site, corPrimaria = "#3B82F6" }) => {
   const router = useRouter();
@@ -22,7 +25,6 @@ const NavBar = ({ site, corPrimaria = "#3B82F6" }) => {
     return router.asPath.startsWith(path);
   };
   
-
   const activeClass = "text-gray-400 rounded-lg px-3 py-1";
 
   return (
@@ -30,15 +32,21 @@ const NavBar = ({ site, corPrimaria = "#3B82F6" }) => {
       className="fixed bottom-0 left-0 right-0 z-50 flex justify-around items-center text-white py-2 shadow-inner rounded-t-4xl"
       style={{ backgroundColor: corPrimaria }}
     >
-    <Link
-  href={`/loja/${slug}`}
-  className={`flex flex-col items-center hover:opacity-80 ${
-    isActive(`/loja/${slug}`, true) ? activeClass : ''
-  }`}
->
-        <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l9-9 9 9M4 10v10a1 1 0 001 1h5m6-11v10a1 1 0 001 1h5" />
-        </svg>
+      <Link
+        href={`/loja/${slug}`}
+        className={`flex flex-col items-center hover:opacity-80 ${
+          isActive(`/loja/${slug}`, true) ? activeClass : ''
+        }`}
+      >
+        <Image
+          src="/icons/home2.svg"
+          alt="Início"
+          width={24} 
+          height={24} 
+          // Adicione 'block' e 'flex-shrink-0' para garantir que não haja expansão indesejada
+          className="mb-1 block flex-shrink-0" 
+          unoptimized 
+        />
         <span>Início</span>
       </Link>
 

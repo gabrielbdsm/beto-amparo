@@ -65,7 +65,6 @@ export default function ProdutosInativosPage() {
       }
 
       setProdutosInativos(prevProdutos => prevProdutos.filter(p => p.id !== productToHandle.id));
-      toast.success('Produto ativado com sucesso!');
       handleCloseConfirmModal();
 
     } catch (err) {
@@ -112,7 +111,7 @@ export default function ProdutosInativosPage() {
 
       // Se a exclusão foi bem-sucedida (status 200, 204), remove o produto da lista inativos
       setProdutosInativos(prevProdutos => prevProdutos.filter(p => p.id !== productToHandle.id));
-      toast.success('Produto excluído permanentemente com sucesso!');
+     // alert('Produto excluído permanentemente com sucesso!');
       handleCloseConfirmModal();
 
     } catch (err) {
