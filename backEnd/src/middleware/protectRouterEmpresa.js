@@ -54,6 +54,7 @@ export const empresaPrivate = async (req, res, next) => {
 
 
         req.idEmpresa = decoded.id; 
+        req.IdEmpresa = decoded.id; 
         req.user = { 
             ...empresa, 
             lojas: lojasDaEmpresa 
@@ -92,16 +93,7 @@ export const empresaPrivate = async (req, res, next) => {
                 });
             }
         }
-        // Cenário 3: Não há slug na URL OU o slug não corresponde nem à empresa nem a uma loja.
-        else if (slugParam && slugParam !== slugDaEmpresaDoBanco) {
-            console.log('DEBUG_AUTH: Acesso negado: Slug da URL não corresponde ao slug da EMPRESA nem a nenhuma LOJA autenticada.');
-            return res.status(403).json({
-                error: "Acesso negado: O slug na URL não corresponde a esta empresa ou suas lojas.",
-                expectedEmpresaSlug: slugDaEmpresaDoBanco,
-                expectedLojaSlugs: slugsPermitidosDaLoja,
-                receivedSlug: slugParam
-            });
-        } else {
+      else {
             console.warn('DEBUG_AUTH: NENHUM SLUG DE EMPRESA/LOJA ENCONTRADO NA URL. Validação do slug específica pode ser pulada.');
             // Isso pode ser aceitável para rotas como /empresa/dashboard (genérico para a empresa)
             // mas não para rotas que esperam um slug de loja.
