@@ -15,30 +15,21 @@ const nextConfig = withPWA({
   },
 
   images: {
-
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'cufzswdymzevdeonjgan.supabase.co',
+        hostname: 'cufzswdymzevdeonjgan.supabase.co', // Domínio de armazenamento de imagens existente
         pathname: '/storage/v1/object/public/**',
       },
       {
         protocol: 'https',
-        hostname: 'qkiyyvnyvjqsjnobfyqn.supabase.co',
+        hostname: 'qkiyyvnyvjqsjnobfyqn.supabase.co', // Domínio de armazenamento de imagens de clientes/produtos
         pathname: '/storage/v1/object/public/**',
       },
+      // Se houver outros domínios de imagem, adicione-os aqui.
     ],
   },
-/*
-      remotePatterns: [
-        {
-          protocol: 'https',
-          hostname: 'qkiyyvnyvjqsjnobfyqn.supabase.co',
-          pathname: '/storage/v1/object/public/**',
-        },
-      ],
-    },
-*/
+  // O bloco `remotePatterns` duplicado e comentado foi removido aqui para limpeza.
 
   async rewrites() {
     return [
@@ -76,7 +67,7 @@ const nextConfig = withPWA({
       },
       {
         source: '/:slug/carrinho',
-        destination: '/client/carrinho',
+        destination: '/client/carrinho', // Cuidado com rotas muito genéricas que podem sobrescrever outras
       },
       {
         source: '/loja/:site',
@@ -117,7 +108,7 @@ const nextConfig = withPWA({
       },
       {
         source: '/api/:path*',
-        destination: 'https://beto-amparo.onrender.com/:path*',
+        destination: 'https://beto-amparo.onrender.com/:path*', // Destino para a sua API de backend
       },
     ];
   },

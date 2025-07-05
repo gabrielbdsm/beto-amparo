@@ -81,25 +81,41 @@ export default function PersonalizacaoLoja() {
   }
 
   async function uploadImagemSupabase(file, pasta) {
-  setUploading(true);
-  try {
-    const nomeArquivo = `${Date.now()}-${file.name}`;
-    const { data, error } = await supabase.storage.from(pasta).upload(nomeArquivo, file, {
-      cacheControl: '3600',
-      upsert: false,
-    });
-
-    if (error) throw error;
-
-    const { data: urlData } = supabase.storage.from(pasta).getPublicUrl(nomeArquivo);
-    setUploading(false);
-    return urlData.publicUrl;
-  } catch (error) {
-    setUploading(false);
-    console.error('Erro no upload:', error.message);
-    return null;
+    setUploading(true);
+    try {
+      const nomeArquivo = `${Date.now()}-${file.name}`;
+      console.log("📁 Nome do arquivo:", nomeArquivo);
+  
+      const { data, error } = await supabase.storage.from(pasta).upload(nomeArquivo, file, {
+        cacheControl: '3600',
+        upsert: false,
+      });
+      
+      console.log("📦 Resultado do upload:", data, error); // ADICIONE ESTE LOG!      
+  
+      if (error) {
+        console.error("❌ Erro ao enviar imagem para Supabase:", error);
+        throw error;
+      }
+  
+      const { data: urlData, error: urlError } = supabase.storage.from(pasta).getPublicUrl(nomeArquivo);
+  
+      console.log("🌐 URL gerada:", urlData?.publicUrl);
+  
+      if (urlError) {
+        console.error("❌ Erro ao gerar URL pública:", urlError);
+        throw urlError;
+      }
+  
+      setUploading(false);
+      return urlData.publicUrl;
+    } catch (error) {
+      setUploading(false);
+      console.error("🛑 Erro no uploadImagemSupabase:", error.message);
+      return null;
+    }
   }
-}
+  
   useEffect(() => {
     if (!slug) return;
 
@@ -140,16 +156,21 @@ export default function PersonalizacaoLoja() {
 
 
   async function handleSubmit(e) {
-  e.preventDefault();
+    e.preventDefault();
+    console.log("🧪 Enviando formulário..."); 
+  
 
   try {
     let urlFotoLoja = dados.foto_loja;
     let urlBanner = dados.banner;
 
     if (imagemFotoLoja) {
-      const url = await uploadImagemSupabase(imagemFotoLoja, 'lojas');
+      console.log("📤 Enviando imagem da loja...");
+      const url = await uploadImagemSupabase(imagemFotoLoja, 'loja');
+      console.log("📎 URL da imagem:", url);
       if (url) urlFotoLoja = url;
     }
+    
 
     if (imagemBanner) {
       const imagemCortada = await cropBannerImage(imagemBanner, posicaoVerticalBanner);
@@ -239,7 +260,7 @@ export default function PersonalizacaoLoja() {
             id="fotoLojaInput"
             type="file"
             style={{ display: 'none' }}
-            onChange={e => handleSelect(e, 'foto_loja')}
+            onChange={e => handleImageSelect(e, 'foto_loja')}
           />
           <label
             htmlFor="fotoLojaInput"

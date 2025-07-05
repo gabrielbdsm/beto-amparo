@@ -3,24 +3,32 @@
 import * as produtoModel from '../../models/ProdutoModel.js';
 import { validarProduto } from '../../validators/ProdutoValidators.js';
 import * as ImageModel from '../../models/ImageModel.js';
-import * as lojaModel from '../../models/Loja.js'; // Assumindo que este modelo existe
+import * as lojaModel from '../../models/Loja.js'; 
 import supabase from '../../config/SupaBase.js';
-import jwt from 'jsonwebtoken'; // Importar JWT
+import jwt from 'jsonwebtoken'; 
+import { trackMissionProgress } from '../../../services/missionTrackerService.js';
 
 
 // --- FUNÇÃO AUXILIAR PARA OBTER EMPRESA ID DO TOKEN ---
-// Esta função é útil para reutilizar a lógica de autenticação em diferentes endpoints.
 async function getEmpresaIdFromToken(req) {
+    console.log('DEBUG: Requisição recebida em getEmpresaIdFromToken.');
+    console.log('DEBUG: Cookies na requisição:', req.cookies);
+
     const token = req.cookies?.token_empresa;
+    console.log('DEBUG: Valor de token_empresa do cookie:', token);
 
     if (!token) {
+        console.log('DEBUG: Token não encontrado no cookie.');
         return { error: { message: 'Token não fornecido no cookie' } };
     }
 
     try {
+        console.log('DEBUG: Tentando verificar o token com JWT_SECRET...');
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        console.log('DEBUG: Token decodificado com sucesso. Empresa ID:', decoded.id);
         return { empresaId: decoded.id };
     } catch (err) {
+        console.error('DEBUG: Erro ao verificar o token:', err.message);
         return { error: { message: 'Token inválido ou expirado' } };
     }
 }
@@ -37,10 +45,10 @@ export const criarProduto = async (req, res) => {
             tamanhos,
             controlar_estoque,
             quantidade,
-            id_loja, // Este é o ID da loja enviado do frontend
+            id_loja,
         } = req.body;
 
-        const imagem = req.file; // Vem do middleware Multer
+        const imagem = req.file;
 
         // --- Conversão de tipos e validações iniciais ---
         const tamanhosParsed = tamanhos ? JSON.parse(tamanhos) : [];
@@ -73,7 +81,7 @@ export const criarProduto = async (req, res) => {
         }
 
         // --- Verificação de Autorização (usando req.Id do middleware existente) ---
-        const id_empresa_autenticada = req.Id; // ID da empresa vindo do JWT através do middleware
+        const id_empresa_autenticada = req.Id;
 
         console.log('DEBUG: ID da loja recebido do frontend (id_loja):', id_loja, 'Tipo:', typeof id_loja);
         console.log('DEBUG: ID da empresa autenticada do JWT (id_empresa_autenticada):', id_empresa_autenticada, 'Tipo:', typeof id_empresa_autenticada);
@@ -96,7 +104,7 @@ export const criarProduto = async (req, res) => {
 
         // --- Salvar Imagem ---
         console.log('DEBUG: Loja verificada, prosseguindo para salvar imagem...');
-        const URlimagem = await ImageModel.salvarImagem(imagem.buffer, imagem.originalname, imagem.mimetype, lojaIdNum); // Assumindo que UUID é o id_loja
+        const URlimagem = await ImageModel.salvarImagem(imagem.buffer, imagem.originalname, imagem.mimetype, lojaIdNum);
         console.log('DEBUG: Imagem salva. URL:', URlimagem);
 
         if (!URlimagem) {
@@ -114,8 +122,8 @@ export const criarProduto = async (req, res) => {
             descricao,
             tamanhos: tamanhosParsed,
             controlar_estoque: controlarEstoqueBool,
-            quantidade: quantidadeParsed, // <-- ATUALIZADO: Usar 'quantidade'
-            ativo: true,
+            quantidade: quantidadeParsed,
+            ativo: true, // Novo produto geralmente é ativo
         });
         console.log('DEBUG: Resultado da inserção do produto:', novoProduto, 'Erro:', inserirProdutoError);
 
@@ -124,11 +132,61 @@ export const criarProduto = async (req, res) => {
             return res.status(500).json({ mensagem: 'Erro ao inserir produto no banco de dados.', erro: inserirProdutoError.message });
         }
 
+        // --- Rastreamento de missão para 'product_creation' ---
+        if (lojaIdNum) {
+            console.log('DEBUG: Chamando trackMissionProgress para "product_creation".');
+            await trackMissionProgress(lojaIdNum, 'product_creation', 1);
+            console.log('DEBUG: Missão "product_creation" rastreada para LOJA:', lojaIdNum);
+        } else {
+            console.warn('DEBUG: criarProduto: Não foi possível rastrear missão "product_creation": ID da LOJA não encontrado.');
+        }
+
+        // --- Rastreamento: "Portfólio em Crescimento" (active_products_count) ---
+        console.log('DEBUG: Iniciando contagem de produtos ativos para "Portfólio em Crescimento".');
+        const { count: totalActiveProducts, error: countActiveError } = await supabase
+            .from('produto')
+            .select('id', { count: 'exact' })
+            .eq('id_loja', lojaIdNum)
+            .eq('ativo', true);
+
+        if (countActiveError) {
+            console.error('DEBUG: ERRO na contagem de produtos ativos para missão "Portfólio em Crescimento":', countActiveError.message);
+        } else {
+            console.log(`DEBUG: LOJA ID: ${lojaIdNum}, CONTAGEM DE PRODUTOS ATIVOS OBTIDA: ${totalActiveProducts}`);
+            await trackMissionProgress(lojaIdNum, 'active_products_count', totalActiveProducts);
+            console.log(`DEBUG: Missão "active_products_count" rastreada para loja ${lojaIdNum} com ${totalActiveProducts} produtos ativos.`);
+        }
+        // --- FIM RASTREAMENTO "Portfólio em Crescimento" ---
+
+        // --- NOVO RASTREAMENTO: "Portfólio Diversificado" ---
+        console.log('DEBUG_PD: Iniciando rastreamento para "Portfólio Diversificado" (contagem de categorias).');
+        if (lojaIdNum) {
+            // Contar o número total de CATEGORIAS para esta loja
+            console.log(`DEBUG_PD: Buscando categorias da tabela 'categorias' para loja_id: ${lojaIdNum}`);
+            const { count: totalCategories, error: countCategoriesError } = await supabase
+                .from('categorias')
+                .select('id', { count: 'exact' })
+                .eq('loja_id', lojaIdNum);
+
+            if (countCategoriesError) {
+                console.error('DEBUG_PD: ERRO ao contar categorias para "Portfólio Diversificado":', countCategoriesError.message);
+                console.error('DEBUG_PD: Detalhes do erro na contagem de categorias:', countCategoriesError);
+            } else {
+                console.log(`DEBUG_PD: LOJA ID: ${lojaIdNum}, CONTAGEM FINAL DE CATEGORIAS OBTIDA: ${totalCategories}`);
+                // Mude o 'portfolio_diversificado' para 'product_creation_categories'
+                await trackMissionProgress(lojaIdNum, 'product_creation_categories', totalCategories);
+                console.log(`DEBUG_PD: Missão "product_creation_categories" rastreada para loja ${lojaIdNum} com ${totalCategories} categorias.`);
+            }
+        } else {
+            console.warn('DEBUG_PD: criarProduto: Não foi possível rastrear missão "product_creation_categories": ID da LOJA não encontrado.');
+        }
+        // --- FIM RASTREAMENTO "Portfólio Diversificado" ---
+
         // --- Resposta de Sucesso ---
         console.log('DEBUG: Produto criado com sucesso, enviando resposta...');
         return res.status(201).json({
             mensagem: 'Produto criado com sucesso.',
-            produto: novoProduto[0] // Retorna o primeiro item se for um array
+            produto: novoProduto[0]
         });
 
     } catch (erro) {
@@ -174,7 +232,7 @@ export const inativarProduto = async (req, res) => {
 
         const { data: produtoExistente, error: produtoFetchError } = await supabase
             .from('produto')
-            .select('id_loja')
+            .select('id_loja, controlar_estoque, ativo') // Inclua 'ativo' para checagem da missão
             .eq('id', id)
             .single();
 
@@ -186,12 +244,10 @@ export const inativarProduto = async (req, res) => {
         if (lojaFetchError || !lojaDoProduto || lojaDoProduto.id_empresa !== empresaIdDoToken) {
             return res.status(403).json({ mensagem: 'Acesso negado: Você não tem permissão para inativar este produto.' });
         }
-        // --- FIM DA AUTORIZAÇÃO ---
-
 
         const { data, error } = await supabase
             .from('produto')
-            .update({ ativo: false })
+            .update({ ativo: false }) // Define como inativo
             .eq('id', id);
 
         if (error) {
@@ -202,9 +258,28 @@ export const inativarProduto = async (req, res) => {
             });
         }
 
+        // --- Rastreamento de missão "Portfólio em Crescimento" após inativação ---
+        // Só atualiza se o produto estava ativo antes de ser inativado
+        if (produtoExistente.ativo) {
+            const lojaId = produtoExistente.id_loja;
+            const { count: totalActiveProducts, error: countError } = await supabase
+                .from('produto')
+                .select('id', { count: 'exact' })
+                .eq('loja_id', lojaId)
+                .eq('ativo', true);
+
+            if (countError) {
+                console.error('inativarProduto: Erro ao contar produtos ativos para missão:', countError.message);
+            } else {
+                await trackMissionProgress(lojaId, 'active_products_count', totalActiveProducts);
+                console.log(`DEBUG: Missão "active_products_count" rastreada após inativação para loja ${lojaId} com ${totalActiveProducts} produtos ativos.`);
+            }
+        }
+        // --- FIM Rastreamento ---
+
         console.log('DEBUG InativarProduto: Produto inativado com sucesso.');
         return res.status(200).json({
-            mensagem: 'Produto inativado com sucesso.',
+            //  mensagem: 'Produto inativado com sucesso.', // Comentado para retorno mais limpo se desejado
         });
     } catch (erro) {
         console.error('DEBUG InativarProduto: Erro inesperado no controlador inativarProduto:', erro);
@@ -234,7 +309,7 @@ export const ativarProduto = async (req, res) => {
 
         const { data: produtoExistente, error: produtoFetchError } = await supabase
             .from('produto')
-            .select('id_loja')
+            .select('id_loja, controlar_estoque, ativo') // Inclua 'ativo' para checagem da missão
             .eq('id', id)
             .single();
 
@@ -246,12 +321,10 @@ export const ativarProduto = async (req, res) => {
         if (lojaFetchError || !lojaDoProduto || lojaDoProduto.id_empresa !== empresaIdDoToken) {
             return res.status(403).json({ mensagem: 'Acesso negado: Você não tem permissão para ativar este produto.' });
         }
-        // --- FIM DA AUTORIZAÇÃO ---
-
 
         const { data, error } = await supabase
             .from('produto')
-            .update({ ativo: true })
+            .update({ ativo: true }) // Define como ativo
             .eq('id', id);
 
         if (error) {
@@ -262,9 +335,28 @@ export const ativarProduto = async (req, res) => {
             });
         }
 
+        // --- Rastreamento de missão "Portfólio em Crescimento" após ativação ---
+        // Só atualiza se o produto estava inativo antes de ser ativado
+        if (!produtoExistente.ativo) {
+            const lojaId = produtoExistente.id_loja;
+            const { count: totalActiveProducts, error: countError } = await supabase
+                .from('produto')
+                .select('id', { count: 'exact' })
+                .eq('loja_id', lojaId)
+                .eq('ativo', true);
+
+            if (countError) {
+                console.error('ativarProduto: Erro ao contar produtos ativos para missão:', countError.message);
+            } else {
+                await trackMissionProgress(lojaId, 'active_products_count', totalActiveProducts);
+                console.log(`DEBUG: Missão "active_products_count" rastreada após ativação para loja ${lojaId} com ${totalActiveProducts} produtos ativos.`);
+            }
+        }
+        // --- FIM Rastreamento ---
+
         console.log('DEBUG AtivarProduto: Produto ativado com sucesso.');
         return res.status(200).json({
-            mensagem: 'Produto ativado com sucesso.',
+            //mensagem: 'Produto ativado com sucesso.', // Comentado para retorno mais limpo se desejado
         });
     } catch (erro) {
         console.error('DEBUG AtivarProduto: Erro inesperado no controlador ativarProduto:', erro);
@@ -335,8 +427,7 @@ export const listarProdutosPorLoja = async (req, res) => {
                     nome,
                     id
                 )
-            `)
-            .eq('id_loja', idDaLojaNoDB);
+            `);
 
         // Aplica filtro de ativo/inativo se for explicitamente solicitado
         // (Ex: para a página do dono, produtos ativos ou inativos)
@@ -348,6 +439,8 @@ export const listarProdutosPorLoja = async (req, res) => {
             query = query.eq('ativo', true);
         }
 
+        query = query.eq('id_loja', idDaLojaNoDB); 
+
         const { data, error } = await query;
 
         if (error) {
@@ -356,17 +449,17 @@ export const listarProdutosPorLoja = async (req, res) => {
         }
 
         // --- NOVO: Adicionar lógica para status de estoque baixo e indisponibilidade ---
-        const ESTOQUE_BAIXO_LIMITE = 5; // Defina seu limite aqui
+        const ESTOQUE_BAIXO_LIMITE = 5; 
 
         const produtosComStatus = data.map(produto => {
-            let statusEstoque = 'disponivel'; // Padrão
-            let estaIndisponivel = false; // Flag para indisponibilidade na loja
+            let statusEstoque = 'disponivel'; 
+            let estaIndisponivel = false; 
 
             // Se o controle de estoque está ativado para este produto
             if (produto.controlar_estoque) {
-                if (produto.quantidade <= 0) { // O 'quantidade' é o campo de estoque
+                if (produto.quantidade <= 0) { 
                     statusEstoque = 'esgotado';
-                    estaIndisponivel = true; // Produto esgotado -> indisponível
+                    estaIndisponivel = true; 
                 } else if (produto.quantidade > 0 && produto.quantidade <= ESTOQUE_BAIXO_LIMITE) {
                     statusEstoque = 'estoque_baixo';
                 }
@@ -375,18 +468,16 @@ export const listarProdutosPorLoja = async (req, res) => {
                 // Não definimos estaIndisponivel aqui, pois para 'não controlado',
                 // o cliente não verá como "esgotado".
             }
-
             // A flag `indisponivel_automatico` deve ser verdadeira se o produto está esgotado
             // OU se ele foi inativado manualmente (produto.ativo é false, mas a query já filtra por ativo:true).
             // No contexto desta função (que pode ser usada pela loja do cliente ou pelo dashboard do dono):
             // - Para o cliente, produtos inativos nem chegam aqui se a query eq('ativo', true) for usada.
             // - Para o dono, a query pode ser eq('ativo', false) e ele veria produtos inativos.
             // A `estaIndisponivel` aqui serve para marcar produtos que estão `esgotados` *automaticamente*.
-
             return {
                 ...produto,
-                status_estoque: statusEstoque, // 'disponivel', 'estoque_baixo', 'esgotado'
-                indisponivel_automatico: estaIndisponivel // True se esgotado (e controla estoque)
+                status_estoque: statusEstoque, 
+                indisponivel_automatico: estaIndisponivel 
             };
         });
         console.log('DEBUG: listarProdutosPorLoja - Produtos enviados para o frontend com status:', produtosComStatus.map(p => ({ id: p.id, nome: p.nome, qtd: p.quantidade, ativo: p.ativo, controlar_estoque: p.controlar_estoque, status_estoque: p.status_estoque, indisponivel_automatico: p.indisponivel_automatico })));
@@ -405,7 +496,7 @@ export const listarProdutosPorLoja = async (req, res) => {
 export const listarProdutosPorEmpresa = async (req, res) => {
     console.log('DEBUG: ProdutoController.js: Chamando listarProdutosPorEmpresa!');
     try {
-        const id_empresa = req.params.empresaId; // Recebe o id_empresa da URL
+        const id_empresa = req.params.empresaId; 
 
         if (!id_empresa) {
             return res.status(400).json({ mensagem: 'ID da empresa não fornecido.' });
@@ -415,7 +506,7 @@ export const listarProdutosPorEmpresa = async (req, res) => {
         const { empresaId: empresaIdDoToken, error: tokenError } = await getEmpresaIdFromToken(req);
         if (tokenError) return res.status(401).json({ error: tokenError.message });
 
-        if (parseInt(id_empresa, 10) !== empresaIdDoToken) { // Converte para int para comparação
+        if (parseInt(id_empresa, 10) !== empresaIdDoToken) { 
             return res.status(403).json({ mensagem: 'Acesso negado: Você não tem permissão para ver produtos desta empresa.' });
         }
         // --- FIM DA AUTORIZAÇÃO ---
@@ -439,7 +530,7 @@ export const listarProdutosPorEmpresa = async (req, res) => {
                     id
                 )
             `)
-            .in('id_loja', idsLojas); // Busca produtos onde 'id_loja' está na lista de IDs de lojas da empresa
+            .in('id_loja', idsLojas); 
 
         if (error) {
             console.error('Controller: Erro do modelo ao listar produtos por empresa:', error);
@@ -473,8 +564,8 @@ export const atualizarProduto = async (req, res) => {
             descricao,
             tamanhos,
             controlar_estoque,
-            quantidade, // Este é o campo de estoque
-            id_loja, // Este id_loja deve vir do req.body
+            quantidade, 
+            id_loja, 
             itens,
             desconto,
             removerImagemExistente
@@ -506,10 +597,10 @@ export const atualizarProduto = async (req, res) => {
             return res.status(403).json({ mensagem: 'Não autorizado: A loja informada não pertence à sua empresa ou não existe.' });
         }
 
-        // Busca o produto existente para obter a URL da imagem antiga
+        // Busca o produto existente para obter a URL da imagem antiga e o status 'ativo' atual
         const { data: produtoExistente, error: selectError } = await supabase
             .from("produto")
-            .select("image, id_loja") // Busca também id_loja para re-verificação
+            .select("image, id_loja, ativo") // Adicionado 'ativo'
             .eq("id", id)
             .single();
 
@@ -548,7 +639,7 @@ export const atualizarProduto = async (req, res) => {
         console.log('DEBUG: Desconto parseado:', descontoParsed);
 
         console.log('DEBUG: Tentando parsear controlar_estoque:', controlar_estoque);
-        const controlarEstoqueParsed = controlar_estoque === 'true'; // Converte string "true"/"false" para booleano
+        const controlarEstoqueParsed = controlar_estoque === 'true'; 
         console.log('DEBUG: Controlar estoque parseado (booleano):', controlarEstoqueParsed);
 
         console.log('DEBUG: Tentando parsear quantidade:', quantidade);
@@ -567,13 +658,14 @@ export const atualizarProduto = async (req, res) => {
         let novaImagemUrl = produtoExistente.image;
         if (removerImagemExistente === 'true' && produtoExistente.image) {
             console.log('DEBUG: Flag para remover imagem existente detectada. Deletando imagem antiga.');
-            await ImageModel.deletarImagem(produtoExistente.image); // Retorna {error: bool, message: string}
-            novaImagemUrl = null; // Garante que o campo 'image' será nulo no banco
+            // Adicionado id_loja na chamada para deletarImagem, se a sua função ImageModel.deletarImagem precisar.
+            await ImageModel.deletarImagem(produtoExistente.image, parseInt(id_loja, 10)); 
+            novaImagemUrl = null; 
         } else if (novaImagemFile) {
             console.log('DEBUG: Nova imagem file detectada. Processando upload...');
             if (produtoExistente.image) {
                 console.log('DEBUG: Deletando imagem antiga antes de salvar a nova.');
-                await ImageModel.deletarImagem(produtoExistente.image);
+                await ImageModel.deletarImagem(produtoExistente.image, parseInt(id_loja, 10));
             }
             novaImagemUrl = await ImageModel.salvarImagem(
                 novaImagemFile.buffer,
@@ -590,6 +682,13 @@ export const atualizarProduto = async (req, res) => {
             console.log('DEBUG: Nenhuma nova imagem para upload e nenhuma requisição de remoção. Mantendo imagem existente.');
         }
 
+        // Determinar o novo status 'ativo'. Assume que 'ativo' pode ser atualizado via frontend.
+        // Se a requisição não especifica 'ativo', mantém o valor existente.
+        const ativoAtualizado = req.body.ativo !== undefined ? (req.body.ativo === 'true') : produtoExistente.ativo;
+        console.log('DEBUG: Status ativo do produto antes da atualização:', produtoExistente.ativo);
+        console.log('DEBUG: Status ativo do produto após a atualização (se mudou):', ativoAtualizado);
+
+
         const updateData = {
             nome,
             categoria_id: categoriaIdParsed,
@@ -597,10 +696,11 @@ export const atualizarProduto = async (req, res) => {
             descricao,
             tamanhos: tamanhosParsed,
             controlar_estoque: controlarEstoqueParsed,
-            quantidade: quantidadeParsed, // <-- ATUALIZADO: Usar 'quantidade'
+            quantidade: quantidadeParsed, 
             itens: itensParsed,
             desconto: descontoParsed,
             image: novaImagemUrl,
+            ativo: ativoAtualizado, // Adicionado o campo ativo na atualização
         };
 
         console.log("DEBUG: Dados finais para atualização do produto:", updateData);
@@ -611,6 +711,26 @@ export const atualizarProduto = async (req, res) => {
             console.error("Controller: Erro ao atualizar produto no modelo:", updateError);
             return res.status(500).json({ mensagem: "Erro ao atualizar produto no banco de dados.", erro: updateError.message });
         }
+
+        // --- Rastreamento de missão "Portfólio em Crescimento" após atualização (se o status ativo mudou) ---
+        // Verifica se o status 'ativo' realmente mudou
+        if (produtoExistente.ativo !== ativoAtualizado) {
+            const lojaId = parseInt(id_loja, 10);
+            const { count: totalActiveProducts, error: countError } = await supabase
+                .from('produto')
+                .select('id', { count: 'exact' })
+                .eq('loja_id', lojaId)
+                .eq('ativo', true);
+
+            if (countError) {
+                console.error('atualizarProduto: Erro ao contar produtos ativos para missão após mudança de status:', countError.message);
+            } else {
+                await trackMissionProgress(lojaId, 'active_products_count', totalActiveProducts);
+                console.log(`DEBUG: Missão "active_products_count" rastreada após atualização (mudança de status) para loja ${lojaId} com ${totalActiveProducts} produtos ativos.`);
+            }
+        }
+        // --- FIM Rastreamento ---
+
 
         const { data: updatedProduct, error: fetchUpdatedError } = await supabase
             .from("produto")
@@ -661,10 +781,10 @@ export const deleteProduto = async (req, res) => {
         }
         console.log('DEBUG: Empresa ID do token para exclusão:', empresaIdDoToken);
 
-        // 1. Buscar o produto para obter o id_loja associado
+        // 1. Buscar o produto para obter o id_loja e o status 'ativo'
         const { data: produtoParaDeletar, error: produtoFetchError } = await supabase
             .from('produto')
-            .select('id_loja, image')
+            .select('id_loja, image, ativo') // Adicionado 'ativo'
             .eq('id', id)
             .single();
 
@@ -699,7 +819,8 @@ export const deleteProduto = async (req, res) => {
         // Se autorizado, prosseguir com a exclusão do produto e da imagem (se houver)
         if (produtoParaDeletar.image) {
             console.log('DEBUG: Tentando deletar imagem do storage:', produtoParaDeletar.image);
-            const { error: deleteImageError } = await ImageModel.deletarImagem(produtoParaDeletar.image); // Esta função retorna { error: bool, message: string }
+            // Passa o id_loja na função de deletar imagem, se necessário para a organização do storage.
+            const { error: deleteImageError } = await ImageModel.deletarImagem(produtoParaDeletar.image, produtoParaDeletar.id_loja); 
             if (deleteImageError) {
                 console.error('DEBUG: Erro ao deletar imagem do Storage (pode não ser crítico se o produto for deletado):', deleteImageError.message || deleteImageError);
             } else {
@@ -718,6 +839,25 @@ export const deleteProduto = async (req, res) => {
             return res.status(500).json({ mensagem: 'Erro interno do servidor ao excluir o produto.' });
         }
 
+        // --- RASTREAMENTO DA MISSÃO "Portfólio em Crescimento" após a exclusão ---
+        // Só atualiza se o produto deletado estava ativo
+        if (produtoParaDeletar.ativo) {
+            const lojaId = produtoParaDeletar.id_loja;
+            const { count: totalActiveProducts, error: countError } = await supabase
+                .from('produto')
+                .select('id', { count: 'exact' })
+                .eq('loja_id', lojaId)
+                .eq('ativo', true); 
+
+            if (countError) {
+                console.error('deleteProduto: Erro ao contar produtos ativos para missão:', countError.message);
+            } else {
+                await trackMissionProgress(lojaId, 'active_products_count', totalActiveProducts);
+                console.log(`DEBUG: Missão "active_products_count" rastreada após exclusão para loja ${lojaId} com ${totalActiveProducts} produtos ativos.`);
+            }
+        }
+        // --- FIM RASTREAMENTO ---
+
         console.log(`Produto com ID ${id} excluído permanentemente.`);
         return res.status(204).send();
 
@@ -734,8 +874,8 @@ export const deleteProduto = async (req, res) => {
 export const ajustarEstoqueProduto = async (req, res) => {
     console.log('DEBUG: ProdutoController.js: Chamando ajustarEstoqueProduto!');
     try {
-        const { id } = req.params; // ID do produto a ser ajustado
-        const { novaQuantidade } = req.body; // Nova quantidade de estoque (vindo do frontend)
+        const { id } = req.params; 
+        const { novaQuantidade } = req.body; 
 
         if (!id || typeof novaQuantidade === 'undefined' || novaQuantidade < 0) {
             return res.status(400).json({ mensagem: 'ID do produto ou nova quantidade inválidos.' });
@@ -752,7 +892,7 @@ export const ajustarEstoqueProduto = async (req, res) => {
         // 1. Buscar o produto para obter o id_loja associado E controlar_estoque
         const { data: produtoExistente, error: produtoFetchError } = await supabase
             .from('produto')
-            .select('id_loja, controlar_estoque') // <-- ADICIONADO: selecionar controlar_estoque
+            .select('id_loja, controlar_estoque') 
             .eq('id', id)
             .single();
 
@@ -769,7 +909,7 @@ export const ajustarEstoqueProduto = async (req, res) => {
         }
 
         // --- NOVO: Checar se o controle de estoque está ativado para este produto ---
-        if (produtoExistente.controlar_estoque === false) { // Verifica se é explicitamente falso
+        if (produtoExistente.controlar_estoque === false) { 
             console.warn(`DEBUG: Ajuste de estoque negado para produto ${id}: Controle de estoque não está ativo.`);
             return res.status(403).json({ mensagem: 'Ajuste de estoque negado: Controle de estoque não está ativo para este produto.' });
         }
@@ -781,7 +921,7 @@ export const ajustarEstoqueProduto = async (req, res) => {
             console.error('DEBUG: Erro ao buscar loja do produto para ajuste de estoque ou loja não encontrada:', lojaFetchError?.message || 'Loja do produto não encontrada.');
             return res.status(500).json({ mensagem: 'Não foi possível verificar a propriedade do produto (loja não encontrada).' });
         }
-        const empresaIdDaLojaDoProduto = lojaDoProduto.id_empresa;
+        const empresaIdDaLojaDoProduto = lojaDoProduto.id_empresa; 
         console.log('DEBUG: Empresa ID da loja do produto:', empresaIdDaLojaDoProduto);
 
         // 3. Comparar os IDs das empresas para autorização
@@ -795,13 +935,23 @@ export const ajustarEstoqueProduto = async (req, res) => {
         // Se a autorização passou e o controle de estoque está ativo, atualize a quantidade
         const { data, error } = await supabase
             .from('produto')
-            .update({ quantidade: novaQuantidade }) // <-- ATUALIZADO: Usar 'quantidade'
+            .update({ quantidade: novaQuantidade }) 
             .eq('id', id);
 
         if (error) {
             console.error('Erro ao ajustar estoque no Supabase:', error.message);
             return res.status(500).json({ mensagem: 'Erro interno ao ajustar estoque.' });
         }
+
+        // --- Rastreamento de missão após ajuste bem-sucedido ---
+        const lojaIdParaMissao = produtoExistente.id_loja; 
+        if (lojaIdParaMissao) { 
+            await trackMissionProgress(lojaIdParaMissao, 'stock_adjustment', 1); 
+            console.log('DEBUG: Missão "stock_adjustment" rastreada para LOJA:', lojaIdParaMissao);
+        } else {
+            console.warn('DEBUG: ajustarEstoqueProduto: Não foi possível rastrear missão de ajuste de estoque: ID da LOJA não encontrado.');
+        }
+        // --- FIM Rastreamento ---
 
         return res.status(200).json({ mensagem: 'Estoque ajustado com sucesso.', produtoId: id, novaQuantidade });
 
@@ -814,6 +964,77 @@ export const ajustarEstoqueProduto = async (req, res) => {
     }
 };
 
+// --- Nova função: decrementarEstoque ---
+export async function decrementarEstoque(produtoId, quantidadeComprada) {
+    try {
+        // Primeiro, obtenha a quantidade atual, o status de controle de estoque e o id_loja do produto
+        const { data: produto, error: fetchError } = await supabase
+            .from('produto')
+            .select('quantidade, controlar_estoque, id_loja, ativo') // Adicionado id_loja e ativo
+            .eq('id', produtoId)
+            .single();
+
+        if (fetchError || !produto) {
+            console.error(`Erro ao buscar produto ${produtoId} para decremento de estoque:`, fetchError?.message);
+            return { success: false, error: 'Produto não encontrado ou erro ao buscar.' };
+        }
+
+        if (!produto.controlar_estoque) {
+            console.log(`Produto ${produtoId} não controla estoque. Nenhuma ação de decremento.`);
+            return { success: true, message: 'Controle de estoque desativado para este produto.' };
+        }
+
+        const estoqueAnterior = produto.quantidade;
+        let novaQuantidade = estoqueAnterior - quantidadeComprada;
+
+        if (novaQuantidade < 0) {
+            console.warn(`Tentativa de estoque negativo para produto ${produtoId}. Ajustando para 0.`);
+            novaQuantidade = 0;
+        }
+
+        // Atualize a quantidade no banco de dados
+        const { data, error: updateError } = await supabase
+            .from('produto')
+            .update({ quantidade: novaQuantidade })
+            .eq('id', produtoId);
+
+        if (updateError) {
+            console.error(`Erro ao decrementar estoque do produto ${produtoId}:`, updateError.message);
+            return { success: false, error: updateError.message };
+        }
+
+        console.log(`Estoque do produto ${produtoId} decrementado para ${novaQuantidade}.`);
+
+        // --- Rastreamento de missão "Portfólio em Crescimento" após decremento de estoque ---
+        // Verifique se o produto estava ativo e se a quantidade anterior ou a nova quantidade afeta o status de ativo.
+        // Se a quantidade anterior era > 0 e a nova quantidade é <= 0, o produto pode ter se tornado inativo.
+        // Recontamos os produtos ativos para ter certeza.
+        const lojaId = produto.id_loja;
+        if (lojaId) {
+            const { count: totalActiveProducts, error: countError } = await supabase
+                .from('produto')
+                .select('id', { count: 'exact' })
+                .eq('loja_id', lojaId)
+                .eq('ativo', true); // Conta apenas produtos que *estão* ativos
+
+            if (countError) {
+                console.error('decrementarEstoque: Erro ao contar produtos ativos para missão após decremento:', countError.message);
+            } else {
+                await trackMissionProgress(lojaId, 'active_products_count', totalActiveProducts);
+                console.log(`DEBUG: Missão "active_products_count" rastreada após decremento de estoque para loja ${lojaId} com ${totalActiveProducts} produtos ativos.`);
+            }
+        }
+        // --- FIM Rastreamento ---
+
+        return { success: true, newQuantity: novaQuantidade };
+
+    } catch (err) {
+        console.error('Erro inesperado em decrementarEstoque:', err);
+        return { success: false, error: err.message };
+    }
+}
+
+// --- Nova função: inserirAvaliacao ---
 export const inserirAvaliacao = async (req, res) => {
     console.log('DEBUG req.params:', req.params);
     const produto_id = parseInt(req.params.id);
@@ -837,7 +1058,7 @@ export const inserirAvaliacao = async (req, res) => {
     res.status(201).json({ mensagem: 'Avaliação registrada com sucesso!', avaliacao: data });
 };
 
-
+// --- Nova função: listarAvaliacoesPorProduto ---
 export const listarAvaliacoesPorProduto = async (req, res) => {
     console.log('DEBUG: Entrou em listarAvaliacoesPorProduto');
     console.log('DEBUG: req.params:', req.params);

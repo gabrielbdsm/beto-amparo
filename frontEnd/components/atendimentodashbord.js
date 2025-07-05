@@ -56,6 +56,8 @@ const DashboardAtendimento = ({ slug }) => {
   const dataFiltrada = useMemo(() => {
     const hoje = new Date();
     const dias = parseInt(periodo);
+
+    if (!Array.isArray(dados)) return []
     return dados.filter(item => {
       const statusOk = statusSelecionado === 'Todos' || item.status.toLowerCase() === statusSelecionado.toLowerCase();
       const dataItem = new Date(item.data);

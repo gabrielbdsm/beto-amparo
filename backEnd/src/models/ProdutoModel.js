@@ -7,14 +7,13 @@ export const inserirProduto = async ({ id_loja, nome, categoria_id, image, preco
         const { data, error } = await supabase
             .from('produto')
             .insert([{
-                id_loja,
+                id_loja, // <--- USANDO id_loja AQUI
                 nome,
                 image,
                 categoria_id,
                 preco,
                 descricao,
-                tamanhos,
-                controlar_estoque,
+                controlar_estoque, 
                 quantidade: quantidade || 0,
                 ativo: true,
             }])
@@ -172,26 +171,89 @@ export const listarProdutosPorLoja = async (lojaId) => {
     }
 };
 
+// --- Função para decrementar estoque (do HEAD) ---
+export async function decrementarEstoque(produtoId, quantidadeComprada) {
+    try {
+        console.log(`DEBUG_DECREMENT: Chamado para produtoId: ${produtoId}, quantidadeComprada (raw): ${quantidadeComprada}`);
+
+        const parsedQuantidadeComprada = parseInt(quantidadeComprada, 10);
+        if (isNaN(parsedQuantidadeComprada) || parsedQuantidadeComprada < 0) {
+            console.error(`DEBUG_DECREMENT: Quantidade comprada inválida para produto ${produtoId}: ${quantidadeComprada}. Deve ser um número inteiro positivo.`);
+            return { success: false, error: 'Quantidade comprada inválida.' };
+        }
+        console.log(`DEBUG_DECREMENT: Quantidade comprada (parsed): ${parsedQuantidadeComprada}`);
+
+        const { data: produto, error: fetchError } = await supabase
+            .from('produto')
+            .select('quantidade, controlar_estoque')
+            .eq('id', produtoId)
+            .single();
+
+        if (fetchError || !produto) {
+            console.error(`DEBUG_DECREMENT: Erro ao buscar produto ${produtoId} para decremento de estoque:`, fetchError?.message);
+            return { success: false, error: 'Produto não encontrado ou erro ao buscar.' };
+        }
+
+        console.log(`DEBUG_DECREMENT: Estoque atual do produto ${produtoId} (antes da atualização): ${produto.quantidade}`);
+        console.log(`DEBUG_DECREMENT: Controle de estoque para produto ${produtoId}: ${produto.controlar_estoque}`);
+
+        if (!produto.controlar_estoque) {
+            console.log(`DEBUG_DECREMENT: Produto ${produtoId} não controla estoque. Nenhuma ação de decremento.`);
+            return { success: true, message: 'Controle de estoque desativado para este produto.' };
+        }
+
+        let novaQuantidade = produto.quantidade - parsedQuantidadeComprada; 
+
+        console.log(`DEBUG_DECREMENT: Cálculo do estoque: ${produto.quantidade} (estoque atual) - ${parsedQuantidadeComprada} (comprado) = ${novaQuantidade}`);
+
+        if (novaQuantidade < 0) {
+            console.warn(`DEBUG_DECREMENT: Tentativa de estoque negativo para produto ${produtoId}. Ajustando para 0.`);
+            novaQuantidade = 0;
+        }
+
+        const { data, error: updateError } = await supabase
+            .from('produto')
+            .update({ quantidade: novaQuantidade })
+            .eq('id', produtoId)
+            .select('id, quantidade, controlar_estoque') 
+            .single();
+
+        if (updateError) {
+            console.error(`DEBUG_DECREMENT: Erro ao atualizar estoque do produto ${produtoId} no Supabase:`, updateError.message);
+            return { success: false, error: updateError.message };
+        }
+
+        console.log(`DEBUG_DECREMENT: Estoque do produto ${produtoId} decrementado com sucesso para: ${novaQuantidade}.`);
+        return { success: true, newQuantity: novaQuantidade, data: data };
+
+    } catch (err) {
+        console.error('DEBUG_DECREMENT: Erro inesperado no catch de decrementarEstoque:', err);
+        return { success: false, error: err.message };
+    }
+}
+
+// --- Função para buscar detalhes de produtos por IDs (unificada e renomeada) ---
 export const getProduto = async (ids) => {
     try {
         const { data, error } = await supabase
             .from('produto')
-            .select('nome, id , preco')
+            .select('nome, id, preco')
             .in('id', ids);
 
         if (error) {
-            console.error('Erro ao buscar pedido_itens:', error.message);
+            console.error('ProdutoModel: Erro ao buscar produtos por IDs:', error.message);
             return [];
         }
 
         return data ?? [];
     } catch (e) {
-        console.error('Erro inesperado em getPedido_itens:', e);
+        console.error('ProdutoModel: Erro inesperado em getProduto (buscar por IDs):', e);
         return [];
     }
 };
 
-// --- NOVO: Inserir uma avaliação ---
+
+// --- NOVA FUNÇÃO: Inserir uma avaliação ---
 export const inserirAvaliacaoModel = async ({ produto_id, nome, rating, comentario }) => {
     try {
         const { data, error } = await supabase
@@ -216,7 +278,7 @@ export const inserirAvaliacaoModel = async ({ produto_id, nome, rating, comentar
     }
 };
 
-// --- NOVO: Listar avaliações de um produto ---
+// --- NOVA FUNÇÃO: Listar avaliações de um produto ---
 export const buscarAvaliacoesPorProduto = async (produto_id) => {
     try {
         const { data, error } = await supabase
