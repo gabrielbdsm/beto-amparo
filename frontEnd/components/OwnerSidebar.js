@@ -368,8 +368,9 @@ export default function OwnerSidebar({ children, slug }) {
                         )}
                         
                         <NavItem icon="/icons/paint_white.svg" label="Personalizar Loja" path="/personalizacao" currentSlug={currentActiveSlug} className="sidebar-personalizar-item" />
-                        <NavItem icon="/icons/clock_white.svg" label="Horarios" path="/horarioEmpresa" currentSlug={currentActiveSlug} className="sidebar-horarios-item" />
-                        
+                       
+                      {tipoLoja === "atendimento" &&  ( <NavItem icon="/icons/clock_white.svg" label="Horarios" path="/horarioEmpresa" currentSlug={currentActiveSlug} className="sidebar-horarios-item" />
+                       ) }
                         {/* Condicional para "Meus Agendamentos" baseado em tipoLoja */}
                         {tipoLoja === "atendimento" && (
                             <NavItem icon="/icons/notes.png" label="Meus agendamentos" path="/meusAgendamentos" currentSlug={currentActiveSlug} className="sidebar-agendamentos-item" />
