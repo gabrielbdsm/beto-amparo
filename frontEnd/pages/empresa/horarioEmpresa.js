@@ -556,15 +556,7 @@ export default function HorariosPorData({ tipo = "agendamento" }) {
                   />
                   <span className="text-slate-700 group-hover:text-slate-900">Marcar como fechado</span>
                 </label>
-                <label className="flex items-center space-x-2 cursor-pointer group">
-                  <input
-                    type="checkbox"
-                    checked={b.repetirSemanal}
-                    onChange={(e) => atualizarBloco(b.id, "repetirSemanal", e.target.checked)}
-                    className="h-4 w-4 text-[#3681B6] border-gray-300 rounded focus:ring-[#3681B6] cursor-pointer"
-                  />
-                  <span className="text-slate-700 group-hover:text-slate-900">Repetir semanalmente</span>
-                </label>
+
               </div>
             </section>
           ))}
