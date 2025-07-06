@@ -318,8 +318,7 @@ export default function OwnerDono() {
 
     return (
         <OwnerSidebar slug={donoData.loja.slug_loja}>
-            <FloatingNotificationsTop />
-
+            
             <h1 className="text-2xl font-bold text-gray-600 mb-6 text-center welcome-message">
                 Bem-vindo(a) de volta, {donoData.empresa.nome}!
             </h1>
