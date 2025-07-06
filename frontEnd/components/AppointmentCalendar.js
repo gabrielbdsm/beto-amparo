@@ -64,12 +64,18 @@ const AppointmentCalendar = ({ selectedDate, onDateSelect, availableDates }) => 
         
   const isDateAvailable = (date) => {
     if (!availableDates || availableDates.length === 0) return false;
+  
+    const today = startOfDay(new Date());
     const normalizedDate = startOfDay(date);
+  
+  
+    if (normalizedDate < today) return false;
+  
     return availableDates.some((availableDateInArray) =>
       isSameDay(normalizedDate, availableDateInArray)
     );
   };
-
+  
   return (
     <Card className="medical-card">
       <CardHeader className="pb-4">
@@ -85,6 +91,7 @@ const AppointmentCalendar = ({ selectedDate, onDateSelect, availableDates }) => 
         <div className="space-y-4">
           <Calendar
             mode="single"
+            
             selected={selectedDate ? startOfDay(new Date(selectedDate)) : undefined}
             onSelect={(date) => {
               const normalizedDate = startOfDay(date);
@@ -92,6 +99,7 @@ const AppointmentCalendar = ({ selectedDate, onDateSelect, availableDates }) => 
                 onDateSelect(normalizedDate);
               }
             }}
+            
             disabled={[
               { before: startOfDay(new Date()) },
               "unavailable",
@@ -107,10 +115,11 @@ const AppointmentCalendar = ({ selectedDate, onDateSelect, availableDates }) => 
               unavailable: "text-gray-400 opacity-25 bg-gray-50 cursor-not-allowed rounded-md",
             }}
             classNames={{
-              day_today: "bg-yellow-100 text-yellow-900 font-semibold rounded-md",
+              day_today: "border-2 border-yellow-500 bg-yellow-100 text-yellow-900 font-bold rounded-full",
               day_selected: "bg-blue-600 text-white hover:bg-blue-700 focus:bg-blue-600 focus:text-white rounded-md",
               day_disabled: "text-gray-400 opacity-25 bg-gray-50 cursor-not-allowed rounded-md",
             }}
+            
           />
 
           {selectedDate && (

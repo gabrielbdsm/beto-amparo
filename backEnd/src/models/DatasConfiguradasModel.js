@@ -33,8 +33,8 @@ export const DatasConfiguradasModel = {
       .eq('data', dateOnly)
       .eq('empresa_id', empresa_id)
       .eq('slug' , slug)
-      .single();
-
+      
+   
     
 
       if (!result.data) {

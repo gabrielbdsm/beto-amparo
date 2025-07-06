@@ -66,6 +66,7 @@ export const postAgendamentoController = async (req, res) => {
 
         // Verificar se já existe agendamento no mesmo dia e horário
         const agendamentoDuplicado = await agendamento.verificaAgendamentoDuplicado(agendamentoData);
+       
         if (agendamentoDuplicado) {
             return res.status(400).json({ message: "Já existe um agendamento para esta data e horário." });
         }
@@ -75,10 +76,11 @@ export const postAgendamentoController = async (req, res) => {
         if (!dataConfigurada) {
             return res.status(400).json({ message: "A data escolhida não está disponível para agendamentos." });
         }
-
+        const dataConfigID = dataConfigurada.find(d => d.data === dataFormatada).id
+      
         // Atualizar status do intervalo de horário
         const intervaloAtualizado = await IntervalosHorarioModel.updateAvailableStatus(
-            dataConfigurada.id,
+            dataConfigID,
             false,
             horario
         );
@@ -86,6 +88,7 @@ export const postAgendamentoController = async (req, res) => {
         if (!intervaloAtualizado) {
             return res.status(400).json({ message: "Horário selecionado não está mais disponível." });
         }
+
 
         // Criar agendamento
         const novoAgendamento = await agendamento.agendamentoInsert(agendamentoData);
@@ -129,26 +132,41 @@ export const putAgendamentoCancelamentoController = async (req, res) => {
     const cliente_id = req.ClientId;
     const {  data, time,id_empresa } = req.body;
     try {
-   const dataConfigurada = await DatasConfiguradasModel.getByDataAndEmpresa(data, id_empresa);
-    if (!dataConfigurada) {
-        return res.status(400).json({ message: "A data escolhida não está disponível para agendamentos." });        
+       
+   const datasConfiguradas = await DatasConfiguradasModel.getByDataAndEmpresa(data, id_empresa , slug);
+
+  
+    if (datasConfiguradas.length !== 0) {
+        
+
+   
+    const dataConfigIds = datasConfiguradas.map(d => d.id);
+
+  
+    const intervalos = await IntervalosHorarioModel.getByDataConfigIds(dataConfigIds);
+    const intervaloEncontrado = intervalos.find(i => i.inicio.slice(0,5) == time );
+ 
+    if (intervaloEncontrado.length !== 0) {
+        await IntervalosHorarioModel.updateAvailableStatus(
+            intervaloEncontrado.data_config_id,
+            true,
+            time
+        );
+    }
 
     }
-    const intervaloAtualizado = await IntervalosHorarioModel.updateAvailableStatus(
-        dataConfigurada.id,
-        true,
-        time
-    );
-    if (!intervaloAtualizado) {
-        return res.status(400).json({ message: "Horário selecionado não está mais disponível." });
-    }  
+   
     const agendamentoStatus = await agendamentoEmpresaModel.updateAgendamentoController(
         data,
         time,
         id_empresa,
         "Cancelado",
         cliente_id,
+        slug
     );
+    if (!agendamentoStatus || agendamentoStatus.length === 0) {
+        return res.status(400).json({ message: "Agendamento não encontrado ou já cancelado." });
+    }
     if (!agendamentoStatus) {
         return res.status(400).json({ message: "Erro ao cancelar o agendamento." });
     }    

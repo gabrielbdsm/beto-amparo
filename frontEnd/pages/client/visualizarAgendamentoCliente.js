@@ -2,7 +2,8 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import NavBar from "@/components/NavBar"; 
+import NavBar from "@/components/NavBar";
+import { parseISO } from "date-fns";
 const statusOptions = ['Agendado', 'Confirmado', 'Concluído', 'Cancelado'];
 
 const getStatusColor = (status) => ({
@@ -227,11 +228,11 @@ export default function VisualizarAgendamento() {
               {agendamentosFiltrados.map((a) => (
                 <li key={a.id} className="py-4 flex justify-between items-center">
                   <div>
-                    <p className="text-sm text-gray-500">{format(new Date(a.data), "EEEE, dd 'de' MMMM", { locale: ptBR })} às {a.horario}</p>
+                    <p className="text-sm text-gray-500">{format(parseISO(a.data), "EEEE, dd 'de' MMMM", { locale: ptBR })} às {a.horario}</p>
                     <span className={`text-xs px-2 py-1 rounded ${getStatusColor(a.status)}`}>{a.status}</span>
                   </div>
                   <div className="flex gap-2">
-                    {a.status !== 'Cancelado' && (
+                    {['Agendado', 'Confirmado'].includes(a.status) && (
                       <button
                         onClick={() => setAgendamentoParaCancelar(a)}
                         className="text-red-600 hover:underline text-sm"
