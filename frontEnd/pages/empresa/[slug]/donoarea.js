@@ -14,7 +14,7 @@ import toast from 'react-hot-toast';
 import Link from 'next/link';
 
 import { createClient } from '@supabase/supabase-js';
-
+import {verificarTipoDeLoja} from '../../../hooks/verificarTipoLoja';
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_KEY);
 
 const donoAreaTourSteps = [
@@ -104,8 +104,13 @@ export default function OwnerDono() {
     const [baseUrl, setBaseUrl] = useState('');
     const [metrics, setMetrics] = useState({
         novosPedidos: null,
-        pedidosFinalizados: null,
+        pedidosConcluido: null,
         notificacoes: null,
+    });
+    const [metricsAtendimento, setMetricsAtendimento] = useState({
+        atendimentosAgendado: null,
+        pedidosFinalizados: null,
+        pedidosConfirmados: null,
     });
     const [valorPonto, setValorPonto] = useState('');
     const [ativo, setAtivo] = useState(false);
@@ -121,16 +126,17 @@ export default function OwnerDono() {
     const [valorCupom, setValorCupom] = useState('');
     const [salvandoCupom, setSalvandoCupom] = useState(false);
 
+    const [verificarTipoLoja , setVerificarTipoLoja] = useState(null);
 
     const [runDonoAreaTour, setRunDonoAreaTour] = useState(false); // Novo estado para o tour da Área do Dono
+    const { slug } = router.query;
 
     useEffect(() => {
         setBaseUrl(window.location.origin);
         if (!router.isReady) {
             return;
         }
-
-        const { slug } = router.query;
+      
         if (!slug) {
             setLoading(false);
             setError("Não foi possível identificar a loja. O slug não está presente na URL.");
@@ -182,10 +188,98 @@ export default function OwnerDono() {
                 setLoading(false);
             }
         }
+        async function fetchMetricsAtendimento() {
+            setError(null);
+            setLoading(true);
+        
+            try {
+                const [resDono, resAgendamentos] = await Promise.all([
+                    fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/dono/${slug}`, {
+                        credentials: 'include',
+                    }),
+                    fetch(`${process.env.NEXT_PUBLIC_EMPRESA_API}/empresa/agendamentos/${slug}`, {
+                        credentials: 'include',
+                    }),
+                ]);
+        
+                // Tratamento do dono
+                if (!resDono.ok) {
+                    const errorData = await resDono.json();
+                    if (resDono.status === 401) {
+                        toast.error(errorData.error || 'Sessão expirada. Faça o login novamente.');
+                        router.push('/loginEmpresa');
+                        return;
+                    }
+                    if (resDono.status === 403) {
+                        throw new Error(errorData.detail || 'Você não tem permissão para acessar esta página.');
+                    }
+                    throw new Error(errorData.error || errorData.message || 'Erro ao carregar os dados do dono.');
+                }
+        
+                const donoData = await resDono.json();
+                setDonoData(donoData);
+        
+                // Tratamento dos agendamentos
+                if (!resAgendamentos.ok) {
+                    const errorData = await resAgendamentos.json();
+                    if (resAgendamentos.status === 401) {
+                        toast.error(errorData.error || 'Sessão expirada. Faça o login novamente.');
+                        router.push('/loginEmpresa');
+                        return;
+                    }
+                    // Se o erro for 404 (sem dados), tratamos como sem agendamentos
+                    if (resAgendamentos.status === 404) {
+                        setMetricsAtendimento({
+                            atendimentosAgendado: 0,
+                            pedidosFinalizados: 0,
+                            pedidosConfirmados: 0,
+                        });
+                        return;
+                    }
+        
+                    throw new Error(errorData.error || errorData.message || 'Erro ao carregar os agendamentos.');
+                }
+        
+                let agendamentos = await resAgendamentos.json();
+        
+                // Garante que seja array
+                if (!Array.isArray(agendamentos)) {
+                    agendamentos = [];
+                }
+        
+                const atendimentosAgendado = agendamentos.filter(a => a.status === 'Agendado').length;
+                const atendimentosConcluido = agendamentos.filter(a => a.status === 'Concluído').length;
+                const atendimentosConfirmado = agendamentos.filter(a => a.status === 'Confirmado').length;
+        
+                setMetricsAtendimento({
+                    atendimentosAgendado,
+                    pedidosFinalizados: atendimentosConcluido,
+                    pedidosConfirmados: atendimentosConfirmado,
+                });
+            } catch (err) {
+                console.error("Erro no fetchMetricsAtendimento:", err);
+                setError(err.message);
+            } finally {
+                setLoading(false);
+            }
+        }
+        
+        
+        async function fetchDonoAreaTour() {
+            setError(null);
+            setLoading(false);
+            const tipoLoja = await verificarTipoDeLoja(slug);
+            setVerificarTipoLoja(tipoLoja);
+            if (tipoLoja === 'atendimento') {
+                fetchMetricsAtendimento()}
+            else{
+                fetchDonoArea();
+            }
+         
+        } 
+        fetchDonoAreaTour();
 
-        fetchDonoArea();
-
-    }, [router.isReady, router.query.slug]);
+    }, [router.isReady, router.query.slug ]);
 
 
     async function salvarConfiguracao() {
@@ -281,15 +375,17 @@ export default function OwnerDono() {
             toast.success('Cupom excluído com sucesso.');
         }
     }
-
-
-    if (loading) {
+    if (loading || !donoData || !donoData.empresa || !donoData.loja) {
         return (
             <div className="flex justify-center items-center min-h-screen">
                 <p className="text-gray-700 text-lg">Carregando...</p>
             </div>
         );
     }
+   
+
+
+    
 
     if (error) {
         return (
@@ -308,19 +404,13 @@ export default function OwnerDono() {
         );
     }
 
-    if (!donoData || !donoData.empresa || !donoData.loja || !donoData.produtos) {
-        return (
-            <div className="flex justify-center items-center min-h-screen">
-                <p className="text-red-600 text-lg">Erro ao carregar os dados da empresa ou da loja. Por favor, tente novamente.</p>
-            </div>
-        );
-    }
+
 
     return (
-        <OwnerSidebar slug={donoData.loja.slug_loja}>
-            
+        <OwnerSidebar slug={slug}>
+            {console.error(donoData)}
             <h1 className="text-2xl font-bold text-gray-600 mb-6 text-center welcome-message">
-                Bem-vindo(a) de volta, {donoData.empresa.nome}!
+                Bem-vindo(a) de volta, {donoData.empresa.nome  }!
             </h1>
 
             <div className="mt-4 w-full max-w-3xl mx-auto mb-6 loja-link-card">
@@ -346,14 +436,15 @@ export default function OwnerDono() {
                 </div>
             </div>
 
-            <div className="bg-white rounded shadow p-6 w-full max-w-3xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-6 mb-8 resumo-geral-card">
+           {verificarTipoLoja !== "atendimento" &&  <div className="bg-white rounded shadow p-6 w-full max-w-3xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-6 mb-8 resumo-geral-card">
                 <div className="col-span-2 md:col-span-4">
                     <h2 className="text-lg font-semibold text-gray-600 mb-1">Resumo geral:</h2>
                 </div>
                 <InfoCard value={donoData.produtosAtivos} sub="produtos ativos" />
                 <InfoCard value={metrics.novosPedidos} sub="novos pedidos" />
                 <InfoCard value={metrics.pedidosFinalizados} sub="pedidos finalizados" />
-                <InfoCard value="3" sub="notificações" />
+               
+               
                 {/* NOVO: Usando o LiveActionCard para "Ver Pedidos em Tempo Real" */}
                 <LiveActionCard
                     icon="/icons/ver-pedidos.svg"
@@ -361,12 +452,28 @@ export default function OwnerDono() {
                     path={`/empresa/${donoData.loja.slug_loja}/pedidos-dono`}
                     className="view-realtime-orders-action-card"
                 />
-            </div>
+            </div>}
+           {verificarTipoLoja === "atendimento" && <div className="bg-white rounded shadow p-6 w-full max-w-3xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-6 mb-8 resumo-geral-card">
+                <div className="col-span-2 md:col-span-4">
+                    <h2 className="text-lg font-semibold text-gray-600 mb-1">Resumo geral:</h2>
+                </div>
+                <InfoCard value={metricsAtendimento.atendimentosAgendado} sub="agendamentos agendados" />
+                <InfoCard value={metricsAtendimento.pedidosFinalizados} sub="agendamentos finalizados" />
+                <InfoCard value={metricsAtendimento.pedidosConfirmados} sub="agendamentos confirmados" />
+               
+               
+                
+                <LiveActionCard
+                    icon="/icons/ver-pedidos.svg"
+                    label="Meus Agendamentos" // Texto alterado
+                    path={`/empresa/${slug}/meusAgendamentos`}
+                    className="view-realtime-orders-action-card"
+                />
+            </div>}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-3xl mx-auto">
-                <div className="grid grid-cols-2 gap-4">
+        {  verificarTipoLoja !== "atendimento" &&   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-3xl mx-auto">
+                <div className="grid grid-cols-1 gap-4">
                     <ActionCard icon="/icons/add2.svg" label="Adicionar Produtos" path={`/empresa/${donoData.loja.slug_loja}/AdicionarProduto`} className="add-products-action-card" />
-                    <ActionCard icon="/icons/notification.svg" label="Notificações" path={`/empresa/${donoData.loja.slug_loja}/notificacoes`} className="notifications-action-card" />
                     <ActionCard icon="/icons/paint_gray.svg" label="Personalizar Loja" path={`/empresa/${donoData.loja.slug_loja}/personalizacao`} className="personalize-store-action-card" />
                     <ActionCard icon="/icons/store_gray.svg" label="Ver Loja" path={`${window.location.origin}/loja/${donoData.loja.slug_loja}`} className="view-store-action-card" />
                 </div>
@@ -375,7 +482,7 @@ export default function OwnerDono() {
                     <ActionCard icon="/icons/loyalty.svg" label="Configurar Fidelidade" onClick={() => setOpen(true)} className="loyalty-config-action-card" />
                     <ActionCard icon="/icons/coupon.svg" label="Meus Cupons" onClick={() =>{setOpenCupons(true); buscarCupons();}} className="loyalty-config-action-card" />
                 </div>
-            </div>
+            </div>}
 
             <Dialog open={open} onOpenChange={setOpen}>
                 <DialogContent className="bg-[#3681b6] text-white">
@@ -523,38 +630,49 @@ export default function OwnerDono() {
 // COMPONENTE: LiveActionCard (Modificado)
 function LiveActionCard({ icon, label, path, onClick, className }) {
     const router = useRouter();
-
-    // Adiciona classes para o destaque e a animação do "ao vivo"
+  
     const classes = `
-        bg-red-600 text-white p-4 rounded shadow flex items-center gap-4 cursor-pointer
-        hover:bg-red-700 transition-colors duration-200 relative
-        ${className || ''}
+      bg-red-600 text-white 
+      px-3 py-4
+      rounded shadow 
+      flex flex-col items-center justify-center
+      gap-2
+      min-w-[120px] max-w-full
+      break-words whitespace-normal text-wrap
+      text-sm sm:text-base
+      relative
+      w-full
+      cursor-pointer
     `;
-
+  
     return (
-        <div
-            onClick={() => {
-                if (onClick) return onClick();
-                if (path) router.push(path);
-            }}
-            className={classes}
-        >
-            {/* O ícone é renderizado sem o quadrado, diretamente pela imagem */}
-            <Image src={icon} alt={label} width={24} height={24} className="filter invert brightness-0 saturate-100 hue-rotate-180" />
-            <span className="text-lg font-semibold">{label}</span>
-            {/* Bolinha de "ao vivo" - Ajustada para ser mais perceptível */}
-            <span className="absolute top-2 right-2 flex h-3 w-3">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-300 opacity-75"></span> {/* Cor mais clara para o "ping" */}
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-red-400"></span> {/* Cor um pouco mais clara para a bolinha */}
-            </span>
-        </div>
-    );
-}
+      <div
+        onClick={() => {
+          if (onClick) return onClick();
+          if (path) router.push(path);
+        }}
+        className={`${classes} ${className || ''}`}
+      >
 
+  
+        {/* Texto ajustável com quebra automática */}
+        <span className="text-base font-semibold break-words text-left w-full">
+          {label}
+        </span>
+  
+        {/* Bolinha de ao vivo */}
+        <span className="absolute top-2 right-2 flex h-3 w-3">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-300 opacity-75"></span>
+          <span className="relative inline-flex rounded-full h-3 w-3 bg-red-400"></span>
+        </span>
+      </div>
+    );
+  }
+  
 
 function InfoCard({ value, sub }) {
     return (
-        <div className="bg-gray-100 p-4 rounded shadow text-center">
+        <div className="bg-gray-100 p-6 rounded shadow text-center">
             <div className="text-3xl font-bold text-gray-800">
                 {value === null || value === undefined ? '-' : value}
             </div>
