@@ -166,7 +166,7 @@ const AppointmentBooking = () => {
       const data = await response.json();
       show("Agendamento criado com sucesso!", "success");
                 
-    
+      resetBooking();
       await fetchScheduleConfigurations(slug);
       
    
@@ -316,7 +316,7 @@ const AppointmentBooking = () => {
         </div>
 
         {/* Conteúdo da página */}
-        <div className="max-w-6xl mx-auto grid lg:grid-cols-3 gap-8">
+        <div className="max-w-6xl mx-auto grid lg:grid-cols-3 gap-6">
           <div className="lg:col-span-1">
             <AppointmentCalendar 
               selectedDate={selectedDate}

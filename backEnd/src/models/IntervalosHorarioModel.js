@@ -80,9 +80,7 @@ export const IntervalosHorarioModel = {
       .update({ available })
       .eq('data_config_id', data_config_id)
       .eq('inicio', horario)
-      .select();
-  
-    if (error) {
+      .select();    if (error) {
       throw new Error(`Erro ao atualizar disponibilidade: ${error.message}`);
     }
     console.log('Intervalos atualizados:', data);

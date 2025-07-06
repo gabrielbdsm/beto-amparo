@@ -3,9 +3,10 @@
   font-size: 0.875rem;
   font-weight: 600;
   color: #1f2937;
+  top: -2.3rem;
   left:53%;
   transform: translateX(-55px);
-  bottom: 14rem;
+
 }
 
 @media (min-width: 430px) and (max-width: 10200px) {
