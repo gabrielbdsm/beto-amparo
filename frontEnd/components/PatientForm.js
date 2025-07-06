@@ -48,7 +48,7 @@ const ClientForm = ({
   }
 
   return (
-    <Card className="medical-card mb-7 ">
+    <Card className="medical-card mb-12 ">
       <CardHeader className="pb-4">
         <CardTitle className="flex items-center text-xl text-gray-900">
           <CheckCircle className="mr-2 h-5 w-5 text-green-600" />

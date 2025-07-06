@@ -25,6 +25,7 @@ export const agendamentoInsert =  async (dataConfig) => {
       .eq("id_cliente",  dataConfig.id_cliente)
       .eq("id_empresa", dataConfig.id_empresa)
       .eq("slug", dataConfig.slug)
+      .neq("status", "Cancelado")
   
     if (error) throw new Error("Erro ao verificar agendamento existente: " + error.message);
   
