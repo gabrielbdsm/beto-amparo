@@ -52,7 +52,7 @@ export const loginEmpresa = async (req, res) => {
             sameSite: process.env.NODE_ENV === 'production' ? "none" : "Lax",
             maxAge: 24 * 60 * 60 * 1000,
             path: "/",
-            
+
         });
 
         console.log("Backend AuthController: Cookie 'token_empresa' setado com:", {
