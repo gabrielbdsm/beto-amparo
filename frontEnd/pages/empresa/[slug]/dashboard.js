@@ -161,7 +161,13 @@ export default function DashboardPage() {
     return '/placeholder.png';
   };
 
-
+  if (!tipoLoja) {
+    return (
+        <div className="flex justify-center items-center min-h-screen bg-white">
+            <p className="text-gray-700 text-lg">Carregando...</p>
+        </div>
+    );
+}
   return (
     <OwnerSidebar slug={slug}>
       <div className="p-8 max-w-6xl mx-auto bg-white rounded-lg shadow-md min-h-[600px]">
