@@ -29,6 +29,7 @@ export default function ListaLojasEmpresa() {
 
 
     useEffect(() => {
+        document.documentElement.style.overflow = 'auto';
         if (!nomeEmpresa) return;
 
         async function fetchLojas() {
