@@ -498,7 +498,7 @@ export default function OwnerSidebar({ children, slug }) {
         </button>
       </aside>
 
-      <main className="flex-1 bg-gray-100 p-6 md:p-8">{children}</main>
+      <main className="flex-1 bg-gray-100 pt-6 px-3 md:pt-8 px-5">{children}</main>
     </div>
   );
 }
