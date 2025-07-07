@@ -146,7 +146,7 @@ export default function DashboardPage() {
 
     fetchAllDashboardData();
 
-  }, [router.isReady, slug, router]); 
+  }, [router.isReady, slug, router , tipoLoja]); 
 
   // Função para obter a URL da imagem do produto (para ControleEstoqueTable se ela for usar imagens)
   // Se essa função já existe em outro lugar ou é um helper, pode importá-la.
@@ -168,6 +168,7 @@ export default function DashboardPage() {
         </div>
     );
 }
+
   return (
     <OwnerSidebar slug={slug}>
       <div className="p-8 max-w-6xl mx-auto bg-white rounded-lg shadow-md min-h-[600px]">
