@@ -81,7 +81,7 @@ export const criarProduto = async (req, res) => {
         }
 
         // --- Verificação de Autorização (usando req.Id do middleware existente) ---
-        const id_empresa_autenticada = req.Id;
+        const id_empresa_autenticada = req.IdEmpresa; // Obtém o ID da empresa do token JWT
 
         console.log('DEBUG: ID da loja recebido do frontend (id_loja):', id_loja, 'Tipo:', typeof id_loja);
         console.log('DEBUG: ID da empresa autenticada do JWT (id_empresa_autenticada):', id_empresa_autenticada, 'Tipo:', typeof id_empresa_autenticada);

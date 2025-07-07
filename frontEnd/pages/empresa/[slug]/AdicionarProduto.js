@@ -41,23 +41,10 @@ export default function AdicionarProduto() {
         const checkAuthStatus = async () => {
             console.log('AdicionarProduto - useEffect: Iniciando verificação de autenticação.');
             try {
-                const response = await fetch(`${API_BASE_URL}/verifyAuthStatus`, { // Use API_BASE_URL
-                    method: 'GET',
-                    credentials: 'include',
-                });
-
-                if (response.status === 401) {
-                    const errorData = await response.json();
-                    console.log('AdicionarProduto - useEffect: Resposta 401 do backend:', errorData);
-                    const targetUrl = errorData.redirectTo || `/empresa/LoginEmpresa?returnTo=${encodeURIComponent(router.asPath)}`;
-                    router.push(targetUrl);
-                    return;
-                }
-                console.log('AdicionarProduto - useEffect: Usuário autenticado.');
-
+               
                 // Se autenticado, buscar o ID da loja associado ao slug
                 // Isso é crucial para buscar categorias e adicionar produtos
-                const lojaResponse = await fetch(`http://localhost:4000/loja/slug/${slug}`);
+                const lojaResponse = await fetch(`${API_BASE_URL}/loja/slug/${slug}`);
                                                                                   // Ou a rota exata que você usa para obter ID da loja por slug, como /loja/slug/:slug
                 if (!lojaResponse.ok) {
                     const errorData = await lojaResponse.json();
@@ -68,17 +55,14 @@ export default function AdicionarProduto() {
 
             } catch (err) {
                 console.error('AdicionarProduto - useEffect: Erro na verificação de autenticação/loja:', err);
-                const targetUrl = `/empresa/LoginEmpresa?returnTo=${encodeURIComponent(router.asPath)}`;
-                router.push(targetUrl);
-            } finally {
-                setIsAuthChecking(false);
-            }
+          
+            } 
         };
 
         if (router.isReady && slug) { // Garante que o router e o slug estão prontos
             checkAuthStatus();
         }
-    }, [router, slug]); // Depende do router e do slug
+    }, [router, slug , lojaId]); // Depende do router e do slug
 
     // --- NOVO useEffect: Buscar Categorias Existentes ---
     useEffect(() => {
@@ -270,8 +254,7 @@ export default function AdicionarProduto() {
               if (response.status === 401) {
                   const errorData = await response.json();
                   console.log('AdicionarProduto - handleSubmit: Resposta 401 do backend:', errorData);
-                  const targetUrl = errorData.redirectTo || `/empresa/LoginEmpresa?returnTo=${encodeURIComponent(router.asPath)}`;
-                  router.push(targetUrl);
+              
                   setIsLoading(false);
                   return;
               }
@@ -302,15 +285,6 @@ export default function AdicionarProduto() {
               setIsLoading(false);
           }
       };
-
-    // Se 'isAuthChecking' é true, mostra uma mensagem de carregamento.
-    if (isAuthChecking) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-100">
-                <p className="text-xl text-[#3681B6]">Verificando autenticação...</p>
-            </div>
-        );
-    }
 
     // Renderiza o formulário apenas se a autenticação foi verificada
     return (
