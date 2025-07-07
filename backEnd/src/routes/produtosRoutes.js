@@ -3,7 +3,7 @@ import express from 'express';
 import * as produto from '../controllers/produto/ProdutoController.js';
 import multer from 'multer';
 import { routePrivate } from '../middleware/protectRoutes.js'; // Seu middleware de autenticação
-
+import { empresaPrivate } from '../middleware/protectRouterEmpresa.js'; // Middleware para rotas privadas de empresa
 const router = express.Router();
 
 // Configuração do Multer para upload de imagens
@@ -26,7 +26,7 @@ const upload = multer({
 // ROTAS
 
 // Criar novo produto (privado com upload de imagem)
-router.post('/produtos', routePrivate, upload.single('imagem'), produto.criarProduto);
+router.post('/produtos', empresaPrivate, upload.single('imagem'), produto.criarProduto);
 
 // Listar todos os produtos (pode ser usado para administração, se houver filtro no controller)
 router.get('/produtos', produto.getProdutos);

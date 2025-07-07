@@ -371,17 +371,19 @@ export default function PedidosDono() {
 
     return (
         <OwnerSidebar slug={slug}>
-            <div className="min-h-screen bg-gray-100 flex flex-col items-center p-4">
-                <div className="w-full max-w-6xl flex justify-between items-center mb-6">
-                    <h1 className="text-2xl font-bold text-gray-800">Gerenciamento de Pedidos</h1>
-                    {/* BOTÃO "Mostrar/Esconder Itens dos Pedidos" */}
-                    <Button 
-                        onClick={() => setShowItemsInline(!showItemsInline)}
-                        className="bg-blue-600 hover:bg-blue-700 text-white cursor-pointer px-4 py-2 rounded-md"
-                    >
-                        {showItemsInline ? 'Esconder Detalhes dos Pedidos' : 'Mostrar Detalhes dos Pedidos'}
-                    </Button>
-                </div>
+            <div className="min-h-screen bg-gray-100 flex flex-col items-center">
+            <div className="w-full max-w-6xl flex flex-col sm:flex-row justify-between items-center mb-6 gap-4 sm:gap-0">
+  <h1 className="text-2xl font-bold text-gray-800 text-center sm:text-left w-full sm:w-auto">
+    Gerenciamento de Pedidos
+  </h1>
+  <Button
+    onClick={() => setShowItemsInline(!showItemsInline)}
+    className="bg-blue-600 hover:bg-blue-700 text-white cursor-pointer px-4 py-2 rounded-md w-full sm:w-auto"
+  >
+    {showItemsInline ? 'Esconder Detalhes dos Pedidos' : 'Mostrar Detalhes dos Pedidos'}
+  </Button>
+</div>
+
                 
                 {/* Barra de Busca */}
                 <div className="w-full max-w-6xl mb-6">
@@ -395,29 +397,42 @@ export default function PedidosDono() {
                 </div>
 
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full max-w-6xl">
-                    <TabsList className="grid w-full grid-cols-3 md:grid-cols-3" style={{ backgroundColor: corPrimaria }}>
-                        <TabsTrigger
-                            value="em_aberto"
-                            className="text-white data-[state=active]:bg-white data-[state=active]:text-blue-600 cursor-pointer"
-                            style={{ backgroundColor: activeTab === 'em_aberto' ? 'white' : corPrimaria, color: activeTab === 'em_aberto' ? corPrimaria : 'white' }}
-                        >
-                            Pedidos em Aberto 
-                        </TabsTrigger>
-                        <TabsTrigger
-                            value="finalizados"
-                            className="text-white data-[state=active]:bg-white data-[state=active]:text-blue-600 cursor-pointer"
-                            style={{ backgroundColor: activeTab === 'finalizados' ? 'white' : corPrimaria, color: activeTab === 'finalizados' ? corPrimaria : 'white' }}
-                        >
-                            Pedidos Finalizados
-                        </TabsTrigger>
-                        <TabsTrigger
-                            value="motoboy"
-                            className="text-white data-[state=active]:bg-white data-[state=active]:text-blue-600 cursor-pointer"
-                            style={{ backgroundColor: activeTab === 'motoboy' ? 'white' : corPrimaria, color: activeTab === 'motoboy' ? corPrimaria : 'white' }}
-                        >
-                            Área do Motoboy
-                        </TabsTrigger>
-                    </TabsList>
+                <TabsList
+  className="w-full flex flex-wrap gap-2 p-1"
+  style={{ backgroundColor: corPrimaria }}
+>
+  <TabsTrigger
+    value="em_aberto"
+    className="flex-1 min-w-[120px] text-center text-white data-[state=active]:bg-white data-[state=active]:text-blue-600 cursor-pointer rounded"
+    style={{
+      backgroundColor: activeTab === 'em_aberto' ? 'white' : corPrimaria,
+      color: activeTab === 'em_aberto' ? corPrimaria : 'white',
+    }}
+  >
+    Pedidos em Aberto
+  </TabsTrigger>
+  <TabsTrigger
+    value="finalizados"
+    className="flex-1 min-w-[120px] text-center text-white data-[state=active]:bg-white data-[state=active]:text-blue-600 cursor-pointer rounded"
+    style={{
+      backgroundColor: activeTab === 'finalizados' ? 'white' : corPrimaria,
+      color: activeTab === 'finalizados' ? corPrimaria : 'white',
+    }}
+  >
+    Pedidos Finalizados
+  </TabsTrigger>
+  <TabsTrigger
+    value="motoboy"
+    className="flex-1 min-w-[120px] text-center text-white data-[state=active]:bg-white data-[state=active]:text-blue-600 cursor-pointer rounded"
+    style={{
+      backgroundColor: activeTab === 'motoboy' ? 'white' : corPrimaria,
+      color: activeTab === 'motoboy' ? corPrimaria : 'white',
+    }}
+  >
+    Área do Motoboy
+  </TabsTrigger>
+</TabsList>
+
 
                     {/* Aba: Pedidos em Aberto */}
                     <TabsContent key={activeTab + '-' + searchTerm + '-em_aberto'} value="em_aberto" className="mt-6">
