@@ -377,7 +377,7 @@ export default function OwnerDono() {
     }
     if (loading || !donoData || !donoData.empresa || !donoData.loja) {
         return (
-            <div className="flex justify-center items-center min-h-screen">
+            <div className="flex justify-center items-center min-h-screen bg-white">
                 <p className="text-gray-700 text-lg">Carregando...</p>
             </div>
         );
