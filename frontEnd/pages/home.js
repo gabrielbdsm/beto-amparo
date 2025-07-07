@@ -33,7 +33,7 @@ export default function Home() {
         </div>
         <div className="z-20 text-center px-4">
           <h1 className="text-3xl lg:text-5xl font-bold mb-4">Transforme o atendimento do seu negócio</h1>
-          <p className="text-lg lg:text-xl mb-6">Automatize pedidos e agendamentos com a cara do seu negócio.</p>
+          <p className="text-lg lg:text-xl mb-6 text-white">Automatize pedidos e agendamentos com a cara do seu negócio.</p>
           <div className="flex flex-col lg:flex-row gap-4 justify-center">
             <Link href="/cadastroEmpresa" passHref>
               <button className="bg-[#F7941D] text-white font-semibold px-6 py-3 rounded-xl shadow-md hover:bg-[#d37313] transition duration-300">
