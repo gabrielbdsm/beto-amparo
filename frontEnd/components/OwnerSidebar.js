@@ -267,21 +267,27 @@ export default function OwnerSidebar({ children, slug }) {
       {/* Sidebar */}
       <aside
   className={`
-    fixed md:static z-40 bg-[#3681B6] text-white w-64 min-h-screen p-4 flex flex-col justify-between
-    transition-transform duration-300 overflow-y-auto
-   
+    absolute md:fixed
+    z-40 bg-[#3681B6] text-white w-64
+    h-full md:min-h-screen
+    p-4 flex flex-col justify-between
+    transition-transform duration-300
+    overflow-y-auto
     ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0
-    `}
-    style={{
-        scrollbarWidth: 'none',           
-        msOverflowStyle: 'none',          
-    }}
-    >
-    <style jsx>{`
-        aside::-webkit-scrollbar {
-        display: none; /* Chrome, Safari e Opera */
-        }
-    `}</style>
+  `}
+  style={{
+    scrollbarWidth: 'none',
+    msOverflowStyle: 'none',
+    WebkitOverflowScrolling: 'touch',
+    touchAction: 'pan-y',
+  }}
+>
+  <style jsx>{`
+    aside::-webkit-scrollbar {
+      display: none;
+    }
+  `}</style>
+
 
 
         <div className="sidebar-menu-area">
@@ -498,7 +504,7 @@ export default function OwnerSidebar({ children, slug }) {
         </button>
       </aside>
 
-      <main className=" flex-1 bg-gray-100 pt-6 px-3 md:pt-8 px-5">{children}</main>
+      <main className="flex-1 bg-gray-100 pt-6 px-3 md:pt-8 px-5">{children}</main>
     </div>
   );
 }
