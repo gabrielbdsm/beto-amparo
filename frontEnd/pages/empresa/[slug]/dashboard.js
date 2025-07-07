@@ -160,6 +160,7 @@ export default function DashboardPage() {
     }
     return '/placeholder.png';
   };
+
   if (!tipoLoja) {
     return (
         <div className="flex justify-center items-center min-h-screen bg-white">
